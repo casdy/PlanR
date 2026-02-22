@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
 import { ActiveWorkoutOverlay } from './ActiveWorkoutOverlay';
+import { WorkoutSummary } from './WorkoutSummary';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, logout, signInWithGoogle } = useAuth();
@@ -73,6 +74,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </div>
             </nav>
             <ActiveWorkoutOverlay />
+            <WorkoutSummary onRestart={() => window.location.href = '/'} />
         </div>
     );
 };

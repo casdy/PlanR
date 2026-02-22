@@ -8,18 +8,15 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg?logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg?logo=vite)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css)
-![Firebase](https://img.shields.io/badge/Firebase-12-FFCA28.svg?logo=firebase)
+![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Inference-FFD21E.svg)
 
 ---
 
-## ✨ Key Features
-
-- **📊 Dashboard**: Real-time overview of your fitness progress and upcoming workouts.
-- **🏋️ Program Management**: Create, edit, and organize multiple workout programs tailored to your goals.
-- **⏱️ Active Workout Tracking**: Interactive workout overlay for real-time tracking of sets, reps, and rest periods.
-- **📜 Workout History**: Comprehensive log of all past workouts to monitor your long-term progress.
+- **🎙️ Voice-Logged Workouts**: Hands-free logging using AI speech-to-text (Whisper).
+- **🤖 AI Routine Builder**: Generate custom workout programs instantly based on your goals.
+- **🏆 Dynamic Achievements**: Unique, AI-generated badges (FLUX) to celebrate your fitness milestones.
 - **📱 PWA Ready**: Installable on mobile and desktop for a native-like experience.
-- **☁️ Cloud Sync**: Powered by Firebase for secure, real-time data synchronization across all your devices.
+- **🔒 Private by Design**: Offline-first storage with secure, local-only data persistence.
 
 ---
 
@@ -28,7 +25,7 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
 - **Frontend**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **Build Tool**: [Vite 7](https://vitejs.dev/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Framer Motion](https://www.framer.com/motion/) (Animations)
-- **State Management**: [Zustand](https://docs.pmnd.rs/zustand/)
+- **AI Engine**: [Hugging Face Inference](https://huggingface.co/inference) (Whisper, FLUX, LLMs)
 - **Persistence**: Local Storage (Offline-first approach)
 - **Utilities**: `date-fns`, `lucide-react`, `clsx`, `tailwind-merge`
 
@@ -54,6 +51,12 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
 
    ```bash
    npm install
+   ```
+
+3. Configure Environment Variables:
+   Create a `.env` file in the root directory and add your Hugging Face API token:
+   ```env
+   HF_API_TOKEN=your_token_here
    ```
 
 ### Development
@@ -82,7 +85,7 @@ src/
 │   ├── ui/        # Atomic UI elements (Buttons, Inputs, etc.)
 │   └── ...
 ├── pages/          # Main application views/routes
-├── services/       # API and external service integrations (Firebase)
+├── services/       # AI (Hugging Face) and Local persistence
 ├── store/          # Zustand state management
 ├── hooks/          # Custom React hooks
 ├── lib/            # Configuration and utility libraries

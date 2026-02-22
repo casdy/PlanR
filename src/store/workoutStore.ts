@@ -26,6 +26,14 @@ interface WorkoutState {
 
     tick: () => void; // Increment elapsed seconds
     resetTimer: () => void;
+
+    // AI/Voice logging
+    exerciseLogs: Record<string, { reps?: number, weight?: number }[]>;
+    logExerciseSet: (programId: string, dayId: string, exerciseIndex: number, reps: number, weight: number) => void;
+    
+    // Achievement badges
+    lastBadgeUrl: string | null;
+    setBadgeUrl: (url: string | null) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -89,7 +97,24 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             tick: () => set((state) => ({ elapsedSeconds: state.elapsedSeconds + 1 })),
 
-            resetTimer: () => set({ elapsedSeconds: 0 })
+            resetTimer: () => set({ elapsedSeconds: 0 }),
+
+            exerciseLogs: {},
+            logExerciseSet: (programId, dayId, exerciseIndex, reps, weight) => {
+                const key = `${programId}-${dayId}-${exerciseIndex}`;
+                set((state) => {
+                    const currentLogs = state.exerciseLogs[key] || [];
+                    return {
+                        exerciseLogs: {
+                            ...state.exerciseLogs,
+                            [key]: [...currentLogs, { reps, weight }]
+                        }
+                    };
+                });
+            },
+
+            lastBadgeUrl: null,
+            setBadgeUrl: (url) => set({ lastBadgeUrl: url })
         }),
         {
             name: 'juuk-workout-storage', // key in local storage

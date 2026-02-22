@@ -4,10 +4,12 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuth } from '../hooks/useAuth';
 import { ProgramService } from '../services/programService';
 import type { WorkoutProgram, WorkoutDay } from '../types';
-import { Play, Pause, Square, SkipForward, Maximize2 } from 'lucide-react';
+import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { cn } from '../lib/utils'; // Keep this one for merging classes
+import { cn } from '../lib/utils';
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
+import { hfService } from '../services/hfService';
 
 
 // Helper to format time properties
@@ -21,8 +23,13 @@ export const ActiveWorkoutOverlay = () => {
     const {
         status, activeProgramId, activeDayId, activeExerciseIndex,
         elapsedSeconds, timerDuration,
-        tick, nextExercise, pauseWorkout, resumeWorkout, cancelWorkout
+        tick, nextExercise, pauseWorkout, resumeWorkout, cancelWorkout,
+        exerciseLogs, logExerciseSet
     } = useWorkoutStore();
+
+    const { isRecording, startRecording, stopRecording, audioBlob } = useVoiceRecorder();
+    const [isProcessingVoice, setIsProcessingVoice] = React.useState(false);
+    const [voiceFeedback, setVoiceFeedback] = React.useState<string | null>(null);
 
     const { user } = useAuth();
     const [program, setProgram] = React.useState<WorkoutProgram | null>(null);
@@ -81,6 +88,37 @@ export const ActiveWorkoutOverlay = () => {
             }
         }
     }, [elapsedSeconds, timerDuration, status, day, nextExercise, activeProgramId, activeDayId, activeExerciseIndex, user]);
+
+    // Voice processing effect
+    useEffect(() => {
+        async function processAudio() {
+            if (audioBlob && activeProgramId && activeDayId) {
+                setIsProcessingVoice(true);
+                setVoiceFeedback("Transcribing...");
+                try {
+                    const transcription = await hfService.speechToText(audioBlob);
+                    setVoiceFeedback(`Parsing: "${transcription.text}"`);
+                    
+                    const result = await hfService.parseWorkoutTranscript(transcription.text);
+                    if (result && (result.reps > 0 || result.weight > 0)) {
+                        logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight);
+                        setVoiceFeedback(`Logged: ${result.reps} reps @ ${result.weight}lbs`);
+                        setTimeout(() => setVoiceFeedback(null), 3000);
+                    } else {
+                        setVoiceFeedback("Couldn't understand reps/weight.");
+                        setTimeout(() => setVoiceFeedback(null), 3000);
+                    }
+                } catch (err) {
+                    console.error("Voice processing failed", err);
+                    setVoiceFeedback("Voice processing error.");
+                    setTimeout(() => setVoiceFeedback(null), 3000);
+                } finally {
+                    setIsProcessingVoice(false);
+                }
+            }
+        }
+        processAudio();
+    }, [audioBlob, activeProgramId, activeDayId, activeExerciseIndex, logExerciseSet]);
 
 
     if (status === 'idle' || status === 'finished' || !day || !program) return null;
@@ -199,14 +237,65 @@ export const ActiveWorkoutOverlay = () => {
                         </div>
 
                         {/* Info Card */}
-                        <Card className="bg-gray-50 dark:bg-slate-800 border-none">
+                        <Card className="bg-gray-50 dark:bg-slate-800 border-none relative overflow-visible">
                             <div className="p-4 flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-gray-500 uppercase font-bold tracking-wider">Current Set</p>
                                     <h2 className="text-2xl font-bold">{currentExercise.name}</h2>
                                     <p className="text-blue-500 font-medium">{currentExercise.targetSets} sets × {currentExercise.targetReps} reps</p>
                                 </div>
+                                
+                                <div className="flex flex-col items-center gap-2">
+                                    <Button 
+                                        size="icon" 
+                                        className={cn(
+                                            "w-14 h-14 rounded-full transition-all duration-300",
+                                            isRecording ? "bg-red-500 animate-pulse scale-110" : "bg-blue-600",
+                                            isProcessingVoice && "opacity-50 cursor-not-allowed"
+                                        )}
+                                        onMouseDown={startRecording}
+                                        onMouseUp={stopRecording}
+                                        onTouchStart={startRecording}
+                                        onTouchEnd={stopRecording}
+                                        disabled={isProcessingVoice}
+                                    >
+                                        {isProcessingVoice ? (
+                                            <Loader2 className="w-6 h-6 animate-spin" />
+                                        ) : (
+                                            <Mic className="w-6 h-6" />
+                                        )}
+                                    </Button>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Hold to Log</span>
+                                </div>
                             </div>
+
+                            {/* Voice Feedback Overlay */}
+                            <AnimatePresence>
+                                {voiceFeedback && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                                        className="absolute -top-12 left-0 right-0 flex justify-center"
+                                    >
+                                        <div className="bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-medium shadow-lg border border-slate-700 flex items-center gap-2">
+                                            {voiceFeedback.includes("Logged") ? <Check className="w-3 h-3 text-emerald-400" /> : <Loader2 className="w-3 h-3 animate-spin" />}
+                                            {voiceFeedback}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            {/* Set History */}
+                            {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`]?.length > 0 && (
+                                <div className="px-4 pb-4 flex flex-wrap gap-2">
+                                    {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`].map((set, i) => (
+                                        <div key={i} className="bg-white dark:bg-slate-700 px-3 py-1 rounded-lg text-xs font-bold border border-gray-100 dark:border-slate-600">
+                                            Set {i + 1}: {set.reps} × {set.weight}lbs
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </Card>
 
                         {nextEx && (
