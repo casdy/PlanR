@@ -13,7 +13,7 @@ export const ProgramManager = () => {
         const programToSave = {
             ...newProgram,
             id,
-            userId: user?.uid || 'guest',
+            userId: user?.id || 'guest',
             version: 1
         };
         await ProgramService.saveProgram(programToSave);

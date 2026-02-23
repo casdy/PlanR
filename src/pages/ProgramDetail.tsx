@@ -7,7 +7,9 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ChevronLeft, Play, Clock, Dumbbell } from 'lucide-react';
-import { cn } from '../lib/utils'; // Keeping this one, assuming previous fixes worked
+import { cn } from '../lib/utils';
+import { motion } from 'framer-motion';
+import { WorkoutDayView } from '../components/WorkoutDayView';
 
 export const ProgramDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -21,7 +23,7 @@ export const ProgramDetail = () => {
         if (id) {
             const fetchProgram = async () => {
                 if (user) {
-                    const progs = await ProgramService.getUserPrograms(user.uid);
+                    const progs = await ProgramService.getUserPrograms(user.id);
                     setProgram(progs.find(p => p.id === id) || null);
                 } else {
                     // Guest Mode
@@ -44,72 +46,86 @@ export const ProgramDetail = () => {
     };
 
     return (
-        <div className="space-y-6 pb-24">
-            <div className="flex items-center gap-2 mb-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <div className="space-y-10 pb-32">
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-2xl bg-secondary/50">
                     <ChevronLeft className="w-4 h-4 mr-1" /> Back
                 </Button>
             </div>
 
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                        {program.title}
-                    </h1>
-                    <p className="text-gray-500 mt-1">{program.description}</p>
+            <header className="space-y-4">
+                <motion.h1 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-5xl font-black tracking-tightest leading-tight"
+                >
+                    {program.title.split(' ').map((word, i) => (
+                        <span key={i} className={i % 2 === 0 ? "text-foreground" : "text-primary italic"}>{word} </span>
+                    ))}
+                </motion.h1>
+                <p className="text-muted-foreground text-lg font-medium leading-relaxed max-w-xl">{program.description}</p>
+                
+                <div className="flex flex-wrap gap-4 pt-4">
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-secondary/50 border border-border/40 text-sm font-bold">
+                        <Clock className="w-4 h-4 text-primary" />
+                        {program.schedule.length} Days / Week
+                    </div>
                 </div>
-            </div>
+            </header>
 
-            <div className="space-y-4">
-                {program.schedule.map((day) => {
+            <div className="space-y-6">
+                {program.schedule.map((day, i) => {
                     const isRest = day.type === 'rest' || day.type === 'active_recovery';
                     return (
-                        <Card key={day.id} className={cn("overflow-hidden transition-all hover:shadow-md", isRest && "opacity-75 bg-gray-50 dark:bg-slate-900 border-dashed")}>
-                            <div className="p-5 flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className={cn(
-                                        "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
-                                        isRest ? "bg-gray-200 text-gray-500 dark:bg-gray-800" : "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                                    )}>
-                                        {isRest ? <Clock className="w-6 h-6" /> : <Dumbbell className="w-6 h-6" />}
+                        <motion.div
+                            key={day.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                        >
+                            <Card className={cn(
+                                "overflow-hidden transition-all duration-500 border-border/40 hover:border-primary/30 rounded-[2.5rem] bg-card/30 backdrop-blur-sm group",
+                                isRest && "opacity-50 border-dashed"
+                            )}>
+                                <div className="p-6 flex items-center justify-between">
+                                    <div className="flex items-center gap-5">
+                                        <div className={cn(
+                                            "w-16 h-16 rounded-3xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
+                                            isRest ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary glow-primary"
+                                        )}>
+                                            {isRest ? <Clock className="w-8 h-8" /> : <Dumbbell className="w-8 h-8" />}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-xl tracking-tight">{day.title}</h3>
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{day.dayOfWeek}</span>
+                                                <span className="w-1 h-1 rounded-full bg-border" />
+                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{day.durationMin} MIN • {day.type.replace('_', ' ')}</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg">{day.title}</h3>
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                            {day.dayOfWeek} • {day.durationMin} min • {day.type}
-                                        </p>
-                                    </div>
+
+                                    {!isRest && (
+                                        <Button
+                                            size="icon"
+                                            className="w-14 h-14 rounded-full shadow-2xl glow-primary"
+                                            onClick={() => handleStartWorkout(day.id)}
+                                            disabled={status === 'running'}
+                                        >
+                                            <Play className="w-6 h-6 fill-primary-foreground ml-1" />
+                                        </Button>
+                                    )}
                                 </div>
 
-                                {!isRest && (
-                                    <Button
-                                        size="icon"
-                                        className="rounded-full shadow-lg"
-                                        onClick={() => handleStartWorkout(day.id)}
-                                        disabled={status === 'running'} // Disable starting another if one is running? Or specific logic
-                                    >
-                                        <Play className="w-5 h-5 fill-white ml-1" />
-                                    </Button>
+                                {(!isRest && day.exercises.length > 0) && (
+                                    <div className="px-6 pb-8 pt-2">
+                                        <div className="ml-20 border-t border-border/20 pt-4">
+                                            <WorkoutDayView day={day} />
+                                        </div>
+                                    </div>
                                 )}
-                            </div>
-
-                            {!isRest && (
-                                <div className="px-5 pb-5 pt-0">
-                                    <div className="space-y-1 mt-2 pl-16">
-                                        {day.exercises.slice(0, 3).map((ex, i) => ( // Show first 3 only for preview
-                                            <p key={i} className="text-sm text-gray-600 dark:text-gray-400 truncate">
-                                                • {ex.name} <span className="text-gray-400 text-xs">({ex.targetSets}x{ex.targetReps})</span>
-                                            </p>
-                                        ))}
-                                        {day.exercises.length > 3 && (
-                                            <p className="text-xs text-blue-500 font-medium pl-2 pt-1">
-                                                + {day.exercises.length - 3} more exercises
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </Card>
+                            </Card>
+                        </motion.div>
                     );
                 })}
             </div>

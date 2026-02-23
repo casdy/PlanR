@@ -10,6 +10,7 @@ import { Card } from './ui/Card';
 import { cn } from '../lib/utils';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { hfService } from '../services/hfService';
+import { LocalService } from '../services/localService';
 
 
 // Helper to format time properties
@@ -43,7 +44,7 @@ export const ActiveWorkoutOverlay = () => {
                 // Determine source
                 let progs: WorkoutProgram[] = [];
                 if (user) {
-                    progs = await ProgramService.getUserPrograms(user.uid);
+                    progs = await ProgramService.getUserPrograms(user.id);
                 } else {
                     const { LocalService } = await import('../services/localService');
                     progs = LocalService.getUserPrograms();
@@ -71,19 +72,39 @@ export const ActiveWorkoutOverlay = () => {
         return () => clearInterval(interval);
     }, [status, tick]);
 
-    // Auto-advance logic (Sound effect could go here)
+    // Utility to play a non-intrusive notification beep
+    const playBeep = () => {
+        const soundsEnabled = localStorage.getItem('planr-sounds') !== 'false';
+        if (!soundsEnabled) return;
+
+        try {
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        } catch (e) {
+            console.warn('Audio feedback failed', e);
+        }
+    };
+
     // Auto-advance logic
     useEffect(() => {
         if (elapsedSeconds >= timerDuration && status === 'running') {
+            playBeep();
             if (day && activeProgramId && activeDayId) {
                 // Mark current exercise as complete before moving on
-                if (!user) {
-                    import('../services/localService').then(({ LocalService }) => {
-                        LocalService.toggleExerciseCompliance(activeProgramId, activeDayId, activeExerciseIndex);
-                    });
-                }
-                // (User logic would go here - likely logging to Firestore)
-
+                LocalService.toggleExerciseCompliance(activeProgramId, activeDayId, activeExerciseIndex);
+                
                 nextExercise(day.exercises.length - 1);
             }
         }
@@ -147,8 +168,8 @@ export const ActiveWorkoutOverlay = () => {
                     if (info.offset.y < -100) setIsMinimized(false);
                 }}
                 className={cn(
-                    "fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-gray-800 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] rounded-t-3xl overflow-hidden touch-manipulation",
-                    !isMinimized ? "h-[90vh] md:h-auto md:max-h-[800px]" : "h-24 cursor-pointer"
+                    "fixed inset-x-0 bottom-0 z-[60] glass border-t border-border/40 shadow-[0_-32px_64px_-12px_rgba(0,0,0,0.15)] rounded-t-[3rem] overflow-hidden touch-manipulation",
+                    !isMinimized ? "h-[92vh] md:h-auto md:max-h-[850px]" : "h-24 cursor-pointer"
                 )}
             >
                 {/* Handle for dragging */}
@@ -201,71 +222,79 @@ export const ActiveWorkoutOverlay = () => {
                                     />
                                 </svg>
                                 <div className="text-center z-10">
-                                    <div className="text-6xl font-mono font-bold tracking-tighter tabular-nums">
+                                    <div className="text-7xl font-black tracking-tightest tabular-nums animate-float">
                                         {formatTime(elapsedSeconds)}
                                     </div>
-                                    <div className="text-gray-400 font-medium">
-                                        Target: {formatTime(timerDuration)}
+                                    <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
+                                        TARGET: {formatTime(timerDuration)}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Controls */}
-                        <div className="grid grid-cols-3 gap-4 mb-8">
-                            <Button size="lg" variant="secondary" onClick={cancelWorkout} className="flex-col h-20 gap-2">
-                                <Square className="w-6 h-6 fill-red-500 text-red-500" />
-                                <span className="text-xs">End</span>
+                        <div className="grid grid-cols-4 gap-3 mb-8">
+                            <Button size="lg" variant="secondary" onClick={cancelWorkout} className="flex-col h-20 gap-2 border-none bg-gray-50 dark:bg-slate-800">
+                                <Square className="w-5 h-5 fill-red-500 text-red-500" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">End</span>
                             </Button>
 
                             {status === 'running' ? (
-                                <Button size="lg" onClick={pauseWorkout} className="flex-col h-20 gap-2 bg-yellow-500 hover:bg-yellow-600">
-                                    <Pause className="w-8 h-8 fill-white" />
-                                    <span className="text-xs">Pause</span>
+                                <Button size="lg" onClick={pauseWorkout} className="flex-col h-20 gap-2 bg-yellow-500 hover:bg-yellow-600 border-none shadow-lg shadow-yellow-500/20">
+                                    <Pause className="w-6 h-6 fill-white" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-white">Pause</span>
                                 </Button>
                             ) : (
-                                <Button size="lg" onClick={resumeWorkout} className="flex-col h-20 gap-2 bg-emerald-500 hover:bg-emerald-600">
-                                    <Play className="w-8 h-8 fill-white ml-1" />
-                                    <span className="text-xs">Resume</span>
+                                <Button size="lg" onClick={resumeWorkout} className="flex-col h-20 gap-2 bg-emerald-500 hover:bg-emerald-600 border-none shadow-lg shadow-emerald-500/20">
+                                    <Play className="w-6 h-6 fill-white ml-1" />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-white">Resume</span>
                                 </Button>
                             )}
 
-                            <Button size="lg" variant="secondary" onClick={() => nextExercise(day.exercises.length - 1)} className="flex-col h-20 gap-2">
-                                <SkipForward className="w-6 h-6" />
-                                <span className="text-xs">Skip</span>
+                            <div className="relative group">
+                                <Button 
+                                    size="lg" 
+                                    className={cn(
+                                        "flex-col h-20 w-full gap-2 transition-all duration-300 border-none shadow-lg",
+                                        isRecording ? "bg-red-500 scale-105 shadow-red-500/40" : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20",
+                                        isProcessingVoice && "opacity-50 cursor-not-allowed"
+                                    )}
+                                    onMouseDown={startRecording}
+                                    onMouseUp={stopRecording}
+                                    onTouchStart={startRecording}
+                                    onTouchEnd={stopRecording}
+                                    disabled={isProcessingVoice}
+                                >
+                                    {isProcessingVoice ? (
+                                        <Loader2 className="w-6 h-6 animate-spin text-white" />
+                                    ) : (
+                                        <Mic className={cn("w-6 h-6 text-white", isRecording && "animate-bounce")} />
+                                    )}
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-white">
+                                        {isRecording ? "Listening" : "Log"}
+                                    </span>
+                                </Button>
+                                {isRecording && (
+                                    <div className="absolute inset-0 rounded-xl ring-4 ring-red-500/30 animate-ping pointer-events-none" />
+                                )}
+                            </div>
+
+                            <Button size="lg" variant="secondary" onClick={() => nextExercise(day.exercises.length - 1)} className="flex-col h-20 gap-2 border-none bg-gray-50 dark:bg-slate-800">
+                                <SkipForward className="w-5 h-5 opacity-60" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Skip</span>
                             </Button>
                         </div>
 
                         {/* Info Card */}
-                        <Card className="bg-gray-50 dark:bg-slate-800 border-none relative overflow-visible">
-                            <div className="p-4 flex justify-between items-center">
-                                <div>
-                                    <p className="text-sm text-gray-500 uppercase font-bold tracking-wider">Current Set</p>
-                                    <h2 className="text-2xl font-bold">{currentExercise.name}</h2>
-                                    <p className="text-blue-500 font-medium">{currentExercise.targetSets} sets × {currentExercise.targetReps} reps</p>
-                                </div>
-                                
-                                <div className="flex flex-col items-center gap-2">
-                                    <Button 
-                                        size="icon" 
-                                        className={cn(
-                                            "w-14 h-14 rounded-full transition-all duration-300",
-                                            isRecording ? "bg-red-500 animate-pulse scale-110" : "bg-blue-600",
-                                            isProcessingVoice && "opacity-50 cursor-not-allowed"
-                                        )}
-                                        onMouseDown={startRecording}
-                                        onMouseUp={stopRecording}
-                                        onTouchStart={startRecording}
-                                        onTouchEnd={stopRecording}
-                                        disabled={isProcessingVoice}
-                                    >
-                                        {isProcessingVoice ? (
-                                            <Loader2 className="w-6 h-6 animate-spin" />
-                                        ) : (
-                                            <Mic className="w-6 h-6" />
-                                        )}
-                                    </Button>
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase">Hold to Log</span>
+                        <Card className="bg-secondary/40 border-none relative overflow-visible rounded-[2.5rem] mt-4">
+                            <div className="p-8 flex justify-between items-center">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">Current Set</p>
+                                    <h2 className="text-3xl font-black tracking-tight">{currentExercise.name}</h2>
+                                    <div className="flex gap-4 pt-1">
+                                        <p className="text-sm font-black text-muted-foreground uppercase">{currentExercise.targetSets} SETS</p>
+                                        <p className="text-sm font-black text-muted-foreground uppercase">{currentExercise.targetReps} REPS</p>
+                                    </div>
                                 </div>
                             </div>
 

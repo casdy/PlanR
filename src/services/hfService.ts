@@ -1,17 +1,22 @@
 import { HfInference } from '@huggingface/inference';
 
-const hfToken = import.meta.env.HF_API_TOKEN;
+const hfToken = import.meta.env.VITE_HF_API_TOKEN || '';
 
-if (!hfToken || hfToken === 'REDACTED_FOR_SECURITY') {
-  console.warn('HF_API_TOKEN is not defined or is redacted. AI features will not work.');
+if (!hfToken || hfToken === 'REDACTED_FOR_SECURITY' || hfToken.length < 5) {
+  console.warn('[Security] VITE_HF_API_TOKEN is missing or invalid. AI features (Voice Parsing, Image Gen) are disabled.');
 }
 
+// Initializing with empty string is safe but calls will fail gracefully
 const client = new HfInference(hfToken);
 
 /**
  * AI Service using Hugging Face Inference ecosystem.
  */
 export const hfService = {
+  /**
+   * Check if the service is configured with a valid token.
+   */
+  isAvailable: hfToken.length > 5 && hfToken !== 'REDACTED_FOR_SECURITY',
   /**
    * Universal text generation with smart routing and auto-fallback.
    * Utilizes :cheapest routing and auto provider provider policy.

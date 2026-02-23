@@ -8,6 +8,8 @@ interface WorkoutState {
     activeProgramId: string | null;
     activeDayId: string | null;
     activeExerciseIndex: number;
+    activeIntensity: 'light' | 'standard' | 'intense';
+    isRecoveryMode: boolean;
 
     // Timer state
     elapsedSeconds: number;
@@ -24,6 +26,9 @@ interface WorkoutState {
     nextExercise: (maxIndex: number) => void;
     prevExercise: () => void;
 
+    scaleIntensity: (intensity: 'light' | 'standard' | 'intense') => void;
+    swapToRecovery: () => void;
+
     tick: () => void; // Increment elapsed seconds
     resetTimer: () => void;
 
@@ -33,6 +38,7 @@ interface WorkoutState {
     
     // Achievement badges
     lastBadgeUrl: string | null;
+    badgePrompt: string | null;
     setBadgeUrl: (url: string | null) => void;
 }
 
@@ -43,6 +49,8 @@ export const useWorkoutStore = create<WorkoutState>()(
             activeProgramId: null,
             activeDayId: null,
             activeExerciseIndex: 0,
+            activeIntensity: 'standard',
+            isRecoveryMode: false,
             elapsedSeconds: 0,
             timerDuration: 60,
 
@@ -51,6 +59,8 @@ export const useWorkoutStore = create<WorkoutState>()(
                 activeProgramId: programId,
                 activeDayId: dayId,
                 activeExerciseIndex: 0,
+                activeIntensity: 'standard',
+                isRecoveryMode: false,
                 elapsedSeconds: 0
             }),
 
@@ -58,7 +68,22 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             resumeWorkout: () => set({ status: 'running' }),
 
-            finishWorkout: () => set({ status: 'finished' }), // Logic to log would be handled by component usually
+            finishWorkout: () => {
+                const { exerciseLogs } = get();
+                let totalVolume = 0;
+                let exerciseCount = 0;
+                
+                Object.values(exerciseLogs).forEach(sets => {
+                    if (sets.length > 0) exerciseCount++;
+                    sets.forEach(set => {
+                        totalVolume += (set.reps || 0) * (set.weight || 0);
+                    });
+                });
+
+                const prompt = `A hyper-realistic 3D digital gold badge, futuristic gym trophy aesthetic, centered, dark glowing background, representing a completed workout with ${exerciseCount} exercises and ${totalVolume.toLocaleString()} lbs total volume lifted. Highly detailed 8k render, Unreal Engine 5 style.`;
+                
+                set({ status: 'finished', badgePrompt: prompt });
+            },
 
             cancelWorkout: () => set({
                 status: 'idle',
@@ -95,6 +120,16 @@ export const useWorkoutStore = create<WorkoutState>()(
                 }
             },
 
+            scaleIntensity: (intensity) => set({ activeIntensity: intensity }),
+
+            swapToRecovery: () => set({
+                isRecoveryMode: true,
+                activeExerciseIndex: 0,
+                elapsedSeconds: 0
+                // Implementation note: The UI will handle the actual exercise replacement
+                // based on this flag.
+            }),
+
             tick: () => set((state) => ({ elapsedSeconds: state.elapsedSeconds + 1 })),
 
             resetTimer: () => set({ elapsedSeconds: 0 }),
@@ -114,6 +149,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             },
 
             lastBadgeUrl: null,
+            badgePrompt: null,
             setBadgeUrl: (url) => set({ lastBadgeUrl: url })
         }),
         {
