@@ -10,6 +10,7 @@ import { Card } from './ui/Card';
 import { cn } from '../lib/utils';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { hfService } from '../services/hfService';
+import { aiService } from '../services/aiService';
 import { LocalService } from '../services/localService';
 
 
@@ -120,7 +121,7 @@ export const ActiveWorkoutOverlay = () => {
                     const transcription = await hfService.speechToText(audioBlob);
                     setVoiceFeedback(`Parsing: "${transcription.text}"`);
                     
-                    const result = await hfService.parseWorkoutTranscript(transcription.text);
+                    const result = await aiService.parseWorkoutTranscript(transcription.text);
                     if (result && (result.reps > 0 || result.weight > 0)) {
                         logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight);
                         setVoiceFeedback(`Logged: ${result.reps} reps @ ${result.weight}lbs`);

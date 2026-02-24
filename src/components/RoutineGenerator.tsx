@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { hfService } from '../services/hfService';
+import { aiService } from '../services/aiService';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Loader2, Sparkles, Plus, Dumbbell, Zap } from 'lucide-react';
@@ -41,17 +41,13 @@ export const RoutineGenerator = ({ onRoutineGenerated }: { onRoutineGenerated: (
         setDiscoveredExercises([]);
         
         try {
-            const prompt = `Create a 3-day workout routine for someone with this goal: "${goal}".
-            Return ONLY a valid JSON object with "title", "description", "icon", "colorTheme", and "schedule" (array of WorkoutDay objects).
-            WorkoutDay object: { id, dayOfWeek, title, durationMin, type, exercises: [{ id, name, targetSets, targetReps }] }.
-            Include 3 exercises per day. Use "blue", "emerald", or "orange" for colorTheme. Use "dumbbell", "home", or "flame" for icon.`;
-
-            const stream = await hfService.generateFastTextStream(prompt);
+            const stream = await aiService.generateRoutine(goal);
             let fullText = '';
             
             for await (const chunk of stream) {
-                if (chunk.choices[0].delta.content) {
-                    fullText += chunk.choices[0].delta.content;
+                const content = chunk.choices[0]?.delta?.content || "";
+                if (content) {
+                    fullText += content;
                     setStreamedContent(fullText);
                 }
             }

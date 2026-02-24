@@ -1,5 +1,6 @@
 import { HfInference } from '@huggingface/inference';
 
+
 const hfToken = import.meta.env.VITE_HF_API_TOKEN || '';
 
 if (!hfToken || hfToken === 'REDACTED_FOR_SECURITY' || hfToken.length < 5) {
@@ -56,18 +57,7 @@ export const hfService = {
     });
   },
 
-  /**
-   * Image generation using FLUX.
-   */
-  async generateBadge(prompt: string) {
-    return client.textToImage({
-      model: 'black-forest-labs/FLUX.1-schnell',
-      inputs: prompt,
-      parameters: {
-        num_inference_steps: 4, // Fast generation
-      }
-    });
-  },
+
 
   /**
    * Parse a workout transcript into structured JSON (reps and weight).

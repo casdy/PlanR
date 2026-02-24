@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { ShieldAlert, Sparkles, Wand2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ExerciseImage } from './ExerciseImage';
 
 const RECOVERY_EXERCISES = [
     { id: 'rec-1', name: 'Cat-Cow Mobility', targetSets: 2, targetReps: '10' },
@@ -94,10 +95,13 @@ export const WorkoutDayView = ({ day }: { day: any }) => {
                         transition={{ delay: i * 0.05 }}
                     >
                         <Card className="border-border/40 hover:border-primary/30 transition-all rounded-3xl overflow-hidden group">
-                            <div className="p-5 flex items-center justify-between">
+                            <div className="p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black">
-                                        {i + 1}
+                                    <div className="relative">
+                                        <div className="absolute -top-2 -left-2 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] text-primary-foreground font-black shadow-lg">
+                                            {i + 1}
+                                        </div>
+                                        <ExerciseImage exerciseName={exercise.name} className="w-16 h-16 flex-shrink-0" />
                                     </div>
                                     <div>
                                         <h4 className="font-bold text-lg">{exercise.name}</h4>

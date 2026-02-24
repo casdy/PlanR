@@ -9,7 +9,6 @@ import { Loader2, Play, Activity, Flame, TrendingUp, ArrowRight, Calendar, Zap, 
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ProgressRing } from '../components/ui/ProgressRing';
-// @ts-expect-error - recharts types can be incomplete or conflicting
 import { AreaChart, Area, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const Dashboard = () => {

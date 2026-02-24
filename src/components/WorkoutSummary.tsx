@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useWorkoutStore } from '../store/workoutStore';
-import { hfService } from '../services/hfService';
+import { thumbnailService } from '../services/thumbnailService';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Trophy, Share2, RotateCcw, Loader2, Download, Sparkles } from 'lucide-react';
@@ -43,12 +43,12 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
             }
         };
 
-        const generateMyBadge = async () => {
+        const generateMyBadge = () => {
             if (status === 'finished' && badgePrompt && !lastBadgeUrl && !isGenerating) {
                 setIsGenerating(true);
                 try {
-                    const blob = await hfService.generateBadge(badgePrompt) as unknown as Blob;
-                    const url = URL.createObjectURL(blob);
+                    // Synchronous generation for deterministic badge
+                    const url = thumbnailService.generateBadge(badgePrompt);
                     setBadgeUrl(url);
                 } catch (err) {
                     console.error("Badge generation failed:", err);
