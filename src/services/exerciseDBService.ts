@@ -37,8 +37,8 @@ const formatMediaUrl = (url: string, type: 'image' | 'video'): string => {
     
     if (url.startsWith('http')) return url;
     
-    // AscendAPI relative URLs need to be proxied to attach the required X-RapidAPI-Key headers
-    return `/api/exercisedb/media/${type}s/${url}`;
+    // AscendAPI relative URLs need to be proxied through the serverless function
+    return `/api/exercisedb?endpoint=media/${type}s/${url}`;
 };
 
 // Helper to map AscendAPI v2 response to our expected interface

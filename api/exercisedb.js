@@ -47,6 +47,19 @@ export default async function handler(req, res) {
         return res.status(response.status).json({ error: `Downstream API error ${response.status}` });
     }
 
+    // Proxy raw media streams (videos/images)
+    if (endpoint.includes('media')) {
+        const contentType = response.headers.get('content-type');
+        if (contentType) res.setHeader('Content-Type', contentType);
+        
+        // Vercel serverless functions require array buffers for binary data
+        const buffer = await response.arrayBuffer();
+        res.status(200);
+        res.send(Buffer.from(buffer));
+        return;
+    }
+
+    // Proxy standard JSON payloads
     const data = await response.json();
     return res.status(200).json(data);
 
