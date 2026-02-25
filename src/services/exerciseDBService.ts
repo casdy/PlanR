@@ -27,18 +27,15 @@ export interface ExerciseDBItem {
 // The frontend no longer needs the API key! The proxy handles it.
 const BASE_URL = '/api/exercisedb';
 
-const formatMediaUrl = (url: string, type: 'image' | 'video'): string => {
+const formatMediaUrl = (url: string, _type: 'image' | 'video'): string => {
     if (!url) return '';
     
-    // Route established CDNs directly through the Vite proxy to avoid CORS/COEP blocking
-    if (url.startsWith('https://cdn.exercisedb.dev')) {
-        return url.replace('https://cdn.exercisedb.dev', '/api/cdn-proxy');
-    }
-    
+    // Fully qualified HTTPS URLs (from cdn.exercisedb.dev or any other CDN)
+    // are returned as-is — the browser can load them directly.
     if (url.startsWith('http')) return url;
     
-    // AscendAPI relative URLs need to be proxied through the serverless function
-    return `/api/exercisedb?endpoint=media/${type}s/${url}`;
+    // Relative paths from AscendAPI are proxied through the serverless function
+    return `/api/exercisedb?endpoint=${url}`;
 };
 
 // Helper to map AscendAPI v2 response to our expected interface

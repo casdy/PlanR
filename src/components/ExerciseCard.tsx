@@ -122,17 +122,18 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
                             {/* Modal Body */}
                             <div className="p-6 overflow-y-auto space-y-8 scroll-smooth no-scrollbar">
                                 {/* GIF/Video Container */}
-                                <div className="w-full aspect-square bg-white rounded-2xl shadow-md border border-black/5 overflow-hidden flex items-center justify-center p-4 relative">
+                                <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl shadow-md border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
                                     {loadingDetails && (
-                                        <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-opacity">
+                                        <div className="absolute inset-0 bg-zinc-100/80 dark:bg-zinc-800/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-opacity">
                                             <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
                                             <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Loading Media...</span>
                                         </div>
                                     )}
                                     {detailedExercise.videoUrl ? (
                                         <video 
+                                            key={detailedExercise.videoUrl}
                                             src={detailedExercise.videoUrl} 
-                                            className="w-full h-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
+                                            className="w-full h-full object-contain transition-transform duration-500"
                                             autoPlay
                                             loop
                                             muted
@@ -142,7 +143,7 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
                                         <img 
                                             src={detailedExercise.gifUrl} 
                                             alt={`Demonstration of ${detailedExercise.name}`} 
-                                            className="w-full h-full object-contain mix-blend-multiply"
+                                            className="w-full h-full object-contain"
                                             loading="lazy"
                                             onError={() => setImageError(true)}
                                         />
