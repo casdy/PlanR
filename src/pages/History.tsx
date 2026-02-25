@@ -128,27 +128,27 @@ const LiveWorkoutCard = () => {
                     </div>
 
                     {/* Stats row */}
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-white/5 rounded-2xl p-3 text-center">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                        <div className="bg-white/5 rounded-2xl p-2 sm:p-3 text-center">
                             <div className="flex items-center justify-center gap-1 text-primary mb-1">
-                                <Timer className="w-3.5 h-3.5" />
+                                <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
-                            <p className="text-xl font-black tabular-nums">{timeStr}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Duration</p>
+                            <p className="text-lg sm:text-xl font-black tabular-nums">{timeStr}</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Duration</p>
                         </div>
-                        <div className="bg-white/5 rounded-2xl p-3 text-center">
+                        <div className="bg-white/5 rounded-2xl p-2 sm:p-3 text-center">
                             <div className="flex items-center justify-center gap-1 text-emerald-400 mb-1">
-                                <Dumbbell className="w-3.5 h-3.5" />
+                                <Dumbbell className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
-                            <p className="text-xl font-black tabular-nums">{completedExerciseIds.length}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Done</p>
+                            <p className="text-lg sm:text-xl font-black tabular-nums">{completedExerciseIds.length}</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Done</p>
                         </div>
-                        <div className="bg-white/5 rounded-2xl p-3 text-center">
+                        <div className="bg-white/5 rounded-2xl p-2 sm:p-3 text-center">
                             <div className="flex items-center justify-center gap-1 text-orange-400 mb-1">
-                                <Activity className="w-3.5 h-3.5" />
+                                <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
-                            <p className="text-xl font-black tabular-nums">{activeExerciseIndex + 1}/{totalExercises || '?'}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Exercise</p>
+                            <p className="text-lg sm:text-xl font-black tabular-nums">{activeExerciseIndex + 1}/{totalExercises || '?'}</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5 whitespace-nowrap overflow-hidden">Exercise</p>
                         </div>
                     </div>
 
@@ -311,43 +311,44 @@ export const History = () => {
                                                 </div>
 
                                                 {/* Stats and Actions Row */}
-                                                <div className="flex items-center justify-between gap-3 pl-[3.25rem] sm:pl-0">
-                                                    <div className="flex gap-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-3 pl-0 sm:pl-[3.25rem]">
+                                                    <div className="flex gap-4 sm:gap-6 items-center">
                                                         <div>
                                                             <p className="text-lg font-black italic text-primary">{(log.totalTimeSpentSec / 60).toFixed(0)}m</p>
-                                                            <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Duration</p>
+                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Duration</p>
                                                         </div>
-                                                        <div className="w-px bg-border" />
+                                                        <div className="w-px h-6 bg-border" />
                                                         <div>
                                                             <p className="text-lg font-black italic">{log.completedExerciseIds?.length || 0}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Moves</p>
+                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Moves</p>
                                                         </div>
                                                     </div>
-
-                                                    <div className="flex gap-2 items-center">
+                                                    
+                                                    <div className="flex flex-wrap gap-2 items-center">
                                                         {!isComplete && (
                                                             <>
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => resumeOldWorkout(log)}
-                                                                    className="h-8 pr-3 pl-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs"
+                                                                    className="h-8 sm:h-9 pr-3 pl-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[11px] sm:text-xs font-black shadow-sm"
                                                                 >
-                                                                    <Play className="w-3.5 h-3.5 mr-1 fill-primary/50" /> Resume
+                                                                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 fill-primary/50" /> Resume
                                                                 </Button>
                                                                 <Button
                                                                     variant="outline"
                                                                     size="sm"
                                                                     onClick={() => { handleDelete(log.id); startWorkout(log.programId, log.dayId, user?.id); }}
-                                                                    className="h-8 pr-3 pl-2.5 rounded-full bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20 text-xs"
+                                                                    className="h-8 sm:h-9 pr-3 pl-2.5 rounded-full bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20 text-[11px] sm:text-xs font-black shadow-sm"
                                                                 >
-                                                                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restart
+                                                                    <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" /> Restart
                                                                 </Button>
                                                             </>
                                                         )}
                                                         <button
                                                             onClick={() => handleDelete(log.id)}
-                                                            className="p-2 text-muted-foreground hover:text-red-500 transition-colors bg-white/5 hover:bg-white/10 rounded-full"
+                                                            className="p-2 text-muted-foreground hover:text-red-500 transition-colors bg-white/5 hover:bg-white/10 rounded-full ml-auto sm:ml-0"
+                                                            title="Delete History"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
