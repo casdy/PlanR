@@ -1,3 +1,12 @@
+/**
+ * @file src/components/WorkoutSummary.tsx
+ * @description Post-workout achievement modal shown when a session finishes.
+ *
+ * Rendered by ActiveWorkoutOverlay when `workoutStore.status === 'finished'`.
+ * Generates and displays a deterministic SVG achievement badge via `thumbnailService`,
+ * logs the final session data to LocalService, and provides options to
+ * save, share, or return to the Dashboard.
+ */
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useWorkoutStore } from '../store/workoutStore';

@@ -1,9 +1,18 @@
+/**
+ * @file src/services/sqliteAuthService.ts
+ * @description Authentication service backed by Supabase.
+ *
+ * Handles user registration, email/password login, and Google OAuth.
+ * The `User` type here mirrors the one in `types/index.ts` but is kept
+ * local to avoid circular dependencies with the auth context.
+ */
 import { supabase } from '../lib/supabase';
 
 export interface User {
     id: string;
     email: string;
     name: string;
+    isGuest?: boolean;
 }
 
 export const sqliteAuthService = {

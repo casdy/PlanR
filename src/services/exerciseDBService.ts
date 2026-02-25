@@ -1,3 +1,14 @@
+/**
+ * @file src/services/exerciseDBService.ts
+ * @description ExerciseDB API integration for fetching real exercise data.
+ *
+ * Used both as a fallback when Groq AI quota is exhausted, and as the data
+ * source for the Dashboard "Today's Focus" suggestions. Returns normalised
+ * `ExerciseDBItem` objects with GIF URLs for visual exercise demos.
+ *
+ * API endpoint: https://exercisedb.p.rapidapi.com
+ * Requires `VITE_EXERCISEDB_API_KEY` in `.env.local`.
+ */
 export interface ExerciseDBItem {
     id: string;
     bodyPart: string;
@@ -13,12 +24,8 @@ export interface ExerciseDBItem {
     variations?: string[];
 }
 
-const RAPID_API_KEY = import.meta.env.VITE_RAPIDAPI_KEY;
-if (!RAPID_API_KEY) {
-    console.warn("VITE_RAPIDAPI_KEY is not defined in the environment variables.");
-}
-
-const BASE_URL = 'https://edb-with-videos-and-images-by-ascendapi.p.rapidapi.com/api/v1/exercises';
+// The frontend no longer needs the API key! The proxy handles it.
+const BASE_URL = '/api/exercisedb';
 
 const formatMediaUrl = (url: string, type: 'image' | 'video'): string => {
     if (!url) return '';
@@ -61,16 +68,9 @@ export const getExercisesByTarget = async (target: string): Promise<ExerciseDBIt
         return exerciseCache.target[target];
     }
 
-    // AscendAPI v2 uses query parameters
-    const url = `${BASE_URL}?limit=40&target=${encodeURIComponent(target)}`;
+    const url = `${BASE_URL}?endpoint=exercises&limit=40&target=${encodeURIComponent(target)}`;
     try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'X-RapidAPI-Key': RAPID_API_KEY || '',
-                'X-RapidAPI-Host': 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com',
-            }
-        });
+        const response = await fetch(url);
 
         if (!response.ok) {
             const errorData = await response.text();
@@ -97,16 +97,9 @@ export const getExercisesByBodyPart = async (bodyPart: string, shuffle = true): 
     if (exerciseCache.bodyPart[bodyPart]) {
         results = [...exerciseCache.bodyPart[bodyPart]];
     } else {
-        // AscendAPI v2 uses query parameters
-        const url = `${BASE_URL}?limit=40&bodyPart=${encodeURIComponent(bodyPart)}`;
+        const url = `${BASE_URL}?endpoint=exercises&limit=40&bodyPart=${encodeURIComponent(bodyPart)}`;
         try {
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'X-RapidAPI-Key': RAPID_API_KEY || '',
-                    'X-RapidAPI-Host': 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com',
-                }
-            });
+            const response = await fetch(url);
 
             if (!response.ok) {
                 const errorData = await response.text();
@@ -136,15 +129,9 @@ export const getExercisesByBodyPart = async (bodyPart: string, shuffle = true): 
 
 // V2 Specific: Fetch detailed exercise info (which includes video and instructions)
 export const getExerciseDetails = async (id: string): Promise<ExerciseDBItem> => {
-    const url = `${BASE_URL}/${encodeURIComponent(id)}`;
+    const url = `${BASE_URL}?endpoint=exercises/${encodeURIComponent(id)}`;
     try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'X-RapidAPI-Key': RAPID_API_KEY || '',
-                'X-RapidAPI-Host': 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com',
-            }
-        });
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch exercise details: ${response.status}`);
@@ -161,16 +148,9 @@ export const getExerciseDetails = async (id: string): Promise<ExerciseDBItem> =>
 
 // Fetch by name since frontend uses localized UUIDs in workout plans
 export const getExerciseByName = async (name: string): Promise<ExerciseDBItem | null> => {
-    // AscendAPI uses name query parameter.
-    const url = `${BASE_URL}?limit=10&name=${encodeURIComponent(name.toLowerCase())}`;
+    const url = `${BASE_URL}?endpoint=exercises&limit=10&name=${encodeURIComponent(name.toLowerCase())}`;
     try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'X-RapidAPI-Key': RAPID_API_KEY || '',
-                'X-RapidAPI-Host': 'edb-with-videos-and-images-by-ascendapi.p.rapidapi.com',
-            }
-        });
+        const response = await fetch(url);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch exercise by name: ${response.status}`);

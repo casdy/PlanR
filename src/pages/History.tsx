@@ -1,8 +1,22 @@
+/**
+ * @file src/pages/History.tsx
+ * @description Activity Feed page — shows the user's workout history.
+ *
+ * Renders two sections:
+ *  1. `LiveWorkoutCard` — a pulsing card for the currently active/running session.
+ *  2. Past logs — a chronological list of completed, paused, and incomplete workout logs.
+ *
+ * Paused sessions (log.isPaused === true) show a yellow badge and a "Resume" button.
+ * Clicking Resume calls `resumeOldWorkout()` which restores the session in `workoutStore`.
+ *
+ * If a workout has no completedExerciseNames (e.g., started then abandoned immediately),
+ * the card falls back to showing the planned exercise list from the program schedule.
+ */
 import * as React from 'react';
 import { Card } from '../components/ui/Card';
 import { LocalService } from '../services/localService';
 import { useAuth } from '../hooks/useAuth';
-import type { WorkoutLog } from '../types';
+import type { WorkoutLog, WorkoutProgram, WorkoutDay, Exercise } from '../types';
 import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { Button } from '../components/ui/Button';
@@ -27,6 +41,7 @@ const LiveWorkoutCard = () => {
 
     const [programTitle, setProgramTitle] = React.useState('Active Session');
     const [dayTitle, setDayTitle] = React.useState('');
+    const [currentExerciseName, setCurrentExerciseName] = React.useState('');
 
     React.useEffect(() => {
         if (!activeProgramId) return;
@@ -37,11 +52,15 @@ const LiveWorkoutCard = () => {
             if (prog) {
                 setProgramTitle(prog.title || 'Active Session');
                 const day = prog.schedule?.find(d => d.id === activeDayId);
-                if (day) setDayTitle(day.title || '');
+                if (day) {
+                    setDayTitle(day.title || '');
+                    const ex = day.exercises?.[activeExerciseIndex];
+                    if (ex) setCurrentExerciseName(ex.name);
+                }
             }
         };
         load();
-    }, [activeProgramId, activeDayId]);
+    }, [activeProgramId, activeDayId, activeExerciseIndex]);
 
     const totalExercises = React.useMemo(() => {
         if (!activeProgramId || !activeDayId) return 0;
@@ -98,6 +117,11 @@ const LiveWorkoutCard = () => {
                                 </div>
                                 {dayTitle && (
                                     <p className="text-xs text-muted-foreground font-medium mt-0.5">{dayTitle}</p>
+                                )}
+                                {currentExerciseName && (
+                                    <p className="text-[10px] text-primary/80 font-bold mt-1 bg-primary/10 inline-block px-1.5 py-0.5 rounded">
+                                        {currentExerciseName}
+                                    </p>
                                 )}
                             </div>
                         </div>
@@ -181,16 +205,20 @@ export const History = () => {
     const { user } = useAuth();
     const { resumeOldWorkout, startWorkout, status, activeSessionId } = useWorkoutStore();
     const [logs, setLogs] = React.useState<WorkoutLog[]>([]);
+    const [programs, setPrograms] = React.useState<WorkoutProgram[]>([]);
     const isActive = status === 'running' || status === 'paused';
 
     // Reload logs when the active session changes (e.g., a new session starts)
     React.useEffect(() => {
         const userId = user?.id || 'guest';
         const fetchedLogs = LocalService.getLogs(userId);
+        const fetchedPrograms = LocalService.getUserPrograms();
+        
         const sortedLogs = [...fetchedLogs].sort((a, b) =>
             new Date(b.completedAt || b.date).getTime() - new Date(a.completedAt || a.date).getTime()
         );
         setLogs(sortedLogs);
+        setPrograms(fetchedPrograms);
     }, [user, activeSessionId]);
 
     const handleDelete = (logId: string) => {
@@ -224,6 +252,16 @@ export const History = () => {
                             {pastLogs.map((log, idx) => {
                                 const isComplete = !!log.completedAt;
                                 const displayDate = log.completedAt || log.date;
+                                
+                                const program = programs.find(p => p.id === log.programId);
+                                const day = program?.schedule?.find((d: WorkoutDay) => d.id === log.dayId);
+                                const programTitle = program ? `${program.title}${day ? ` - ${day.title}` : ''}` : ((log as any).programTitle || 'Strength Session');
+                                
+                                // Determine which exercise names to show
+                                const hasCompleted = log.completedExerciseNames && log.completedExerciseNames.length > 0;
+                                const displayExerciseNames = hasCompleted 
+                                    ? log.completedExerciseNames 
+                                    : (day?.exercises.map((e: Exercise) => e.name) || []);
 
                                 return (
                                     <motion.div
@@ -235,22 +273,39 @@ export const History = () => {
                                         <Card className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all">
                                             <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isComplete ? 'bg-primary/10 text-primary' : 'bg-red-500/10 text-red-500'}`}>
-                                                        {isComplete ? <Activity className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isComplete ? 'bg-primary/10 text-primary' : (log.isPaused ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500')}`}>
+                                                        {isComplete ? <Activity className="w-6 h-6" /> : (log.isPaused ? <Play className="w-6 h-6" /> : <XCircle className="w-6 h-6" />)}
                                                     </div>
                                                     <div>
                                                         <h4 className="font-bold text-lg flex items-center gap-2">
-                                                            {(log as any).programTitle || 'Strength Session'}
-                                                            {!isComplete && (
+                                                            {programTitle}
+                                                            {!isComplete && !log.isPaused && (
                                                                 <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">Incomplete</span>
+                                                            )}
+                                                            {!isComplete && log.isPaused && (
+                                                                <span className="text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shadow-sm shadow-yellow-500/10">Paused</span>
                                                             )}
                                                             {isComplete && (
                                                                 <span className="text-[10px] font-black tracking-widest uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-sm shadow-emerald-500/10">Completed</span>
                                                             )}
                                                         </h4>
-                                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider">
+                                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block mb-2">
                                                             {format(new Date(displayDate), 'MMM do, yyyy • h:mm a')}
                                                         </span>
+                                                        {displayExerciseNames && displayExerciseNames.length > 0 && (
+                                                            <div className="flex flex-wrap gap-1.5 mt-1 opacity-80">
+                                                                {displayExerciseNames.slice(0, 3).map((name: string, i: number) => (
+                                                                    <span key={i} className="text-[10px] font-bold bg-white/5 border border-white/5 text-foreground/80 px-2 py-1 rounded-md">
+                                                                        {name}
+                                                                    </span>
+                                                                ))}
+                                                                {displayExerciseNames.length > 3 && (
+                                                                    <span className="text-[10px] font-bold bg-white/5 border border-white/5 text-muted-foreground px-2 py-1 rounded-md">
+                                                                        +{displayExerciseNames.length - 3} more {hasCompleted ? 'completed' : 'planned'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 

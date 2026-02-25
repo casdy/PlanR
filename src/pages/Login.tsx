@@ -1,3 +1,11 @@
+/**
+ * @file src/pages/Login.tsx
+ * @description Email/password login page.
+ *
+ * Shows a success SplashScreen for 2.5s before navigating to the Dashboard
+ * once authentication completes. Also provides a Google OAuth button and a
+ * link to the SignUp page for new users.
+ */
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -5,12 +13,14 @@ import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { SplashScreen } from '../components/SplashScreen';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessSplash, setShowSuccessSplash] = useState(false);
     
     const { login, loginWithGoogle, resetApp } = useAuth();
     const navigate = useNavigate();
@@ -22,7 +32,8 @@ export const Login = () => {
 
         try {
             await login(email, password);
-            navigate('/');
+            setShowSuccessSplash(true);
+            setTimeout(() => navigate('/'), 2500);
         } catch (err: any) {
             setError(err.message || 'Failed to login.');
         } finally {
@@ -32,6 +43,8 @@ export const Login = () => {
 
     return (
         <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
+            <SplashScreen show={showSuccessSplash} message="Welcome back!" />
+            
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

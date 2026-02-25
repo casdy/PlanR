@@ -1,3 +1,10 @@
+/**
+ * @file src/components/WorkoutDayView.tsx
+ * @description Read-only view of a single day's exercise list within a program.
+ *
+ * Used in ProgramDetail to show the full exercise list for a selected day.
+ * Tapping "Start Workout" calls `workoutStore.startWorkout` for that program/day.
+ */
 import { useMemo } from 'react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { Card, CardContent } from './ui/Card';
@@ -13,7 +20,7 @@ const RECOVERY_EXERCISES = [
     { id: 'rec-3', name: 'Deep Squat Hold', targetSets: 2, targetReps: '60s' },
 ];
 
-export const WorkoutDayView = ({ day }: { day: any }) => {
+export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?: string }) => {
     const { activeIntensity, isRecoveryMode, scaleIntensity, swapToRecovery } = useWorkoutStore();
 
     const displayedDay = useMemo(() => {
@@ -25,19 +32,42 @@ export const WorkoutDayView = ({ day }: { day: any }) => {
             };
         }
 
-        const multiplier = activeIntensity === 'light' ? 0.8 : activeIntensity === 'intense' ? 1.2 : 1.0;
+        let exercises = [...day.exercises];
+        const intensity = activeIntensity;
+
+        if (intensity === 'light') {
+            // Drop the last exercise if there's more than 3 (skip accessory)
+            if (exercises.length > 3) {
+                exercises.pop();
+            }
+        }
 
         return {
             ...day,
-            exercises: day.exercises.map((ex: any) => {
-                const baseReps = parseInt(ex.targetReps) || 10;
-                const scaledReps = Math.round(baseReps * multiplier);
+            exercises: exercises.map((ex: any) => {
+                let baseSets = parseInt(String(ex.targetSets)) || 3;
+                let baseReps = String(ex.targetReps);
                 
+                // Parse out the primary rep number if it's a range (e.g. "10-12" -> 10)
+                let numReps = 10;
+                const match = baseReps.match(/\d+/);
+                if (match) {
+                    numReps = parseInt(match[0]);
+                }
+
+                if (intensity === 'light') {
+                    baseSets = Math.max(1, baseSets - 1);
+                    numReps = Math.max(1, Math.round(numReps * 0.8));
+                } else if (intensity === 'intense') {
+                    baseSets += 1;
+                    numReps = Math.round(numReps * 1.2);
+                }
+
                 return {
                     ...ex,
-                    targetReps: String(ex.targetReps).includes('-') 
-                        ? ex.targetReps 
-                        : `${scaledReps} (Scaled)`
+                    targetSets: baseSets,
+                    // If the original was a string format we couldn't parse cleanly, fall back to showing the math 
+                    targetReps: intensity === 'standard' ? baseReps : `${numReps} (Scaled)`
                 };
             })
         };
@@ -48,7 +78,7 @@ export const WorkoutDayView = ({ day }: { day: any }) => {
             <header className="flex items-center justify-between">
                 <div>
                     <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">Current Protocol</p>
-                    <h2 className="text-3xl font-black tracking-tighter">{displayedDay.title}</h2>
+                    <h2 className="text-3xl font-black tracking-tighter">{programTitle || displayedDay.title}</h2>
                 </div>
                 {!isRecoveryMode && (
                     <Button 

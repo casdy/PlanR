@@ -1,3 +1,11 @@
+/**
+ * @file src/pages/SignUp.tsx
+ * @description New user registration page.
+ *
+ * Validates the form fields, creates a new account via `sqliteAuthService`,
+ * and shows a "Setting up your profile..." SplashScreen for 2.5s before
+ * navigating to the Dashboard.
+ */
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -5,6 +13,7 @@ import { Mail, Lock, User, UserPlus, ArrowRight } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
+import { SplashScreen } from '../components/SplashScreen';
 
 export const SignUp = () => {
     const [name, setName] = useState('');
@@ -13,6 +22,7 @@ export const SignUp = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessSplash, setShowSuccessSplash] = useState(false);
     
     const { signUp, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
@@ -30,7 +40,8 @@ export const SignUp = () => {
 
         try {
             await signUp(email, password, name);
-            navigate('/');
+            setShowSuccessSplash(true);
+            setTimeout(() => navigate('/'), 2500);
         } catch (err: any) {
             setError(err.message || 'Failed to create account.');
         } finally {
@@ -40,6 +51,8 @@ export const SignUp = () => {
 
     return (
         <div className="min-h-[85vh] flex flex-col items-center justify-center p-4">
+            <SplashScreen show={showSuccessSplash} message="Setting up your profile..." />
+            
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

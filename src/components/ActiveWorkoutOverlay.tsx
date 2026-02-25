@@ -1,3 +1,17 @@
+/**
+ * @file src/components/ActiveWorkoutOverlay.tsx
+ * @description Floating persistent workout overlay shown during active sessions.
+ *
+ * Renders over the bottom navigation bar when `workoutStore.status` is `running`
+ * or `paused`. The overlay walks the user through each exercise in the active
+ * program day, shows GIF demos via `ExerciseImage`, and supports voice logging,
+ * intensity scaling, recovery swaps, and manual set entry.
+ *
+ * Key states:
+ *  - Minimised pill → tap to expand into the full panel
+ *  - Expanded panel → shows exercise detail, timer, set logger, and nav buttons
+ *  - Finished → transitions to `WorkoutSummary` achievement screen
+ */
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
@@ -41,16 +55,24 @@ export const ActiveWorkoutOverlay = () => {
     const [exerciseDetails, setExerciseDetails] = React.useState<ExerciseDBItem | null>(null);
     const location = useLocation();
 
-    // Handle Route Changes
+    // Keep track of the previous pathname to detect actual navigation events after starting
+    const [lastPath, setLastPath] = React.useState(location.pathname);
+
+    // Handle Route Changes & Maximization Rules
     useEffect(() => {
         if (status === 'running' || status === 'paused') {
+            // Automatically maximize if navigating to the dedicated history tab (e.g. reviewing past workouts)
+            // or if the workout just started and we haven't actually navigated away yet
             if (location.pathname === '/history') {
                 setIsMinimized(false);
-            } else {
+            } else if (location.pathname !== lastPath) {
+                // User navigated somewhere else while a workout is active -> Minimize it
                 setIsMinimized(true);
             }
+            // else: Do nothing. (This allows startWorkout() which sets isMinimized=false to keep it maximized)
         }
-    }, [location.pathname, status, setIsMinimized]);
+        setLastPath(location.pathname);
+    }, [location.pathname, status, setIsMinimized, lastPath]);
 
     // Fetch program data when active
     useEffect(() => {
@@ -136,7 +158,8 @@ export const ActiveWorkoutOverlay = () => {
             if (day && activeProgramId && activeDayId) {
                 // Mark current exercise as complete before moving on
                 if (day.exercises[activeExerciseIndex]) {
-                    markExerciseCompleted(day.exercises[activeExerciseIndex].id);
+                    const ex = day.exercises[activeExerciseIndex];
+                    markExerciseCompleted(ex.id, ex.name);
                 }
                 LocalService.toggleExerciseCompliance(activeProgramId, activeDayId, activeExerciseIndex);
                 
@@ -158,8 +181,9 @@ export const ActiveWorkoutOverlay = () => {
                     const result = await aiService.parseWorkoutTranscript(transcription.text);
                     if (result && (result.reps > 0 || result.weight > 0)) {
                         logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight);
-                        if (day?.exercises[activeExerciseIndex]?.id) {
-                            markExerciseCompleted(day.exercises[activeExerciseIndex].id);
+                        if (day?.exercises[activeExerciseIndex]) {
+                            const ex = day.exercises[activeExerciseIndex];
+                            markExerciseCompleted(ex.id, ex.name);
                         }
                         setVoiceFeedback(`Logged: ${result.reps} reps @ ${result.weight}lbs`);
                         setTimeout(() => setVoiceFeedback(null), 3000);

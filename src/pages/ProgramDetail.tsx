@@ -1,3 +1,11 @@
+/**
+ * @file src/pages/ProgramDetail.tsx
+ * @description Detailed view of a single workout program.
+ *
+ * Renders the full schedule of a selected program and lets the user
+ * start a workout for any specific day. Also includes controls to edit
+ * (via ProgramEditor) or delete the program.
+ */
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -145,7 +153,7 @@ export const ProgramDetail = () => {
                                     {(!isRest && day.exercises.length > 0) && (
                                         <div className="px-6 pb-8 pt-2">
                                             <div className="ml-20 border-t border-border/20 pt-4">
-                                                <WorkoutDayView day={day} />
+                                                <WorkoutDayView day={day} programTitle={program.title} />
                                             </div>
                                         </div>
                                     )}

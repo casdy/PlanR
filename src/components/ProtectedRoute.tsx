@@ -1,3 +1,12 @@
+/**
+ * @file src/components/ProtectedRoute.tsx
+ * @description Route guard for authenticated areas.
+ *
+ * Renders a spinner while auth state is loading. If the user is not logged in
+ * after load, redirects to `/login`. Otherwise renders the child `<Outlet />`.
+ *
+ * Usage: Wrap protected routes in `<Route element={<ProtectedRoute />}>`.
+ */
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Loader2 } from 'lucide-react';

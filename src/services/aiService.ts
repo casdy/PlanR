@@ -1,3 +1,14 @@
+/**
+ * @file src/services/aiService.ts
+ * @description AI orchestration layer for workout generation.
+ *
+ * Primary pathway:  Groq LLM (llama3-70b-8192) → fast structured JSON streaming
+ * Fallback pathway: ExerciseDB API → deterministic program build when Groq quota is exhausted
+ *
+ * `quotaService` gates Groq calls to avoid burning the session API limit in one go.
+ * Callers receive either `{ type: 'stream', stream }` or `{ type: 'program', program }`
+ * and must handle both cases.
+ */
 import { groqService } from './groqService';
 import { quotaService } from './quotaService';
 import { getExercisesByBodyPart } from './exerciseDBService';

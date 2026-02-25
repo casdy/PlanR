@@ -1,3 +1,22 @@
+/**
+ * @file src/store/workoutStore.ts
+ * @description Zustand store for the active workout session.
+ *
+ * This is the central brain of the live workout experience. It tracks:
+ * - The current session (program, day, exercise index, timer state)
+ * - Exercise completion (IDs and human-readable names)
+ * - Session lifecycle: start → running → paused → idle or finished
+ *
+ * Pausing a workout persists the session to LocalService with `isPaused: true`
+ * and resets the store to `idle` so multiple paused sessions can co-exist in
+ * the Activity feed. Any of them can be re-loaded via `resumeOldWorkout`.
+ *
+ * Starting a new workout automatically saves the currently active session as paused
+ * before resetting to the new session.
+ *
+ * Usage:
+ *   const { status, startWorkout, pauseWorkout, finishWorkout } = useWorkoutStore();
+ */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { LocalService } from '../services/localService';
@@ -22,6 +41,7 @@ interface WorkoutState {
     
     // Tracking
     completedExerciseIds: string[];
+    completedExerciseNames: string[];
 
     // Actions
     startWorkout: (programId: string, dayId: string, userId?: string) => void;
@@ -35,7 +55,7 @@ interface WorkoutState {
     setExerciseIndex: (index: number) => void;
     nextExercise: (maxIndex: number) => void;
     prevExercise: () => void;
-    markExerciseCompleted: (exerciseId: string) => void;
+    markExerciseCompleted: (exerciseId: string, exerciseName?: string) => void;
 
     scaleIntensity: (intensity: 'light' | 'standard' | 'intense') => void;
     swapToRecovery: () => void;
@@ -69,9 +89,24 @@ export const useWorkoutStore = create<WorkoutState>()(
             elapsedSeconds: 0,
             totalSessionSeconds: 0,
             completedExerciseIds: [],
+            completedExerciseNames: [],
             timerDuration: 60,
 
             startWorkout: (programId, dayId, userId = 'guest') => {
+                const { activeSessionId, totalSessionSeconds, activeExerciseIndex, completedExerciseIds, completedExerciseNames } = get();
+                
+                // If there's an active session, implicitly pause it before starting a new one
+                if (activeSessionId) {
+                    LocalService.logWorkoutEvent(activeSessionId, 'pause');
+                    LocalService.updateWorkoutSession(activeSessionId, { 
+                        totalTimeSpentSec: totalSessionSeconds,
+                        lastExerciseIndex: activeExerciseIndex,
+                        completedExerciseIds: completedExerciseIds,
+                        completedExerciseNames: completedExerciseNames,
+                        isPaused: true
+                    });
+                }
+
                 const sessionId = LocalService.createWorkoutSession(programId, dayId, userId);
                 set({
                     status: 'running',
@@ -84,7 +119,8 @@ export const useWorkoutStore = create<WorkoutState>()(
                     isMinimized: false,
                     elapsedSeconds: 0,
                     totalSessionSeconds: 0,
-                    completedExerciseIds: []
+                    completedExerciseIds: [],
+                    completedExerciseNames: []
                 });
             },
 
@@ -101,14 +137,38 @@ export const useWorkoutStore = create<WorkoutState>()(
                     isMinimized: false,
                     elapsedSeconds: 0, // start the timer fresh for the resumed exercise
                     totalSessionSeconds: log.totalTimeSpentSec || 0,
-                    completedExerciseIds: log.completedExerciseIds || []
+                    completedExerciseIds: log.completedExerciseIds || [],
+                    completedExerciseNames: log.completedExerciseNames || []
                 });
+                LocalService.updateWorkoutSession(log.sessionId, { isPaused: false });
             },
 
             pauseWorkout: () => {
-                const { activeSessionId } = get();
-                if (activeSessionId) LocalService.logWorkoutEvent(activeSessionId, 'pause');
-                set({ status: 'paused' });
+                const { activeSessionId, totalSessionSeconds, activeExerciseIndex, completedExerciseIds, completedExerciseNames } = get();
+                if (activeSessionId) {
+                    LocalService.logWorkoutEvent(activeSessionId, 'pause');
+                    LocalService.updateWorkoutSession(activeSessionId, { 
+                        totalTimeSpentSec: totalSessionSeconds,
+                        lastExerciseIndex: activeExerciseIndex,
+                        completedExerciseIds: completedExerciseIds,
+                        completedExerciseNames: completedExerciseNames,
+                        isPaused: true
+                    });
+                }
+                
+                set({
+                    status: 'idle',
+                    activeProgramId: null,
+                    activeDayId: null,
+                    activeSessionId: null,
+                    activeExerciseIndex: 0,
+                    isMinimized: false,
+                    elapsedSeconds: 0,
+                    totalSessionSeconds: 0,
+                    completedExerciseIds: [],
+                    completedExerciseNames: [],
+                    exerciseLogs: {}
+                });
             },
 
             resumeWorkout: () => {
@@ -154,16 +214,21 @@ export const useWorkoutStore = create<WorkoutState>()(
                     achievementSubtitle: subtitle,
                     exerciseLogs: {} // clear logs on finish
                 });
+                if (activeSessionId) {
+                    LocalService.updateWorkoutSession(activeSessionId, { isPaused: false });
+                }
             },
 
             cancelWorkout: () => {
-                const { activeSessionId, totalSessionSeconds, activeExerciseIndex, completedExerciseIds } = get();
+                const { activeSessionId, totalSessionSeconds, activeExerciseIndex, completedExerciseIds, completedExerciseNames } = get();
                 if (activeSessionId) {
                     LocalService.logWorkoutEvent(activeSessionId, 'cancel');
                     LocalService.updateWorkoutSession(activeSessionId, { 
                         totalTimeSpentSec: totalSessionSeconds,
                         lastExerciseIndex: activeExerciseIndex,
-                        completedExerciseIds: completedExerciseIds
+                        completedExerciseIds: completedExerciseIds,
+                        completedExerciseNames: completedExerciseNames,
+                        isPaused: false
                     });
                 }
                 
@@ -177,6 +242,7 @@ export const useWorkoutStore = create<WorkoutState>()(
                     elapsedSeconds: 0,
                     totalSessionSeconds: 0,
                     completedExerciseIds: [],
+                    completedExerciseNames: [],
                     exerciseLogs: {} // clear logs on cancel
                 });
             },
@@ -210,12 +276,18 @@ export const useWorkoutStore = create<WorkoutState>()(
                 }
             },
 
-            markExerciseCompleted: (exerciseId) => {
-                set((state) => ({
-                    completedExerciseIds: state.completedExerciseIds.includes(exerciseId) 
-                        ? state.completedExerciseIds 
-                        : [...state.completedExerciseIds, exerciseId]
-                }));
+            markExerciseCompleted: (exerciseId, exerciseName) => {
+                set((state) => {
+                    const hasId = state.completedExerciseIds.includes(exerciseId);
+                    return {
+                        completedExerciseIds: hasId 
+                            ? state.completedExerciseIds 
+                            : [...state.completedExerciseIds, exerciseId],
+                        completedExerciseNames: (hasId || !exerciseName)
+                            ? state.completedExerciseNames
+                            : [...state.completedExerciseNames, exerciseName]
+                    };
+                });
             },
 
             scaleIntensity: (intensity) => set({ activeIntensity: intensity }),
@@ -270,7 +342,8 @@ export const useWorkoutStore = create<WorkoutState>()(
                 activeExerciseIndex: state.activeExerciseIndex,
                 elapsedSeconds: state.elapsedSeconds,
                 totalSessionSeconds: state.totalSessionSeconds,
-                completedExerciseIds: state.completedExerciseIds
+                completedExerciseIds: state.completedExerciseIds,
+                completedExerciseNames: state.completedExerciseNames
             }),
         }
     )

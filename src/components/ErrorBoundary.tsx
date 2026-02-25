@@ -1,3 +1,11 @@
+/**
+ * @file src/components/ErrorBoundary.tsx
+ * @description React class component that catches rendering errors in its subtree.
+ *
+ * Renders a user-friendly "Something went wrong" fallback UI instead of a blank
+ * screen when an unhandled JavaScript error propagates during render.
+ * In development mode, the raw error message is displayed for debugging.
+ */
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Button } from './ui/Button';

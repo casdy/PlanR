@@ -1,3 +1,14 @@
+/**
+ * @file src/services/programService.ts
+ * @description Workout program data layer — default templates and CRUD operations.
+ *
+ * Contains three built-in seeded programs (`gym`, `home`, `cardio`) that are
+ * shown to new users. `ProgramService` delegates all read/write calls to
+ * `LocalService` for the actual localStorage persistence.
+ *
+ * `DEFAULT_PROGRAMS` is also exported and consumed by `LocalService` to seed
+ * the user's storage on first launch.
+ */
 import { LocalService } from './localService';
 import type { WorkoutProgram, WorkoutLog } from '../types';
 

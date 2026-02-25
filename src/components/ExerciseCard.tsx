@@ -1,3 +1,10 @@
+/**
+ * @file src/components/ExerciseCard.tsx
+ * @description Card UI for displaying a single exercise suggestion on the Dashboard.
+ *
+ * Shows the exercise name, body part, equipment, and a GIF demo fetched from
+ * ExerciseDB. Tapping the card expands a detail panel with step-by-step instructions.
+ */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, X, Dumbbell, Loader2 } from 'lucide-react';
@@ -8,10 +15,10 @@ import type { ExerciseDBItem } from '../services/exerciseDBService';
 
 interface ExerciseCardProps {
     exercise: ExerciseDBItem;
-    iconUrl: string | null;
+    iconUrl?: string | null;
 }
 
-export const ExerciseCard = ({ exercise, iconUrl }: ExerciseCardProps) => {
+export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [detailedExercise, setDetailedExercise] = useState<ExerciseDBItem>(exercise);
     const [loadingDetails, setLoadingDetails] = useState(false);

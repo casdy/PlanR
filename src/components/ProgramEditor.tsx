@@ -1,3 +1,12 @@
+/**
+ * @file src/components/ProgramEditor.tsx
+ * @description Inline exercise swap editor for saved workout programs.
+ *
+ * Renders a list of all exercises in the program's schedule with a "Swap" button
+ * on each. Clicking Swap opens a modal powered by ExerciseDB that shows
+ * 3 alternative exercises for the same muscle group. Confirming a swap updates
+ * the program in LocalService and calls `onUpdate` to re-render the parent.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getExercisesByTarget } from '../services/exerciseDBService';

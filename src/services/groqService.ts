@@ -1,54 +1,60 @@
-import Groq from 'groq-sdk';
-
-const groqToken = import.meta.env.VITE_GROQ_API_KEY || '';
-
-if (!groqToken) {
-  console.warn('[Security] VITE_GROQ_API_KEY is missing. Groq AI features are disabled.');
-}
-
-// Dangerously allow browser for purely client-side MVP apps. 
-// In production, Groq API calls MUST go through a proxy backend.
-const groq = new Groq({ apiKey: groqToken, dangerouslyAllowBrowser: true, maxRetries: 2 });
-
 /**
- * AI Service using Groq's ultra-fast inference edge network.
+ * @file src/services/groqService.ts
+ * @description Groq AI inference service.
+ *
+ * This version safely routes all requests to the Vercel Serverless Function 
+ * (`/api/groq`) so the `GROQ_API_KEY` is never exposed in the browser bundle.
  */
+
 export const groqService = {
-  isAvailable: !!groqToken,
+  isAvailable: true, // Serverless fn handles key validation
 
   /**
    * Fast text generation optimized for low latency.
-   * Defaults to the blazing fast Llama 3 8B.
+   * Note: The serverless proxy currently returns the full response at once (no streaming).
    */
   async generateFastTextStream(prompt: string, model: string = 'llama3-8b-8192') {
-    return groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: model,
-      temperature: 0.5,
-      max_tokens: 1024,
-      top_p: 1,
-      stream: true,
+    const response = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'chat', prompt, model, temperature: 0.5, max_tokens: 1024 })
     });
+
+    if (!response.ok) throw new Error(`[Backend] Failed to generate: ${response.statusText}`);
+    
+    const data = await response.json();
+    
+    // Simulate streaming interface for existing components
+    return {
+        async *[Symbol.asyncIterator]() {
+            yield { choices: [{ delta: { content: data.content } }] };
+        }
+    };
   },
 
   /**
    * Powerful text generation optimized for complex reasoning.
-   * Defaults to Llama 3 70B limit.
    */
   async generateTextStream(prompt: string, model: string = 'llama3-70b-8192') {
-     return groq.chat.completions.create({
-      messages: [{ role: 'user', content: prompt }],
-      model: model,
-      temperature: 0.7,
-      max_tokens: 2048,
-      top_p: 1,
-      stream: true,
+      const response = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'chat', prompt, model, temperature: 0.7, max_tokens: 2048 })
     });
+
+    if (!response.ok) throw new Error(`[Backend] Failed to generate: ${response.statusText}`);
+    
+    const data = await response.json();
+    
+    return {
+        async *[Symbol.asyncIterator]() {
+            yield { choices: [{ delta: { content: data.content } }] };
+        }
+    };
   },
 
   /**
    * Parse a workout transcript into structured JSON (reps and weight).
-   * Swapped from HF Qwen to Groq Llama3 for zero-latency UI response.
    */
   async parseWorkoutTranscript(transcript: string): Promise<{ reps: number, weight: number } | null> {
     const prompt = `Extract workout data from this transcript: "${transcript}". 
@@ -57,37 +63,50 @@ export const groqService = {
     Example: "12 reps at 225" -> {"reps": 12, "weight": 225}`;
 
     try {
-      const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
-        model: 'llama3-8b-8192',
-        temperature: 0.1, // extremely low temp for strict JSON adherence
-        response_format: { type: 'json_object' }
+      const response = await fetch('/api/groq', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            action: 'chat', 
+            prompt, 
+            model: 'llama3-8b-8192', 
+            temperature: 0.1,
+            response_format: { type: 'json_object' }
+        })
       });
 
-      const content = completion.choices[0]?.message?.content || '';
-      return JSON.parse(content);
+      if (!response.ok) return null;
+      
+      const data = await response.json();
+      return JSON.parse(data.content);
     } catch (err) {
-      console.error('[Groq] Failed to parse transcript', err);
+      console.error('[Groq] Failed to fetch or parse transcript', err);
     }
     return null;
   },
 
   /**
-   * Transcribe an audio blob to text using Groq's fast Whisper implementation.
+   * Transcribe an audio blob to text via the backend proxy.
    */
   async transcribeAudio(audioBlob: Blob): Promise<{ text: string }> {
     try {
-      const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
-      const transcription = await groq.audio.transcriptions.create({
-        file: file,
-        model: 'whisper-large-v3',
-        prompt: 'Workout logging audio. Expected to be in English. Short phrases like 10 reps at 150 lbs.',
-        response_format: 'json',
-        language: 'en',
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'audio.webm');
+
+      const response = await fetch('/api/groq', {
+        method: 'POST',
+        body: formData,
       });
-      return { text: transcription.text };
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || `[Backend] Failed to transcribe: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return { text: data.text };
     } catch (err: any) {
-      console.error('[Groq] Failed to transcribe audio', err);
+      console.error('[Groq] Fetch error transcribing audio:', err);
       throw new Error(err.message || 'Transcription failed');
     }
   }

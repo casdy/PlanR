@@ -1,10 +1,20 @@
+/**
+ * @file src/pages/Dashboard.tsx
+ * @description Main home page of PlanR — the first tab users land on.
+ *
+ * Displays:
+ *  - Today's scheduled workout (from CalendarView / scheduleStore)
+ *  - Live consistency tracker and streak stats
+ *  - "Today's Focus" exercise suggestions powered by ExerciseDB
+ *  - Quick-start buttons for today's workout
+ *  - The Active Workout Overlay (when a session is live)
+ */
 import { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ProgramService } from '../services/programService';
 import { LocalService } from '../services/localService';
 import { getExercisesByBodyPart } from '../services/exerciseDBService';
 import type { ExerciseDBItem } from '../services/exerciseDBService';
-import { fetchExerciseIcon } from '../services/nounProjectService';
 import type { WorkoutProgram } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -15,6 +25,7 @@ import { ProgressRing } from '../components/ui/ProgressRing';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { DailyWorkoutModal } from '../components/DailyWorkoutModal';
 import { useCalendarStore } from '../store/calendarStore';
+import { useWorkoutStore } from '../store/workoutStore';
 import { useToastStore } from '../store/toastStore';
 import { format } from 'date-fns';
 
@@ -38,7 +49,7 @@ export const Dashboard = () => {
     const [streak, setStreak] = useState(0);
     const [weeklyVolume, setWeeklyVolume] = useState(0);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(0);
-    const [dailySuggestion, setDailySuggestion] = useState<{ exercise: ExerciseDBItem, icon: string | null }[]>([]);
+    const [dailySuggestion, setDailySuggestion] = useState<ExerciseDBItem[]>([]);
     const [suggestionMuscle, setSuggestionMuscle] = useState<string>('chest');
     const [suggestionError, setSuggestionError] = useState(false);
     const [isFetchingSuggestion, setIsFetchingSuggestion] = useState(false);
@@ -52,16 +63,7 @@ export const Dashboard = () => {
         setSuggestionError(false);
         try {
             const exercises = await getExercisesByBodyPart(bodyPart);
-            const selectedExercises = exercises.slice(0, 6);
-            
-            const suggestionsWithIcons = await Promise.all(
-                selectedExercises.map(async (ex) => {
-                    const iconTerm = `${ex.name} exercise`; 
-                    const iconUrl = await fetchExerciseIcon(iconTerm);
-                    return { exercise: ex, icon: iconUrl };
-                })
-            );
-            setDailySuggestion(suggestionsWithIcons);
+            setDailySuggestion(exercises.slice(0, 6));
         } catch (apiError) {
             console.error("Error loading daily suggestions:", apiError);
             setSuggestionError(true);
@@ -71,7 +73,7 @@ export const Dashboard = () => {
     };
     
     // Calendar store for saving workouts
-    const addPlannedWorkout = useCalendarStore(state => state.addPlannedWorkout);
+    const { plannedWorkouts, addPlannedWorkout } = useCalendarStore();
     const showToast = useToastStore(state => state.showToast);
 
     const handleGuestMode = () => {
@@ -101,7 +103,7 @@ export const Dashboard = () => {
                     const thisWeekLogs = logs.filter(l => new Date(l.completedAt).getTime() >= startOfWeek.getTime());
                     setWorkoutsThisWeek(thisWeekLogs.length);
 
-                    // Fetch Daily Suggestion using ExerciseDB and Noun Project
+                    // Fetch Daily Suggestion using ExerciseDB
                     const randomBodyPart = bodyPartsList[Math.floor(Math.random() * bodyPartsList.length)];
                     await fetchDailySuggestion(randomBodyPart);
                 }
@@ -237,11 +239,11 @@ export const Dashboard = () => {
     const getHeatmapColor = (level: number) => {
         switch(level) {
             case -1: return 'bg-transparent border border-transparent'; // empty padding
-            case 0: return 'bg-white/5 dark:bg-white/5';
-            case 1: return 'bg-emerald-900/60 dark:bg-emerald-900/40';
-            case 2: return 'bg-emerald-600/80';
-            case 3: return 'bg-emerald-400';
-            default: return 'bg-white/5';
+            case 0: return 'bg-zinc-200 dark:bg-white/10';
+            case 1: return 'bg-emerald-300 dark:bg-emerald-900/60';
+            case 2: return 'bg-emerald-500 dark:bg-emerald-600/80';
+            case 3: return 'bg-emerald-600 dark:bg-emerald-400';
+            default: return 'bg-zinc-200 dark:bg-white/10';
         }
     };
 
@@ -255,9 +257,17 @@ export const Dashboard = () => {
     }
 
     const handleStartWorkout = async () => {
+        setIsModalOpen(false); // Close modal before starting
+        
+        // If we have a planned workout for today, start it directly
+        if (plannedForToday) {
+            useWorkoutStore.getState().startWorkout(plannedForToday.programId, plannedForToday.dayId, user?.id);
+            return;
+        }
+
+        // Otherwise generate a new session based on the suggestion
         if (dailySuggestion.length === 0) return;
         
-        setIsModalOpen(false); // Close modal before starting
         const id = crypto.randomUUID();
         const newProgram: WorkoutProgram = {
             id,
@@ -274,9 +284,9 @@ export const Dashboard = () => {
                 dayOfWeek: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date()),
                 type: 'strength',
                 durationMin: 45,
-                exercises: dailySuggestion.map((sug) => ({
+                exercises: dailySuggestion.map((ex) => ({
                     id: crypto.randomUUID(),
-                    name: sug.exercise.name,
+                    name: ex.name,
                     targetSets: 3,
                     targetReps: '10-12'
                 }))
@@ -311,9 +321,9 @@ export const Dashboard = () => {
                 dayOfWeek: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date()),
                 type: 'strength',
                 durationMin: 45,
-                exercises: dailySuggestion.map((sug) => ({
+                exercises: dailySuggestion.map((ex) => ({
                     id: crypto.randomUUID(),
-                    name: sug.exercise.name,
+                    name: ex.name,
                     targetSets: 3,
                     targetReps: '10-12'
                 }))
@@ -366,6 +376,21 @@ export const Dashboard = () => {
                 </motion.div>
             </div>
         );
+    }
+
+    // Determine if there is an assigned workout for today
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const plannedForToday = plannedWorkouts.find((w: any) => w.date === todayKey);
+    let assignedWorkout = null;
+    if (plannedForToday) {
+        const assignedProgram = programs.find(p => p.id === plannedForToday.programId);
+        const assignedDay = assignedProgram?.schedule?.find(d => d.id === plannedForToday.dayId);
+        if (assignedProgram && assignedDay) {
+            assignedWorkout = {
+                programTitle: assignedProgram.title,
+                dayTitle: assignedDay.title
+            };
+        }
     }
 
     return (
@@ -453,10 +478,10 @@ export const Dashboard = () => {
                             onChange={(e) => fetchDailySuggestion(e.target.value)}
                             onClick={(e) => e.stopPropagation()}
                             disabled={isFetchingSuggestion}
-                            className="bg-transparent text-primary capitalize outline-none cursor-pointer hover:underline disabled:opacity-50"
+                            className="bg-white dark:bg-zinc-900 text-primary capitalize outline-none cursor-pointer hover:underline disabled:opacity-50 rounded-md px-1"
                         >
                             {bodyPartsList.map(bp => (
-                                <option key={bp} value={bp} className="bg-background text-foreground capitalize">
+                                <option key={bp} value={bp} className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 capitalize">
                                     {bp}
                                 </option>
                             ))}
@@ -514,11 +539,10 @@ export const Dashboard = () => {
                                 </div>
                             ) : dailySuggestion.length > 0 ? (
                                 <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
-                                    {dailySuggestion.map((sug, idx) => (
+                                    {dailySuggestion.map((ex, idx) => (
                                         <ExerciseCard 
                                             key={idx} 
-                                            exercise={sug.exercise} 
-                                            iconUrl={sug.icon} 
+                                            exercise={ex} 
                                         />
                                     ))}
                                 </div>
@@ -584,10 +608,10 @@ export const Dashboard = () => {
                     </div>
                     <div className="flex items-center justify-end gap-2 mt-4 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
                         <span>Less</span>
-                        <div className="w-3 h-3 rounded-[3px] bg-white/5" />
-                        <div className="w-3 h-3 rounded-[3px] bg-emerald-900/60" />
-                        <div className="w-3 h-3 rounded-[3px] bg-emerald-600/80" />
-                        <div className="w-3 h-3 rounded-[3px] bg-emerald-400" />
+                        <div className="w-3 h-3 rounded-[3px] bg-zinc-200 dark:bg-white/10" />
+                        <div className="w-3 h-3 rounded-[3px] bg-emerald-300 dark:bg-emerald-900/60" />
+                        <div className="w-3 h-3 rounded-[3px] bg-emerald-500 dark:bg-emerald-600/80" />
+                        <div className="w-3 h-3 rounded-[3px] bg-emerald-600 dark:bg-emerald-400" />
                         <span>More</span>
                     </div>
                 </CardContent>
@@ -601,6 +625,7 @@ export const Dashboard = () => {
                 onStartWorkout={handleStartWorkout}
                 onSaveToCalendar={handleSaveToCalendar}
                 isLoading={loading || authLoading}
+                assignedWorkout={assignedWorkout}
             />
         </div>
     );

@@ -1,3 +1,10 @@
+/**
+ * @file src/components/DailyWorkoutModal.tsx
+ * @description Bottom-sheet modal for scheduling or starting a workout from the Calendar.
+ *
+ * Lets the user pick a specific program day to schedule on a calendar date, or
+ * start it immediately. Renders as a portal to avoid layout clipping issues.
+ */
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
@@ -8,11 +15,12 @@ import type { ExerciseDBItem } from '../services/exerciseDBService';
 interface DailyWorkoutModalProps {
     isOpen: boolean;
     onClose: () => void;
-    exercises: { exercise: ExerciseDBItem, icon: string | null }[];
+    exercises: ExerciseDBItem[];
     targetMuscle: string;
     onStartWorkout: () => void;
     onSaveToCalendar: () => void;
     isLoading?: boolean;
+    assignedWorkout?: { programTitle: string, dayTitle: string } | null;
 }
 
 export const DailyWorkoutModal = ({ 
@@ -22,7 +30,8 @@ export const DailyWorkoutModal = ({
     targetMuscle,
     onStartWorkout,
     onSaveToCalendar,
-    isLoading = false
+    isLoading = false,
+    assignedWorkout = null
 }: DailyWorkoutModalProps) => {
 
     return createPortal(
@@ -46,8 +55,12 @@ export const DailyWorkoutModal = ({
                         {/* Header */}
                         <div className="p-6 border-b border-border/50 flex items-start justify-between bg-card z-10 sticky top-0">
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Daily Suggestion</p>
-                                <h3 className="text-2xl font-black capitalize leading-tight">Focus: {targetMuscle}</h3>
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">
+                                    {assignedWorkout ? 'Scheduled Routine' : 'Daily Suggestion'}
+                                </p>
+                                <h3 className="text-2xl font-black capitalize leading-tight">
+                                    {assignedWorkout ? assignedWorkout.dayTitle : `Focus: ${targetMuscle}`}
+                                </h3>
                             </div>
                             <Button 
                                 variant="ghost" 
@@ -64,7 +77,17 @@ export const DailyWorkoutModal = ({
                             className="pb-4 px-6 pt-6 overflow-x-auto overflow-y-hidden scroll-smooth flex-1 min-h-0"
                             style={{ WebkitOverflowScrolling: 'touch' }}
                         >
-                            {isLoading || exercises.length === 0 ? (
+                            {assignedWorkout ? (
+                                <div className="py-12 flex flex-col items-center justify-center gap-4 w-full h-full">
+                                    <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center shadow-inner shadow-emerald-500/20 mb-2 ring-1 ring-emerald-500/20">
+                                        <Dumbbell className="w-10 h-10" />
+                                    </div>
+                                    <h4 className="text-3xl font-black tracking-tighter text-center">Workout Assigned</h4>
+                                    <p className="text-muted-foreground font-medium text-lg max-w-sm text-center px-4 leading-snug">
+                                        You are scheduled to complete the <span className="text-primary font-bold italic">{assignedWorkout.programTitle}</span>.
+                                    </p>
+                                </div>
+                            ) : isLoading || exercises.length === 0 ? (
                                 <div className="py-12 flex flex-col items-center justify-center gap-4 w-full h-full">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                                     <p className="text-sm font-bold text-muted-foreground animate-pulse">Forging your workout...</p>
@@ -74,12 +97,13 @@ export const DailyWorkoutModal = ({
                                     {exercises.map((item, idx) => (
                                         <Card key={idx} className="p-5 bg-secondary/20 border-white/5 rounded-[2rem] flex flex-col items-center text-center gap-4 w-[240px] shrink-0 h-full">
                                             {/* Icon/Visual */}
-                                            <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 p-4 border border-white/5">
-                                                {item.icon ? (
+                                            <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 p-4 border border-white/5 overflow-hidden">
+                                                {item.gifUrl ? (
                                                     <img 
-                                                        src={item.icon} 
-                                                        alt={item.exercise.name} 
-                                                        className="w-full h-full object-contain filter invert opacity-80"
+                                                        src={item.gifUrl} 
+                                                        alt={item.name} 
+                                                        className="w-full h-full object-contain mix-blend-multiply rounded-xl"
+                                                        loading="lazy"
                                                     />
                                                 ) : (
                                                     <Dumbbell className="w-8 h-8 text-muted-foreground/50" />
@@ -88,13 +112,13 @@ export const DailyWorkoutModal = ({
                                             
                                             {/* Details */}
                                             <div className="flex-1 w-full flex flex-col items-center">
-                                                <p className="font-bold text-base leading-tight w-full mb-3 text-balance">{item.exercise.name}</p>
+                                                <p className="font-bold text-base leading-tight w-full mb-3 text-balance capitalize">{item.name}</p>
                                                 <div className="mt-auto flex flex-col gap-2 w-full items-center">
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full truncate max-w-full">
-                                                        {item.exercise.target}
+                                                        {item.target}
                                                     </span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full truncate max-w-full">
-                                                        {item.exercise.equipment.replace('_', ' ')}
+                                                        {item.equipment.replace('_', ' ')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -112,20 +136,22 @@ export const DailyWorkoutModal = ({
 
                         {/* Footer Actions */}
                         <div className="p-6 bg-card border-t border-border/50 grid grid-cols-2 gap-3 shrink-0">
-                            <Button 
-                                variant="outline" 
-                                className="h-14 rounded-2xl gap-2 font-bold border-white/10"
-                                onClick={onSaveToCalendar}
-                                disabled={isLoading || exercises.length === 0}
-                            >
-                                <Calendar className="w-5 h-5" />
-                                Save to Calendar
-                            </Button>
+                            {!assignedWorkout && (
+                                <Button 
+                                    variant="outline" 
+                                    className="h-14 rounded-2xl gap-2 font-bold border-white/10"
+                                    onClick={onSaveToCalendar}
+                                    disabled={isLoading || exercises.length === 0}
+                                >
+                                    <Calendar className="w-5 h-5" />
+                                    Save to Calendar
+                                </Button>
+                            )}
                             <Button 
                                 variant="primary" 
-                                className="h-14 rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20"
+                                className={`h-14 rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20 ${assignedWorkout ? 'col-span-2' : ''}`}
                                 onClick={onStartWorkout}
-                                disabled={isLoading || exercises.length === 0}
+                                disabled={isLoading || (!assignedWorkout && exercises.length === 0)}
                             >
                                 <Play className="w-5 h-5" />
                                 Start Now

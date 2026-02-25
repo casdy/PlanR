@@ -1,3 +1,12 @@
+/**
+ * @file src/components/RoutineGenerator.tsx
+ * @description AI-powered workout routine generator widget.
+ *
+ * Accepts a free-text fitness goal from the user and calls `aiService.generateRoutine`.
+ * Streams discovered exercise names in real time as Groq generates the JSON response.
+ * When the AI quota is exhausted, falls back to `ExerciseDB` auto-build silently.
+ * On completion, calls `onRoutineGenerated` with the parsed program object.
+ */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { aiService } from '../services/aiService';

@@ -1,3 +1,11 @@
+/**
+ * @file src/pages/ProgramManager.tsx
+ * @description Workout programs library page — shows all saved programs.
+ *
+ * Renders the AI Routine Generator at the top for creating new programs,
+ * followed by a list of the user's saved workout programs. Tapping a program
+ * navigates to `/program/:id` (ProgramDetail).
+ */
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card } from '../components/ui/Card';

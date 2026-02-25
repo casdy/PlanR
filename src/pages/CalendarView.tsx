@@ -1,3 +1,12 @@
+/**
+ * @file src/pages/CalendarView.tsx
+ * @description Workout planning calendar view.
+ *
+ * Displays an interactive monthly calendar where users can schedule
+ * workouts on specific dates. Tapping a date opens a modal to pick a
+ * program + day. Planned workouts are stored in `calendarStore` and
+ * displayed on the Dashboard when the date arrives.
+ */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCalendarStore } from '../store/calendarStore';
@@ -168,18 +177,27 @@ export const CalendarView = () => {
                             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-6">Plan your routine</p>
 
                             {/* Check if already assigned */}
-                            {plannedWorkouts.find(w => w.date === formatDateKey(selectedDate)) ? (
-                                <div className="space-y-4">
-                                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-500">
-                                            <Dumbbell className="w-5 h-5" />
+                            {plannedWorkouts.find(w => w.date === formatDateKey(selectedDate)) ? (() => {
+                                const planned = plannedWorkouts.find(w => w.date === formatDateKey(selectedDate))!;
+                                const assignedProgram = programs.find(p => p.id === planned.programId);
+                                const assignedDay = assignedProgram?.schedule?.find(d => d.id === planned.dayId);
+
+                                return (
+                                    <div className="space-y-4">
+                                        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0">
+                                                <Dumbbell className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-base leading-tight">
+                                                    {assignedProgram?.title || 'Workout Assigned'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-0.5">
+                                                    {assignedDay?.title || 'You have a routine scheduled.'}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-bold">Workout Assigned</p>
-                                            <p className="text-xs text-muted-foreground">You have a routine scheduled.</p>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="grid grid-cols-2 gap-3">
                                         <Button variant="outline" className="w-full rounded-2xl border-destructive/20 text-destructive hover:bg-destructive/10" onClick={handleRemove}>
                                             <Trash2 className="w-4 h-4 mr-2" /> Remove
                                         </Button>
@@ -200,7 +218,8 @@ export const CalendarView = () => {
                                         </Button>
                                     </div>
                                 </div>
-                            ) : (
+                                );
+                            })() : (
                                 <div className="space-y-3">
                                     {programs.length === 0 ? (
                                         <p className="text-sm text-center py-4 opacity-60">No saved programs found. Create one first!</p>

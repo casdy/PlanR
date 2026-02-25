@@ -1,6 +1,14 @@
+/**
+ * @file src/components/Layout.tsx
+ * @description App shell — wraps all pages with the top header and bottom navigation bar.
+ *
+ * The header shows the PlanR logo, a dark/light mode toggle, and a user/guest badge.
+ * The bottom nav provides tab-bar navigation between Dashboard, Programs, Calendar,
+ * History, and Settings. The active tab is highlighted with a pill indicator.
+ */
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { Dumbbell, Settings as SettingsIcon, LogOut, Home, Activity, Moon, Sun, Calendar } from 'lucide-react';
+import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
@@ -10,7 +18,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Toast } from './ui/Toast';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-    const { user, logout, loading: authLoading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
 
@@ -54,14 +62,16 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                         {!authLoading && (
                             user ? (
                                 <div className="flex items-center gap-2">
-                                    <Button 
-                                        variant="ghost" 
-                                        onClick={logout} 
-                                        className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold px-4 gap-2"
-                                    >
-                                        <LogOut className="w-4 h-4" />
-                                        <span className="hidden sm:inline">Sign Out</span>
-                                    </Button>
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/30 border border-white/5">
+                                        {user.isGuest ? (
+                                            <Ghost className="w-4 h-4 text-muted-foreground" />
+                                        ) : (
+                                            <User className="w-4 h-4 text-primary" />
+                                        )}
+                                        <span className="text-xs font-bold whitespace-nowrap hidden sm:inline-block">
+                                            {user.isGuest ? 'Guest User' : (user.name || 'Athlete')}
+                                        </span>
+                                    </div>
                                 </div>
                             ) : (
                                 <Link to="/login">
@@ -103,29 +113,35 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                     key={item.path}
                                     to={item.path}
                                     className={cn(
-                                        "relative flex flex-col items-center justify-center h-full w-14 transition-all duration-300",
+                                        "relative flex flex-col items-center justify-center h-full px-4 transition-all duration-300 rounded-2xl",
                                         isActive ? "text-primary active:scale-95" : "text-muted-foreground hover:text-foreground active:scale-90"
                                     )}
                                 >
-                                    <Icon className={cn(
-                                        "w-6 h-6 mb-1 transition-all duration-300",
-                                        isActive && "scale-110 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]"
-                                    )} />
-                                    
-                                    <span className={cn(
-                                        "text-[10px] font-black uppercase tracking-widest transition-opacity duration-300",
-                                        isActive ? "opacity-100" : "opacity-40"
-                                    )}>
-                                        {item.label}
-                                    </span>
-
+                                    {/* Active Background Pill */}
                                     {isActive && (
-                                        <motion.div 
-                                            layoutId="active-nav-dot"
-                                            className="absolute -bottom-1 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.8)]"
-                                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                                        <motion.div
+                                            layoutId="active-nav-bg"
+                                            className="absolute inset-0 bg-primary/10 rounded-2xl"
+                                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
                                         />
                                     )}
+
+                                    <div className="relative z-10 flex flex-col items-center justify-center">
+                                        <Icon 
+                                            className={cn(
+                                                "w-6 h-6 mb-1 transition-all duration-300",
+                                                isActive ? "scale-110 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : ""
+                                            )} 
+                                            fill={isActive ? "currentColor" : "none"}
+                                        />
+                                        
+                                        <span className={cn(
+                                            "text-[10px] font-black uppercase tracking-widest transition-opacity duration-300",
+                                            isActive ? "opacity-100" : "opacity-40"
+                                        )}>
+                                            {item.label}
+                                        </span>
+                                    </div>
                                 </Link>
                             );
                         })}
