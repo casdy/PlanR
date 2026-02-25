@@ -51,7 +51,8 @@ export interface WorkoutProgram {
 }
 
 export interface WorkoutLog {
-  id: string;
+  id: string; // The specific log ID
+  sessionId: string; // The continuous session ID (links starts, pauses, etc)
   userId: string;
   programId: string;
   dayId: string;
@@ -59,4 +60,6 @@ export interface WorkoutLog {
   completedExerciseIds: string[];
   totalTimeSpentSec: number;
   completedAt: any;
+  lastExerciseIndex?: number;
+  events?: { type: 'start' | 'pause' | 'resume' | 'finish' | 'cancel', timestamp: number }[];
 }

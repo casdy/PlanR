@@ -49,3 +49,7 @@ node_modules
 .env
 .env.*
 !.env.example
+
+# Custom Agent Configs & Outputs
+.vscode/mcp.json
+coverage/

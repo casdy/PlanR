@@ -4,16 +4,12 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { thumbnailService } from '../services/thumbnailService';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Trophy, Share2, RotateCcw, Loader2, Download, Sparkles } from 'lucide-react';
+import { Trophy, Share2, RotateCcw, Download, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LocalService } from '../services/localService';
 
-const Shimmer = () => (
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite] skew-x-12" />
-);
-
 export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
-    const { status, badgePrompt, lastBadgeUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
+    const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
     const [isGenerating, setIsGenerating] = useState(false);
 
     const [isLogging, setIsLogging] = useState(false);
@@ -25,15 +21,16 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                 setIsLogging(true);
                 try {
                     const userId = user?.id || 'guest';
-                    // Log the workout to SQLite
-                    const { activeProgramId, activeDayId, elapsedSeconds } = useWorkoutStore.getState();
-                    if (activeProgramId && activeDayId) {
+                    // Log the workout to SQLite (Supabase under the hood)
+                    const { activeProgramId, activeDayId, totalSessionSeconds, completedExerciseIds, activeSessionId } = useWorkoutStore.getState();
+                    if (activeProgramId && activeDayId && activeSessionId) {
                         await LocalService.logWorkout({
                             programId: activeProgramId,
                             dayId: activeDayId,
-                            totalTimeSpentSec: elapsedSeconds,
+                            sessionId: activeSessionId,
+                            totalTimeSpentSec: totalSessionSeconds,
                             userId: userId,
-                            completedExerciseIds: [], // Could be expanded later
+                            completedExerciseIds: completedExerciseIds,
                             date: new Date().toISOString()
                         }, userId);
                     }
@@ -75,32 +72,28 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
             <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                initial={{ scale: 0.95, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
-                className="w-full max-w-md"
+                className="w-full max-w-sm"
             >
-                <Card className="overflow-hidden border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] bg-white dark:bg-slate-900 rounded-[2.5rem]">
-                    <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 p-8 text-center text-white relative overflow-hidden">
-                        <motion.div 
-                             animate={{ rotate: [0, 10, -10, 0] }}
-                             transition={{ repeat: Infinity, duration: 5 }}
-                             className="relative z-10"
-                        >
-                            <Trophy className="w-16 h-16 mx-auto mb-4 text-yellow-300 drop-shadow-[0_0_15px_rgba(253,224,71,0.5)]" />
-                        </motion.div>
-                        <h2 className="text-3xl font-black mb-1 relative z-10">BEAST MODE</h2>
-                        <p className="text-blue-100 opacity-80 uppercase tracking-[0.2em] text-[10px] font-black relative z-10">New Achievement Unlocked</p>
-                        
-                        {/* Decorative background elements */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/20 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
+                <Card className="overflow-hidden border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] bg-[#0f121b] rounded-[2rem]">
+                    {/* Top Header - Blue Gradient */}
+                    <div className="bg-gradient-to-b from-[#385cf0] to-[#513cf0] pt-10 pb-8 px-6 text-center text-white relative">
+                        <Trophy className="w-14 h-14 mx-auto mb-3 text-[#F2DF3D]" strokeWidth={1.5} />
+                        <h2 className="text-[22px] font-black tracking-wide mb-1">
+                            {achievementTitle || "BEAST MODE"}
+                        </h2>
+                        <p className="text-white/80 text-[8px] font-black uppercase tracking-[0.2em] opacity-90">
+                            {achievementSubtitle || "NEW ACHIEVEMENT UNLOCKED"}
+                        </p>
                     </div>
 
-                    <div className="p-8 text-center">
-                        <div className="relative w-full aspect-square mb-8 bg-slate-100 dark:bg-slate-950 rounded-[2rem] overflow-hidden flex items-center justify-center border-4 border-slate-50 dark:border-slate-800/50 shadow-inner">
+                    {/* Middle Section - Image / Loader */}
+                    <div className="p-6 pb-5 text-center">
+                        <div className="relative w-full aspect-square mb-6 bg-[#05060a] rounded-2xl overflow-hidden flex items-center justify-center shadow-inner">
                             {lastBadgeUrl ? (
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.5 }}
+                                    initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     className="w-full h-full"
                                 >
@@ -109,57 +102,52 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                                         alt="Achievement Badge" 
                                         className="w-full h-full object-cover"
                                     />
-                                    <div className="absolute bottom-4 right-4 animate-bounce">
-                                        <div className="bg-white/90 dark:bg-slate-800/90 p-2 rounded-full shadow-lg backdrop-blur-sm">
-                                            <Sparkles className="w-4 h-4 text-yellow-500" />
+                                    <div className="absolute bottom-3 right-3 animate-bounce">
+                                        <div className="bg-[#0f121b]/80 p-1.5 rounded-full shadow-lg backdrop-blur-sm">
+                                            <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
                                         </div>
                                     </div>
                                 </motion.div>
                             ) : (
-                                <div className="flex flex-col items-center gap-4 relative w-full h-full justify-center">
-                                    <Shimmer />
-                                    <div className="relative">
-                                        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-                                        <div className="absolute inset-0 blur-xl bg-indigo-500/30 animate-pulse" />
-                                    </div>
-                                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest animate-pulse">
+                                <div className="flex flex-col items-center gap-5 relative w-full h-full justify-center">
+                                    <div className="w-12 h-12 rounded-full border-[3px] border-[#2a2d48] border-t-[#665DDC] animate-spin" />
+                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
                                         Forging Achievement...
                                     </p>
                                 </div>
                             )}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <Button variant="secondary" className="gap-2 h-14 rounded-2xl bg-gray-50 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-none text-xs font-bold uppercase tracking-wider" onClick={handleDownload} disabled={!lastBadgeUrl}>
-                                <Download className="w-4 h-4" />
-                                Save
+                        {/* Buttons */}
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            <Button 
+                                variant="secondary" 
+                                className="gap-2 h-11 rounded-xl bg-[#1e2330] hover:bg-[#282d3b] border-none text-[10px] font-black uppercase tracking-widest text-[#9ca3af] hover:text-white transition-colors"
+                                onClick={handleDownload} 
+                                disabled={!lastBadgeUrl}
+                            >
+                                <Download className="w-3.5 h-3.5" strokeWidth={2.5} /> Save
                             </Button>
-                            <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2 h-14 rounded-2xl shadow-lg shadow-indigo-600/20 text-xs font-bold uppercase tracking-wider">
-                                <Share2 className="w-4 h-4" />
-                                Share
+                            <Button 
+                                className="bg-[#5C45F4] hover:bg-[#6c57f5] gap-2 h-11 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-[#5C45F4]/20 transition-all"
+                            >
+                                <Share2 className="w-3.5 h-3.5" strokeWidth={2.5} /> Share
                             </Button>
                         </div>
 
-                        <Button 
-                            variant="ghost" 
-                            className="w-full h-12 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 gap-2 font-bold"
+                        <button 
+                            className="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-gray-400 hover:text-gray-200 transition-colors"
                             onClick={() => {
                                 cancelWorkout();
                                 onRestart();
                             }}
                         >
-                            <RotateCcw className="w-4 h-4" />
+                            <RotateCcw className="w-3.5 h-3.5" />
                             Return to Dashboard
-                        </Button>
+                        </button>
                     </div>
                 </Card>
             </motion.div>
-
-            <style dangerouslySetInnerHTML={{ __html: `
-                @keyframes shimmer {
-                    100% { transform: translateX(100%); }
-                }
-            `}} />
         </div>
     );
 };

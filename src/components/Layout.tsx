@@ -1,20 +1,22 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { Dumbbell, Settings as SettingsIcon, LogOut, Home, Activity, Moon, Sun } from 'lucide-react';
+import { Dumbbell, Settings as SettingsIcon, LogOut, Home, Activity, Moon, Sun, Calendar } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
 import { ActiveWorkoutOverlay } from './ActiveWorkoutOverlay';
 import { WorkoutSummary } from './WorkoutSummary';
 import { useTheme } from '../hooks/useTheme';
+import { Toast } from './ui/Toast';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const location = useLocation();
 
     const navItems = [
         { label: 'Home', icon: Home, path: '/' },
+        { label: 'Calendar', icon: Calendar, path: '/calendar' },
         { label: 'Programs', icon: Dumbbell, path: '/manage' },
         { label: 'Activity', icon: Activity, path: '/history' },
         { label: 'Profile', icon: SettingsIcon, path: '/settings' },
@@ -49,23 +51,25 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                             {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
                         </Button>
 
-                        {user ? (
-                            <div className="flex items-center gap-2">
-                                <Button 
-                                    variant="ghost" 
-                                    onClick={logout} 
-                                    className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold px-4 gap-2"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Sign Out</span>
-                                </Button>
-                            </div>
-                        ) : (
-                            <Link to="/login">
-                                <Button size="sm" className="rounded-2xl px-5">
-                                    Sign In
-                                </Button>
-                            </Link>
+                        {!authLoading && (
+                            user ? (
+                                <div className="flex items-center gap-2">
+                                    <Button 
+                                        variant="ghost" 
+                                        onClick={logout} 
+                                        className="rounded-2xl bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold px-4 gap-2"
+                                    >
+                                        <LogOut className="w-4 h-4" />
+                                        <span className="hidden sm:inline">Sign Out</span>
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Link to="/login">
+                                    <Button size="sm" className="rounded-2xl px-5">
+                                        Sign In
+                                    </Button>
+                                </Link>
+                            )
                         )}
                     </div>
                 </div>
@@ -130,6 +134,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             )}
             <ActiveWorkoutOverlay />
             <WorkoutSummary onRestart={() => window.location.href = '/'} />
+            <Toast />
         </div>
     );
 };

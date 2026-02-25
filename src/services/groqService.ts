@@ -70,5 +70,25 @@ export const groqService = {
       console.error('[Groq] Failed to parse transcript', err);
     }
     return null;
+  },
+
+  /**
+   * Transcribe an audio blob to text using Groq's fast Whisper implementation.
+   */
+  async transcribeAudio(audioBlob: Blob): Promise<{ text: string }> {
+    try {
+      const file = new File([audioBlob], 'audio.webm', { type: 'audio/webm' });
+      const transcription = await groq.audio.transcriptions.create({
+        file: file,
+        model: 'whisper-large-v3',
+        prompt: 'Workout logging audio. Expected to be in English. Short phrases like 10 reps at 150 lbs.',
+        response_format: 'json',
+        language: 'en',
+      });
+      return { text: transcription.text };
+    } catch (err: any) {
+      console.error('[Groq] Failed to transcribe audio', err);
+      throw new Error(err.message || 'Transcription failed');
+    }
   }
 };

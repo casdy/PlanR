@@ -7,16 +7,16 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
 ![React](https://img.shields.io/badge/React-19-blue.svg?logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg?logo=typescript)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF.svg?logo=vite)
-![Tailwind](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css)
-![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Inference-FFD21E.svg)
+![Groq](https://img.shields.io/badge/Groq-Fast%20AI-F55036.svg)
+![Supabase](https://img.shields.io/badge/Supabase-Database-3ECF8E.svg?logo=supabase)
 
 ---
 
-- **🎙️ Voice-Logged Workouts**: Hands-free logging using AI speech-to-text (Whisper).
-- **🤖 AI Routine Builder**: Generate custom workout programs instantly based on your goals.
-- **🏆 Dynamic Achievements**: Unique, AI-generated badges (FLUX) to celebrate your fitness milestones.
+- **🎙️ Voice-Logged Workouts**: Hands-free logging using AI speech-to-text (Groq Whisper).
+- **🤖 AI Routine Builder**: Generate custom workout programs instantly using the fast Groq LLM API.
+- **🏆 Dynamic Achievements & Visuals**: Rich exercise visualizations using a hybrid of ExerciseDB GIFs and Noun Project SVGs.
 - **📱 PWA Ready**: Installable on mobile and desktop for a native-like experience.
-- **🔒 Private by Design**: Offline-first storage with secure, local-only data persistence.
+- **🔒 Local-First Database**: Powered by robust local-first SQLite-WASM storage with Supabase integration capabilities.
 
 ---
 
@@ -24,10 +24,11 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
 
 - **Frontend**: [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
 - **Build Tool**: [Vite 7](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Framer Motion](https://www.framer.com/motion/) (Animations)
-- **AI Engine**: [Hugging Face Inference](https://huggingface.co/inference) (Whisper, FLUX, LLMs)
-- **Persistence**: Local Storage (Offline-first approach)
-- **Utilities**: `date-fns`, `lucide-react`, `clsx`, `tailwind-merge`
+- **Styling**: Tailwind CSS + Framer Motion (Animations)
+- **AI Engine**: [Groq API](https://groq.com/) (Whisper large-v3, LLMs) for ultra-fast generation and transcription
+- **Data APIs**: [ExerciseDB](https://rapidapi.com/justin-WFnsXH_t6/api/exercisedb/) & [Noun Project](https://thenounproject.com/)
+- **Persistence**: SQLite-WASM (Local) + [Supabase](https://supabase.com/)
+- **Utilities**: `date-fns`, `lucide-react`, `zustand`
 
 ---
 
@@ -54,9 +55,22 @@ PlanR is a modern, high-performance Progressive Web App (PWA) designed to stream
    ```
 
 3. Configure Environment Variables:
-   Create a `.env` file in the root directory and add your Hugging Face API token:
+   Create a `.env` file in the root directory and add your API keys:
+
    ```env
-   HF_API_TOKEN=your_token_here
+   # Groq API for AI capabilities
+   VITE_GROQ_API_KEY=your_groq_api_key
+
+   # ExerciseDB API (via RapidAPI)
+   VITE_RAPIDAPI_KEY=your_rapidapi_key
+
+   # Noun Project API for SVGs
+   VITE_NOUN_API_KEY=your_noun_key
+   VITE_NOUN_API_SECRET=your_noun_secret
+
+   # Supabase Configuration
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 ### Development
@@ -81,14 +95,12 @@ npm run build
 
 ```text
 src/
-├── components/     # Reusable UI components and layout
-│   ├── ui/        # Atomic UI elements (Buttons, Inputs, etc.)
-│   └── ...
+├── components/     # Reusable UI components and overlays
 ├── pages/          # Main application views/routes
-├── services/       # AI (Hugging Face) and Local persistence
+├── services/       # Groq AI, ExerciseDB, Noun Project, and DB services
 ├── store/          # Zustand state management
 ├── hooks/          # Custom React hooks
-├── lib/            # Configuration and utility libraries
+├── lib/            # Configuration and utility libraries (including SQLite Setup)
 ├── types/          # TypeScript interface and type definitions
 └── assets/         # Static assets (images, icons)
 ```

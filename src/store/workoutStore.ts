@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { LocalService } from '../services/localService';
+import type { WorkoutLog } from '../types';
 
 type WorkoutStatus = 'idle' | 'running' | 'paused' | 'finished';
 
@@ -7,24 +9,33 @@ interface WorkoutState {
     status: WorkoutStatus;
     activeProgramId: string | null;
     activeDayId: string | null;
+    activeSessionId: string | null;
     activeExerciseIndex: number;
     activeIntensity: 'light' | 'standard' | 'intense';
     isRecoveryMode: boolean;
+    isMinimized: boolean;
 
     // Timer state
     elapsedSeconds: number;
+    totalSessionSeconds: number;
     timerDuration: number; // Duration for the current exercise (default 60s)
+    
+    // Tracking
+    completedExerciseIds: string[];
 
     // Actions
-    startWorkout: (programId: string, dayId: string) => void;
+    startWorkout: (programId: string, dayId: string, userId?: string) => void;
+    resumeOldWorkout: (log: WorkoutLog) => void;
     pauseWorkout: () => void;
     resumeWorkout: () => void;
-    finishWorkout: () => void;
+    finishWorkout: () => Promise<void>;
     cancelWorkout: () => void;
+    setIsMinimized: (isMinimized: boolean) => void;
 
     setExerciseIndex: (index: number) => void;
     nextExercise: (maxIndex: number) => void;
     prevExercise: () => void;
+    markExerciseCompleted: (exerciseId: string) => void;
 
     scaleIntensity: (intensity: 'light' | 'standard' | 'intense') => void;
     swapToRecovery: () => void;
@@ -39,6 +50,8 @@ interface WorkoutState {
     // Achievement badges
     lastBadgeUrl: string | null;
     badgePrompt: string | null;
+    achievementTitle: string | null;
+    achievementSubtitle: string | null;
     setBadgeUrl: (url: string | null) => void;
 }
 
@@ -48,28 +61,68 @@ export const useWorkoutStore = create<WorkoutState>()(
             status: 'idle',
             activeProgramId: null,
             activeDayId: null,
+            activeSessionId: null,
             activeExerciseIndex: 0,
             activeIntensity: 'standard',
             isRecoveryMode: false,
+            isMinimized: false,
             elapsedSeconds: 0,
+            totalSessionSeconds: 0,
+            completedExerciseIds: [],
             timerDuration: 60,
 
-            startWorkout: (programId, dayId) => set({
-                status: 'running',
-                activeProgramId: programId,
-                activeDayId: dayId,
-                activeExerciseIndex: 0,
-                activeIntensity: 'standard',
-                isRecoveryMode: false,
-                elapsedSeconds: 0
-            }),
+            startWorkout: (programId, dayId, userId = 'guest') => {
+                const sessionId = LocalService.createWorkoutSession(programId, dayId, userId);
+                set({
+                    status: 'running',
+                    activeProgramId: programId,
+                    activeDayId: dayId,
+                    activeSessionId: sessionId,
+                    activeExerciseIndex: 0,
+                    activeIntensity: 'standard',
+                    isRecoveryMode: false,
+                    isMinimized: false,
+                    elapsedSeconds: 0,
+                    totalSessionSeconds: 0,
+                    completedExerciseIds: []
+                });
+            },
 
-            pauseWorkout: () => set({ status: 'paused' }),
+            resumeOldWorkout: (log) => {
+                LocalService.logWorkoutEvent(log.sessionId, 'resume');
+                set({
+                    status: 'running',
+                    activeProgramId: log.programId,
+                    activeDayId: log.dayId,
+                    activeSessionId: log.sessionId,
+                    activeExerciseIndex: log.lastExerciseIndex || 0,
+                    activeIntensity: 'standard',
+                    isRecoveryMode: false,
+                    isMinimized: false,
+                    elapsedSeconds: 0, // start the timer fresh for the resumed exercise
+                    totalSessionSeconds: log.totalTimeSpentSec || 0,
+                    completedExerciseIds: log.completedExerciseIds || []
+                });
+            },
 
-            resumeWorkout: () => set({ status: 'running' }),
+            pauseWorkout: () => {
+                const { activeSessionId } = get();
+                if (activeSessionId) LocalService.logWorkoutEvent(activeSessionId, 'pause');
+                set({ status: 'paused' });
+            },
 
-            finishWorkout: () => {
-                const { exerciseLogs } = get();
+            resumeWorkout: () => {
+                const { activeSessionId } = get();
+                if (activeSessionId) LocalService.logWorkoutEvent(activeSessionId, 'resume');
+                set({ status: 'running' });
+            },
+
+            finishWorkout: async () => {
+                const { exerciseLogs, activeSessionId } = get();
+                const userId = 'guest'; // Can be passed in later, but LocalService calls usually don't strictly need it if just using current session logic
+
+                if (activeSessionId) LocalService.logWorkoutEvent(activeSessionId, 'finish');
+                
                 let totalVolume = 0;
                 let exerciseCount = 0;
                 
@@ -80,18 +133,55 @@ export const useWorkoutStore = create<WorkoutState>()(
                     });
                 });
 
-                const prompt = `A hyper-realistic 3D digital gold badge, futuristic gym trophy aesthetic, centered, dark glowing background, representing a completed workout with ${exerciseCount} exercises and ${totalVolume.toLocaleString()} lbs total volume lifted. Highly detailed 8k render, Unreal Engine 5 style.`;
+                const streak = await LocalService.getCurrentStreak(userId);
+                let title = "BEAST MODE";
+                let subtitle = "NEW ACHIEVEMENT UNLOCKED";
+
+                if (streak > 0 && streak % 5 === 0) {
+                    title = `${streak} DAY STREAK!`;
+                    subtitle = "DEDICATION BADGE UNLOCKED";
+                } else if (totalVolume > 10000) {
+                    title = "10K VOLUME CLUB";
+                    subtitle = "STRENGTH BADGE UNLOCKED";
+                }
+
+                const prompt = `A hyper-realistic 3D digital gold badge, futuristic gym trophy aesthetic, centered, dark glowing background, representing a completed workout with ${exerciseCount} exercises and ${totalVolume.toLocaleString()} lbs total volume lifted. Highly detailed 8k render, Unreal Engine 5 style. Text saying "${title}".`;
                 
-                set({ status: 'finished', badgePrompt: prompt });
+                set({ 
+                    status: 'finished', 
+                    badgePrompt: prompt,
+                    achievementTitle: title,
+                    achievementSubtitle: subtitle,
+                    exerciseLogs: {} // clear logs on finish
+                });
             },
 
-            cancelWorkout: () => set({
-                status: 'idle',
-                activeProgramId: null,
-                activeDayId: null,
-                activeExerciseIndex: 0,
-                elapsedSeconds: 0
-            }),
+            cancelWorkout: () => {
+                const { activeSessionId, totalSessionSeconds, activeExerciseIndex, completedExerciseIds } = get();
+                if (activeSessionId) {
+                    LocalService.logWorkoutEvent(activeSessionId, 'cancel');
+                    LocalService.updateWorkoutSession(activeSessionId, { 
+                        totalTimeSpentSec: totalSessionSeconds,
+                        lastExerciseIndex: activeExerciseIndex,
+                        completedExerciseIds: completedExerciseIds
+                    });
+                }
+                
+                set({
+                    status: 'idle',
+                    activeProgramId: null,
+                    activeDayId: null,
+                    activeSessionId: null,
+                    activeExerciseIndex: 0,
+                    isMinimized: false,
+                    elapsedSeconds: 0,
+                    totalSessionSeconds: 0,
+                    completedExerciseIds: [],
+                    exerciseLogs: {} // clear logs on cancel
+                });
+            },
+
+            setIsMinimized: (isMinimized) => set({ isMinimized }),
 
             setExerciseIndex: (index) => set({
                 activeExerciseIndex: index,
@@ -120,6 +210,14 @@ export const useWorkoutStore = create<WorkoutState>()(
                 }
             },
 
+            markExerciseCompleted: (exerciseId) => {
+                set((state) => ({
+                    completedExerciseIds: state.completedExerciseIds.includes(exerciseId) 
+                        ? state.completedExerciseIds 
+                        : [...state.completedExerciseIds, exerciseId]
+                }));
+            },
+
             scaleIntensity: (intensity) => set({ activeIntensity: intensity }),
 
             swapToRecovery: () => set({
@@ -130,19 +228,26 @@ export const useWorkoutStore = create<WorkoutState>()(
                 // based on this flag.
             }),
 
-            tick: () => set((state) => ({ elapsedSeconds: state.elapsedSeconds + 1 })),
+            tick: () => set((state) => ({ 
+                elapsedSeconds: state.elapsedSeconds + 1,
+                totalSessionSeconds: state.totalSessionSeconds + 1 
+            })),
 
             resetTimer: () => set({ elapsedSeconds: 0 }),
 
             exerciseLogs: {},
             logExerciseSet: (programId, dayId, exerciseIndex, reps, weight) => {
+                // Input validation: ensure no negative reps or weights
+                const validReps = Math.max(0, reps);
+                const validWeight = Math.max(0, weight);
+                
                 const key = `${programId}-${dayId}-${exerciseIndex}`;
                 set((state) => {
                     const currentLogs = state.exerciseLogs[key] || [];
                     return {
                         exerciseLogs: {
                             ...state.exerciseLogs,
-                            [key]: [...currentLogs, { reps, weight }]
+                            [key]: [...currentLogs, { reps: validReps, weight: validWeight }]
                         }
                     };
                 });
@@ -150,6 +255,8 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             lastBadgeUrl: null,
             badgePrompt: null,
+            achievementTitle: null,
+            achievementSubtitle: null,
             setBadgeUrl: (url) => set({ lastBadgeUrl: url })
         }),
         {
@@ -159,8 +266,11 @@ export const useWorkoutStore = create<WorkoutState>()(
                 status: state.status,
                 activeProgramId: state.activeProgramId,
                 activeDayId: state.activeDayId,
+                activeSessionId: state.activeSessionId,
                 activeExerciseIndex: state.activeExerciseIndex,
-                elapsedSeconds: state.elapsedSeconds
+                elapsedSeconds: state.elapsedSeconds,
+                totalSessionSeconds: state.totalSessionSeconds,
+                completedExerciseIds: state.completedExerciseIds
             }),
         }
     )

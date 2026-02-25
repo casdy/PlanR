@@ -70,28 +70,85 @@ export const LocalService = {
     },
 
     // --- Logs ---
-    logWorkout: async (log: Omit<WorkoutLog, 'id' | 'completedAt'>, userId: string = 'guest') => {
-        const id = crypto.randomUUID();
-        const completedAt = new Date().toISOString();
+    createWorkoutSession: (programId: string, dayId: string, userId: string = 'guest'): string => {
+        const sessionId = crypto.randomUUID();
+        const logId = crypto.randomUUID();
+        const newLog: WorkoutLog = {
+            id: logId,
+            sessionId,
+            userId,
+            programId,
+            dayId,
+            date: new Date().toISOString(),
+            completedExerciseIds: [],
+            totalTimeSpentSec: 0,
+            completedAt: null, // Not completed yet
+            events: [{ type: 'start', timestamp: Date.now() }]
+        };
         
-        const { error } = await supabase
-            .from('workout_history')
-            .insert([{
-                id,
-                program_id: log.programId,
-                day_id: log.dayId,
-                user_id: userId,
-                timestamp: completedAt
-            }]);
-            
-        if (error) {
-            console.error('[Supabase] Failed to insert workout log:', error);
+        const logs = LocalService.getLogs();
+        logs.push(newLog);
+        localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+        return sessionId;
+    },
+
+    updateWorkoutSession: (sessionId: string, updates: Partial<WorkoutLog>) => {
+        const logs = LocalService.getLogs();
+        const index = logs.findIndex(l => l.sessionId === sessionId);
+        if (index !== -1) {
+            logs[index] = { ...logs[index], ...updates };
+            localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+        }
+    },
+
+    logWorkoutEvent: (sessionId: string, eventType: 'pause' | 'resume' | 'cancel' | 'finish') => {
+        const logs = LocalService.getLogs();
+        const sessionIndex = logs.findIndex(l => l.sessionId === sessionId);
+        
+        if (sessionIndex !== -1) {
+            if (!logs[sessionIndex].events) {
+                logs[sessionIndex].events = [];
+            }
+            logs[sessionIndex].events!.push({ type: eventType, timestamp: Date.now() });
+            localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+        }
+    },
+
+    logWorkout: async (log: Omit<WorkoutLog, 'id' | 'completedAt'> & { id?: string, completedAt?: any }, userId: string = 'guest') => {
+        // If we're updating a finished session, it already has an ID
+        const id = log.id || crypto.randomUUID();
+        const completedAt = log.completedAt || new Date().toISOString();
+        const fullLog: WorkoutLog = { ...log, id, userId, completedAt, sessionId: log.sessionId || id };
+        
+        try {
+            const { error } = await supabase
+                .from('workout_history')
+                .insert([{
+                    id,
+                    program_id: log.programId,
+                    day_id: log.dayId,
+                    user_id: userId,
+                    timestamp: completedAt
+                }]);
+                
+            if (error) {
+                console.error('[Supabase] Failed to insert workout log:', error);
+            }
+        } catch (e) {
+            console.error('[Supabase] Exception during log insertion:', e);
         }
 
-        // Also update local legacy logs for backward compatibility during transition
+        // Always update local legacy logs for backward compatibility and offline support
         const logs = LocalService.getLogs();
-        const fullLog: WorkoutLog = { ...log, id, userId, completedAt };
-        logs.push(fullLog);
+        
+        // If this session already exists in logs (e.g. from createWorkoutSession), update it
+        const existingSessionIndex = logs.findIndex(l => l.sessionId === fullLog.sessionId);
+        if (existingSessionIndex !== -1) {
+            logs[existingSessionIndex] = { ...logs[existingSessionIndex], ...fullLog };
+        } else {
+            logs.push(fullLog);
+        }
+        
         localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
     },
 
@@ -102,6 +159,14 @@ export const LocalService = {
             return logs.filter(l => l.userId === userId);
         }
         return logs;
+    },
+
+    deleteLog: (logId: string) => {
+        const logs = LocalService.getLogs();
+        const filtered = logs.filter(l => l.id !== logId && l.sessionId !== logId);
+        localStorage.setItem(LOGS_KEY, JSON.stringify(filtered));
+        // Also attempt to delete from Supabase if we have a real user, though for now
+        // since we aren't strongly enforcing sync, local deletion is primary.
     },
 
     // --- Progress ---

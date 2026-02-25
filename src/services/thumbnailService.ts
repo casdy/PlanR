@@ -124,6 +124,7 @@ export const thumbnailService = {
         <circle cx="332" cy="375" r="5" fill="${goldColor}" />
     </svg>`.trim();
 
-    return `data:image/svg+xml;base64,${btoa(svg)}`;
+    // Use encodeURIComponent for SVGs instead of btoa to avoid InvalidCharacterError
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
   }
 };
