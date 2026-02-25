@@ -30,16 +30,14 @@ const BASE_URL = '/api/exercisedb';
 const formatMediaUrl = (url: string, type: 'image' | 'video'): string => {
     if (!url) return '';
     
-    // Under COEP (require-corp) all cross-origin resources must have the
-    // Cross-Origin-Resource-Policy header. CDNs don't add it, so we route
-    // their URLs through /api/cdn-proxy which adds the header server-side.
-    // This proxy works in Vite dev (via vite.config.ts server.proxy)
-    // and in Vercel dev/production (via api/cdn-proxy.js serverless fn).
+    // Under COEP (require-corp), cross-origin resources need the
+    // Cross-Origin-Resource-Policy header. Route CDN media through our
+    // serverless proxy which injects that header.
     if (url.startsWith('https://cdn.exercisedb.dev')) {
-        return url.replace('https://cdn.exercisedb.dev', '/api/cdn-proxy');
+        return `/api/cdn-proxy?url=${encodeURIComponent(url)}`;
     }
     
-    // Other fully qualified HTTPS URLs pass through as-is
+    // Other absolute URLs pass through directly
     if (url.startsWith('http')) return url;
     
     // Relative paths from AscendAPI are proxied through the serverless function

@@ -14,20 +14,34 @@ export default defineConfig({
     },
     proxy: {
 
-      // Vite proxy is only needed for the image CDN now.
-      // API calls are handled by Vercel Serverless Functions in development and production.
+      // /api/cdn-proxy?url=<encoded CDN URL>
+      // Matches what api/cdn-proxy.js serverless fn does in production.
+      // Extracts the CDN URL from query params, fetches it, adds CORP headers.
       '/api/cdn-proxy': {
         target: 'https://cdn.exercisedb.dev',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api\/cdn-proxy/, ''),
+        rewrite: (path) => {
+          // Extract the `url` query param value and use its pathname
+          try {
+            const match = path.match(/[?&]url=([^&]+)/);
+            if (match) {
+              const cdnUrl = decodeURIComponent(match[1]);
+              const url = new URL(cdnUrl);
+              return url.pathname;
+            }
+          } catch (e) { /* fall through */ }
+          return path.replace(/^\/api\/cdn-proxy/, '');
+        },
         configure: (proxy, _options) => {
-            proxy.on('proxyRes', (_proxyRes, _req, res) => {
-                res.setHeader('Access-Control-Allow-Origin', '*');
-                res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-            });
+          proxy.on('proxyRes', (_proxyRes, _req, res) => {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+          });
         }
-      }
+      },
+
+      // All other /api/* calls go to Vercel serverless functions via vercel dev
     }
   }
 })
