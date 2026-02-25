@@ -102,8 +102,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Floating Bottom Nav - Optimized for one-hand mobile use */}
             {user && (
-                <div className="fixed bottom-8 inset-x-0 flex justify-center z-50 px-6">
-                    <nav className="w-full max-w-md glass rounded-[2.5rem] border border-white/20 dark:border-white/5 shadow-2xl shadow-black/20 flex justify-around items-center h-20 px-4">
+                <div className="fixed bottom-6 sm:bottom-8 inset-x-0 flex justify-center z-50 px-4 sm:px-6">
+                    <nav className="w-full max-w-md glass rounded-[2.5rem] border border-white/20 dark:border-white/5 shadow-2xl shadow-black/20 flex justify-between items-center h-16 sm:h-20 px-2 sm:px-4">
                         {navItems.map((item) => {
                             const isActive = location.pathname === item.path;
                             const Icon = item.icon;
@@ -113,7 +113,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                     key={item.path}
                                     to={item.path}
                                     className={cn(
-                                        "relative flex flex-col items-center justify-center h-full px-4 transition-all duration-300 rounded-2xl",
+                                        "relative flex flex-col items-center justify-center h-[90%] flex-1 transition-all duration-300 rounded-2xl",
                                         isActive ? "text-primary active:scale-95" : "text-muted-foreground hover:text-foreground active:scale-90"
                                     )}
                                 >
@@ -129,14 +129,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                     <div className="relative z-10 flex flex-col items-center justify-center">
                                         <Icon 
                                             className={cn(
-                                                "w-6 h-6 mb-1 transition-all duration-300",
+                                                "w-5 h-5 sm:w-6 sm:h-6 mb-1 transition-all duration-300",
                                                 isActive ? "scale-110 drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : ""
                                             )} 
                                             fill={isActive ? "currentColor" : "none"}
                                         />
                                         
                                         <span className={cn(
-                                            "text-[10px] font-black uppercase tracking-widest transition-opacity duration-300",
+                                            "text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest transition-opacity duration-300",
                                             isActive ? "opacity-100" : "opacity-40"
                                         )}>
                                             {item.label}

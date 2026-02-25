@@ -270,30 +270,31 @@ export const History = () => {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: idx * 0.05 }}
                                     >
-                                        <Card className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all">
-                                            <div className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${isComplete ? 'bg-primary/10 text-primary' : (log.isPaused ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500')}`}>
-                                                        {isComplete ? <Activity className="w-6 h-6" /> : (log.isPaused ? <Play className="w-6 h-6" /> : <XCircle className="w-6 h-6" />)}
+                                <Card className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all">
+                                            <div className="p-4 sm:p-5 flex flex-col gap-4">
+                                                {/* Title Row */}
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${isComplete ? 'bg-primary/10 text-primary' : (log.isPaused ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500')}`}>
+                                                        {isComplete ? <Activity className="w-5 h-5" /> : (log.isPaused ? <Play className="w-5 h-5" /> : <XCircle className="w-5 h-5" />)}
                                                     </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-lg flex items-center gap-2">
-                                                            {programTitle}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="font-bold text-base truncate flex items-center gap-2 flex-wrap">
+                                                            <span className="truncate">{programTitle}</span>
                                                             {!isComplete && !log.isPaused && (
-                                                                <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">Incomplete</span>
+                                                                <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">Incomplete</span>
                                                             )}
                                                             {!isComplete && log.isPaused && (
-                                                                <span className="text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shadow-sm shadow-yellow-500/10">Paused</span>
+                                                                <span className="text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shrink-0">Paused</span>
                                                             )}
                                                             {isComplete && (
-                                                                <span className="text-[10px] font-black tracking-widest uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-sm shadow-emerald-500/10">Completed</span>
+                                                                <span className="text-[10px] font-black tracking-widest uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">Done</span>
                                                             )}
                                                         </h4>
-                                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block mb-2">
+                                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block mt-0.5">
                                                             {format(new Date(displayDate), 'MMM do, yyyy • h:mm a')}
                                                         </span>
                                                         {displayExerciseNames && displayExerciseNames.length > 0 && (
-                                                            <div className="flex flex-wrap gap-1.5 mt-1 opacity-80">
+                                                            <div className="flex flex-wrap gap-1.5 mt-2 opacity-80">
                                                                 {displayExerciseNames.slice(0, 3).map((name: string, i: number) => (
                                                                     <span key={i} className="text-[10px] font-bold bg-white/5 border border-white/5 text-foreground/80 px-2 py-1 rounded-md">
                                                                         {name}
@@ -301,7 +302,7 @@ export const History = () => {
                                                                 ))}
                                                                 {displayExerciseNames.length > 3 && (
                                                                     <span className="text-[10px] font-bold bg-white/5 border border-white/5 text-muted-foreground px-2 py-1 rounded-md">
-                                                                        +{displayExerciseNames.length - 3} more {hasCompleted ? 'completed' : 'planned'}
+                                                                        +{displayExerciseNames.length - 3} more
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -309,52 +310,48 @@ export const History = () => {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex sm:flex-col gap-4 sm:gap-0 items-center sm:items-end w-full sm:w-auto bg-black/20 sm:bg-transparent p-3 sm:p-0 rounded-2xl sm:rounded-none relative">
+                                                {/* Stats and Actions Row */}
+                                                <div className="flex items-center justify-between gap-3 pl-[3.25rem] sm:pl-0">
                                                     <div className="flex gap-4">
-                                                        <div className="text-left sm:text-right">
+                                                        <div>
                                                             <p className="text-lg font-black italic text-primary">{(log.totalTimeSpentSec / 60).toFixed(0)}m</p>
                                                             <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Duration</p>
                                                         </div>
-                                                        <div className="w-px h-8 bg-border sm:hidden" />
-                                                        <div className="text-left sm:text-right">
+                                                        <div className="w-px bg-border" />
+                                                        <div>
                                                             <p className="text-lg font-black italic">{log.completedExerciseIds?.length || 0}</p>
-                                                            <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Movements</p>
+                                                            <p className="text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Moves</p>
                                                         </div>
                                                     </div>
 
-                                                    {!isComplete && (
-                                                        <div className="flex gap-2 mt-3 sm:mt-4">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => resumeOldWorkout(log)}
-                                                                className="h-8 pr-3 pl-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 hover:text-primary transition-colors text-xs"
-                                                                title="Resume this session exactly where you left off"
-                                                            >
-                                                                <Play className="w-3.5 h-3.5 mr-1 fill-primary/50" /> Resume
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    handleDelete(log.id);
-                                                                    startWorkout(log.programId, log.dayId, user?.id);
-                                                                }}
-                                                                className="h-8 pr-3 pl-2.5 rounded-full bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20 hover:text-orange-500 transition-colors text-xs"
-                                                                title="Restart this session from the beginning"
-                                                            >
-                                                                <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restart
-                                                            </Button>
-                                                        </div>
-                                                    )}
-
-                                                    <button
-                                                        onClick={() => handleDelete(log.id)}
-                                                        className="absolute right-3 top-3 sm:static sm:mt-3 p-2 text-muted-foreground hover:text-red-500 transition-colors bg-white/5 hover:bg-white/10 rounded-full"
-                                                        title="Delete Session"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    <div className="flex gap-2 items-center">
+                                                        {!isComplete && (
+                                                            <>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => resumeOldWorkout(log)}
+                                                                    className="h-8 pr-3 pl-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-xs"
+                                                                >
+                                                                    <Play className="w-3.5 h-3.5 mr-1 fill-primary/50" /> Resume
+                                                                </Button>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => { handleDelete(log.id); startWorkout(log.programId, log.dayId, user?.id); }}
+                                                                    className="h-8 pr-3 pl-2.5 rounded-full bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20 text-xs"
+                                                                >
+                                                                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Restart
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDelete(log.id)}
+                                                            className="p-2 text-muted-foreground hover:text-red-500 transition-colors bg-white/5 hover:bg-white/10 rounded-full"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </Card>

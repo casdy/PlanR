@@ -394,21 +394,21 @@ export const Dashboard = () => {
     }
 
     return (
-        <div className="space-y-10 pb-36">
+        <div className="space-y-6 sm:space-y-10 pb-36">
             {/* Hero Section */}
-            <header className="flex flex-col gap-2">
+            <header className="flex flex-col gap-1">
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 mb-2"
+                    className="flex items-center gap-2 mb-1"
                 >
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-500">Active Session Ready</span>
                 </motion.div>
-                <h1 className="text-4xl font-black tracking-tighter">
+                <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">
                     Hello, <span className="text-primary italic">{user.name || 'Athlete'}</span>
                 </h1>
-                <p className="text-muted-foreground text-lg font-medium">Ready to smash today's goals?</p>
+                <p className="text-muted-foreground text-base sm:text-lg font-medium">Ready to smash today's goals?</p>
             </header>
 
             {/* Primary CTA */}
@@ -421,13 +421,13 @@ export const Dashboard = () => {
             >
                 <Button 
                     variant="primary" 
-                    className="w-full h-24 rounded-[2.5rem] text-2xl font-black tracking-tight flex items-center justify-between px-8 shadow-2xl shadow-primary/30 group overflow-hidden relative"
+                    className="w-full h-[4.5rem] sm:h-24 rounded-[2rem] sm:rounded-[2.5rem] text-xl sm:text-2xl font-black tracking-tight flex items-center justify-between px-6 sm:px-8 shadow-2xl shadow-primary/30 group overflow-hidden relative"
                     onClick={() => setIsModalOpen(true)}
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
                     <span className="relative z-10">Start Today's Workout</span>
-                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:translate-x-1 transition-transform">
-                        <ArrowRight className="w-6 h-6" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                        <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     {/* Pulsing effect */}
                     <div className="absolute -inset-1 bg-primary/20 rounded-[2.6rem] blur-xl animate-pulse -z-10" />
@@ -435,34 +435,34 @@ export const Dashboard = () => {
             </motion.div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 gap-4">
-                <Card className="glass border-white/10 dark:border-white/5 rounded-[2.5rem] p-6 flex flex-col items-center justify-center gap-4 group">
-                    <ProgressRing progress={workoutsThisWeek / 5} size={100} strokeWidth={8}>
-                        <Zap className="w-6 h-6 text-primary" />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <Card className="glass border-white/10 dark:border-white/5 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-center justify-center gap-3 sm:gap-4 group">
+                    <ProgressRing progress={workoutsThisWeek / 5} size={80} strokeWidth={7}>
+                        <Zap className="w-5 h-5 text-primary" />
                     </ProgressRing>
                     <div className="text-center">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Weekly Goal</p>
-                        <h3 className="text-2xl font-black tabular-nums">{workoutsThisWeek}<span className="text-sm opacity-40 ml-1">/ 5</span></h3>
+                        <h3 className="text-xl sm:text-2xl font-black tabular-nums">{workoutsThisWeek}<span className="text-sm opacity-40 ml-1">/ 5</span></h3>
                     </div>
                 </Card>
 
-                <div className="grid grid-rows-2 gap-4">
-                    <Card className="glass border-white/10 dark:border-white/5 rounded-3xl p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-orange-500/10 text-orange-500 rounded-2xl flex items-center justify-center">
-                            <Flame className="w-6 h-6" />
+                <div className="grid grid-rows-2 gap-3 sm:gap-4">
+                    <Card className="glass border-white/10 dark:border-white/5 rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-500/10 text-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                            <Flame className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Streak</p>
-                            <h3 className="text-xl font-black tabular-nums">{streak} Days</h3>
+                            <h3 className="text-lg sm:text-xl font-black tabular-nums">{streak} Days</h3>
                         </div>
                     </Card>
-                    <Card className="glass border-white/10 dark:border-white/5 rounded-3xl p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center">
-                            <TrendingUp className="w-6 h-6" />
+                    <Card className="glass border-white/10 dark:border-white/5 rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500/10 text-emerald-500 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0">
+                            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Volume</p>
-                            <h3 className="text-xl font-black tabular-nums">{(weeklyVolume / 1000).toFixed(1)}k <span className="text-xs font-medium opacity-50">kg</span></h3>
+                            <h3 className="text-lg sm:text-xl font-black tabular-nums">{(weeklyVolume / 1000).toFixed(1)}k <span className="text-xs font-medium opacity-50">kg</span></h3>
                         </div>
                     </Card>
                 </div>
@@ -568,7 +568,7 @@ export const Dashboard = () => {
             </section>
 
             {/* Consistency Tracker */}
-            <Card className="rounded-[2.5rem] border-white/10 dark:border-white/5 glass overflow-hidden flex flex-col h-[280px]">
+            <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-white/10 dark:border-white/5 glass overflow-hidden">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
                     <div>
                         <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
@@ -581,30 +581,32 @@ export const Dashboard = () => {
                     </div>
                 </CardHeader>
                 <CardContent className="px-6 pb-6 pt-2 flex-1 flex flex-col min-h-0">
-                    <div className="w-full h-full flex-1 min-h-0 min-w-max flex gap-1.5 justify-between">
-                        {consistencyGrid.map((col, cIdx) => (
-                            <div 
-                                className="flex flex-col gap-1.5 flex-1 max-w-[12px]"
-                                key={`col-${cIdx}`}
-                            >
-                                {col.map((day, dIdx) => {
-                                    if (day.level === -1) {
-                                        return <div key={`empty-${cIdx}-${dIdx}`} className="w-full aspect-square opacity-0" />;
-                                    }
-                                    return (
-                                        <Tooltip key={`day-${cIdx}-${dIdx}`} content={
-                                            <div className="text-xs font-bold px-2 py-1">
-                                                {day.date ? format(day.date, 'MMM d, yyyy') : ''}: {day.count} workout{day.count !== 1 ? 's' : ''}
-                                            </div>
-                                        }>
-                                            <div 
-                                                className={`w-full aspect-square rounded-[4px] cursor-help transition-all hover:ring-2 hover:ring-white/40 hover:scale-[1.05] ${getHeatmapColor(day.level)}`}
-                                            />
-                                        </Tooltip>
-                                    );
-                                })}
-                            </div>
-                        ))}
+                    <div className="w-full flex-1 min-h-0 overflow-x-auto no-scrollbar pb-2">
+                        <div className="h-full min-w-max flex gap-1.5 justify-start">
+                            {consistencyGrid.map((col, cIdx) => (
+                                <div 
+                                    className="flex flex-col gap-1.5 w-3"
+                                    key={`col-${cIdx}`}
+                                >
+                                    {col.map((day, dIdx) => {
+                                        if (day.level === -1) {
+                                            return <div key={`empty-${cIdx}-${dIdx}`} className="w-full h-full bg-transparent" />;
+                                        }
+                                        return (
+                                            <Tooltip key={`day-${cIdx}-${dIdx}`} content={
+                                                <div className="text-xs font-bold px-2 py-1">
+                                                    {day.date ? format(day.date, 'MMM d, yyyy') : ''}: {day.count} workout{day.count !== 1 ? 's' : ''}
+                                                </div>
+                                            }>
+                                                <div 
+                                                    className={`w-full flex-1 aspect-square rounded-[3px] cursor-help transition-all hover:ring-2 hover:ring-white/40 hover:scale-[1.05] ${getHeatmapColor(day.level)}`}
+                                                />
+                                            </Tooltip>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
                     </div>
                     <div className="flex items-center justify-end gap-2 mt-4 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
                         <span>Less</span>
