@@ -27,15 +27,23 @@ export interface ExerciseDBItem {
 // The frontend no longer needs the API key! The proxy handles it.
 const BASE_URL = '/api/exercisedb';
 
-const formatMediaUrl = (url: string, _type: 'image' | 'video'): string => {
+const formatMediaUrl = (url: string, type: 'image' | 'video'): string => {
     if (!url) return '';
     
-    // Fully qualified HTTPS URLs (from cdn.exercisedb.dev or any other CDN)
-    // are returned as-is — the browser can load them directly.
+    // Under COEP (require-corp) all cross-origin resources must have the
+    // Cross-Origin-Resource-Policy header. CDNs don't add it, so we route
+    // their URLs through /api/cdn-proxy which adds the header server-side.
+    // This proxy works in Vite dev (via vite.config.ts server.proxy)
+    // and in Vercel dev/production (via api/cdn-proxy.js serverless fn).
+    if (url.startsWith('https://cdn.exercisedb.dev')) {
+        return url.replace('https://cdn.exercisedb.dev', '/api/cdn-proxy');
+    }
+    
+    // Other fully qualified HTTPS URLs pass through as-is
     if (url.startsWith('http')) return url;
     
     // Relative paths from AscendAPI are proxied through the serverless function
-    return `/api/exercisedb?endpoint=${url}`;
+    return `/api/exercisedb?endpoint=media/${type}s/${url}`;
 };
 
 // Helper to map AscendAPI v2 response to our expected interface
