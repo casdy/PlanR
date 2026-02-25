@@ -154,7 +154,7 @@ export const SettingsPage = () => {
     ];
 
     return (
-        <div className="space-y-8 pb-32">
+        <div className="space-y-8 pb-36">
             <header>
                 <h1 className="text-4xl font-black tracking-tighter">Settings</h1>
                 <p className="text-muted-foreground font-medium">Manage your app experience & data</p>

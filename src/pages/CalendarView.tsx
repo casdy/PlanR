@@ -80,7 +80,7 @@ export const CalendarView = () => {
     };
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-36">
             <header className="flex flex-col gap-2">
                 <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
                     <CalendarIcon className="w-8 h-8 text-primary" />

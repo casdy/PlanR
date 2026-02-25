@@ -226,8 +226,8 @@ export const ActiveWorkoutOverlay = () => {
                 className={cn(
                     "fixed z-[60] glass shadow-[0_-32px_64px_-12px_rgba(0,0,0,0.15)] overflow-hidden transition-all duration-300 flex flex-col",
                     !isMinimized 
-                        ? "inset-x-0 top-0 bottom-[120px] rounded-b-[2.5rem] border-b border-white/10 mx-0" 
-                        : "inset-x-4 h-20 bottom-[120px] rounded-[2rem] border border-border/40 ring-1 ring-white/10"
+                        ? "inset-x-0 bottom-[100px] max-h-[calc(100dvh-120px)] rounded-[2.5rem] border border-white/10 mx-2" 
+                        : "inset-x-4 h-20 bottom-[100px] rounded-[2rem] border border-border/40 ring-1 ring-white/10"
                 )}
             >
                 {/* Drag Handle — drag is ONLY on this strip so buttons below are never intercepted */}
@@ -304,7 +304,7 @@ export const ActiveWorkoutOverlay = () => {
                         </div>
 
                         {/* Expanded View Content */}
-                        <div className="p-6 pb-20 overflow-y-auto space-y-8 scroll-smooth no-scrollbar w-full flex-1">
+                        <div className="p-6 pb-8 overflow-y-auto space-y-8 scroll-smooth no-scrollbar w-full flex-1 overscroll-none">
                             {/* Media Container */}
                             {exerciseDetails && (exerciseDetails.videoUrl || exerciseDetails.gifUrl) ? (
                                 <div className="w-full aspect-square sm:aspect-video bg-white rounded-2xl shadow-md border border-black/5 overflow-hidden flex items-center justify-center p-4 relative">

@@ -32,7 +32,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <div className={cn(
-            "min-h-screen bg-background text-foreground transition-all duration-700 flex flex-col font-['Outfit']",
+            "fixed inset-0 bg-background text-foreground transition-all duration-700 font-['Outfit'] flex flex-col overflow-hidden",
             theme === 'dark' ? 'dark' : ''
         )}>
             {/* Header - Minimal and clean */}
@@ -85,8 +85,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </div>
             </header>
 
-            {/* Main Content - Mobile spacing focus */}
-            <main className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 pb-32">
+            {/* Main Content - Mobile spacing focus. Scrollable inner area */}
+            <main id="main-scroll-area" className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 pb-32 overflow-y-auto overflow-x-hidden no-scrollbar">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}

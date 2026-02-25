@@ -230,7 +230,7 @@ export const History = () => {
     const pastLogs = logs.filter(l => l.sessionId !== activeSessionId);
 
     return (
-        <div className="space-y-8 pb-24">
+        <div className="space-y-8 pb-36">
             <header>
                 <h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
                     <Activity className="w-8 h-8 text-primary" />

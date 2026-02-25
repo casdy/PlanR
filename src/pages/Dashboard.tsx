@@ -394,7 +394,7 @@ export const Dashboard = () => {
     }
 
     return (
-        <div className="space-y-10 pb-20">
+        <div className="space-y-10 pb-36">
             {/* Hero Section */}
             <header className="flex flex-col gap-2">
                 <motion.div
