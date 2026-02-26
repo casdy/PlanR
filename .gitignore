@@ -54,3 +54,6 @@ Desktop.ini
 .agent/
 
 .vercel
+
+# ─── Supabase ─────────────────────────────────────────────────────────────────
+supabase/.temp/

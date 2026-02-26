@@ -22,10 +22,8 @@ PlanR is a modern, offline-first Progressive Web App (PWA) for tracking workouts
 | **⏸️ Multi-Session Pausing** | Pause a workout and start another — all paused sessions are saved independently in the Activity Feed and resumable at any time.                         |
 | **📅 Calendar Planning**     | Schedule workouts on specific dates. The Dashboard highlights today's planned session for a one-tap start.                                              |
 | **📊 Activity Feed**         | Full chronological workout history with colour-coded badges: ✅ Completed, ⏸️ Paused, ❌ Incomplete.                                                    |
-| **🔄 Exercise Swapper**      | Replace any exercise in a saved program with alternatives from the same muscle group, powered by ExerciseDB.                                            |
-| **🏆 Achievement Badges**    | Dynamic procedural SVG achievement badges are generated after every completed workout.                                                                  |
-| **📱 PWA Ready**             | Installable on mobile and desktop for a native-like experience. Fully offline-capable data layer.                                                       |
-| **🔒 Local-First Storage**   | All workout data is stored in `localStorage` — nothing is lost on refresh. Supabase is used for authentication only.                                    |
+| **🔄 Cloud Sync**            | Background sync to Supabase for logged-in users. Data is persisted locally for offline speed and synced to the cloud for multi-device access.           |
+| **🔒 Local-First Storage**   | All workout data is stored in `localStorage` — nothing is lost on refresh.                                                                              |
 | **🌙 Dark / Light Mode**     | System-aware theme with a manual toggle, persisted across sessions.                                                                                     |
 
 ---
@@ -41,7 +39,7 @@ PlanR is a modern, offline-first Progressive Web App (PWA) for tracking workouts
 | **AI**            | Groq SDK — Llama 3 70B (routines), Llama 3 8B (transcript parsing), Whisper large-v3 (voice) |
 | **Exercise Data** | ExerciseDB via RapidAPI                                                                      |
 | **Auth**          | Supabase Auth (email/password + Google OAuth)                                                |
-| **Persistence**   | localStorage (offline-first) + Supabase (auth only)                                          |
+| **Persistence**   | localStorage (offline-first) + Supabase Cloud Sync                                           |
 | **Routing**       | React Router DOM 7                                                                           |
 | **Icons**         | Lucide React                                                                                 |
 | **Utilities**     | `date-fns`, `clsx`, `tailwind-merge`, `bcryptjs`                                             |
