@@ -18,9 +18,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing `url` query parameter' });
   }
 
-  // Only proxy URLs from the trusted CDN — reject anything else
-  if (!targetUrl.startsWith('https://cdn.exercisedb.dev/')) {
-    return res.status(403).json({ error: 'Forbidden: only cdn.exercisedb.dev URLs are allowed' });
+  // Only proxy URLs from the trusted CDNs — reject anything else
+  if (!targetUrl.startsWith('https://cdn.exercisedb.dev/') && !targetUrl.startsWith('https://v2.exercisedb.io/')) {
+    return res.status(403).json({ error: 'Forbidden: only trusted ExerciseDB CDNs are allowed' });
   }
 
   try {

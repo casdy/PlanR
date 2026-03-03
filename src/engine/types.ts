@@ -41,3 +41,9 @@ export interface EngineAdjustmentResult {
   adjustedTemplate: WorkoutTemplate;
   adjustmentsMade: string[];
 }
+
+export interface DeloadResult {
+  isDeloadRecommended: boolean;
+  fatigueLevel: 'Low' | 'Medium' | 'High';
+  reason: string;
+}

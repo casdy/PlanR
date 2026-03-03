@@ -6,12 +6,54 @@
  * start it immediately. Renders as a portal to avoid layout clipping issues.
  */
 import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { X, Calendar, Play, Loader2, Dumbbell } from 'lucide-react';
 import type { DbExercise } from '../services/wgerService';
-import { getExerciseImageUrl } from '../services/wgerService';
+import { fetchWgerMedia } from '../services/wgerService';
+
+const ModalExerciseImage = ({ exerciseName }: { exerciseName: string }) => {
+    const [mediaUrl, setMediaUrl] = useState<string>('');
+    const [isMediaLoading, setIsMediaLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        setIsMediaLoading(true);
+        setImageError(false);
+
+        fetchWgerMedia(exerciseName).then(url => {
+            if (isMounted) {
+                setMediaUrl(url);
+                setIsMediaLoading(false);
+            }
+        }).catch(() => {
+            if (isMounted) setIsMediaLoading(false);
+        });
+
+        return () => { isMounted = false; };
+    }, [exerciseName]);
+
+    if (isMediaLoading) {
+        return <Loader2 className="w-6 h-6 text-muted-foreground/30 animate-spin" />;
+    }
+
+    if (mediaUrl && !imageError) {
+        return (
+            <img 
+                src={mediaUrl} 
+                alt={exerciseName} 
+                className="w-full h-full object-contain drop-shadow-sm rounded-lg"
+                loading="lazy"
+                onError={() => setImageError(true)}
+            />
+        );
+    }
+
+    return <Dumbbell className="w-8 h-8 text-zinc-400" />;
+};
 
 interface DailyWorkoutModalProps {
     isOpen: boolean;
@@ -97,18 +139,9 @@ export const DailyWorkoutModal = ({
                                 <div className="flex gap-4 w-max h-full min-h-[280px]">
                                     {exercises.map((item, idx) => (
                                         <Card key={idx} className="p-5 bg-secondary/20 border-white/5 rounded-[2rem] flex flex-col items-center text-center gap-4 w-[240px] shrink-0 h-full">
-                                            {/* Icon/Visual */}
-                                            <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 p-4 border border-white/5 overflow-hidden">
-                                                {getExerciseImageUrl(item) ? (
-                                                    <img 
-                                                        src={getExerciseImageUrl(item)} 
-                                                        alt={item.name} 
-                                                        className="w-full h-full object-contain mix-blend-multiply rounded-xl"
-                                                        loading="lazy"
-                                                    />
-                                                ) : (
-                                                    <Dumbbell className="w-8 h-8 text-muted-foreground/50" />
-                                                )}
+                                            {/* Icon/Visual - Fixed for Light/Dark Mode */}
+                                            <div className="w-24 h-24 rounded-3xl bg-white dark:bg-zinc-200 flex items-center justify-center shrink-0 p-3 border border-border/50 shadow-inner overflow-hidden">
+                                                <ModalExerciseImage exerciseName={item.name} />
                                             </div>
                                             
                                             {/* Details */}
@@ -140,22 +173,22 @@ export const DailyWorkoutModal = ({
                             {!assignedWorkout && (
                                 <Button 
                                     variant="outline" 
-                                    className="h-14 rounded-2xl gap-2 font-bold border-white/10"
+                                    className="h-14 rounded-2xl gap-2 font-bold border-2 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground focus:ring-4 focus:ring-primary/20 transition-all active:scale-95"
                                     onClick={onSaveToCalendar}
                                     disabled={isLoading || exercises.length === 0}
                                 >
-                                    <Calendar className="w-5 h-5" />
-                                    Save to Calendar
+                                    <Calendar className="w-5 h-5 flex-shrink-0" />
+                                    <span className="truncate">Save to Calendar</span>
                                 </Button>
                             )}
                             <Button 
                                 variant="primary" 
-                                className={`h-14 rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20 ${assignedWorkout ? 'col-span-2' : ''}`}
+                                className={`h-14 rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20 hover:brightness-110 focus:ring-4 focus:ring-primary/30 transition-all active:scale-95 ${assignedWorkout ? 'col-span-2' : ''}`}
                                 onClick={onStartWorkout}
                                 disabled={isLoading || (!assignedWorkout && exercises.length === 0)}
                             >
-                                <Play className="w-5 h-5" />
-                                Start Now
+                                <Play className="w-5 h-5 flex-shrink-0 fill-current" />
+                                <span className="truncate">Start Now</span>
                             </Button>
                         </div>
                     </motion.div>

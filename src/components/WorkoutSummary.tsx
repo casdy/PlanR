@@ -120,7 +120,7 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                             ) : (
                                 <div className="flex flex-col items-center gap-5 relative w-full h-full justify-center">
                                     <div className="w-12 h-12 rounded-full border-[3px] border-[#2a2d48] border-t-[#665DDC] animate-spin" />
-                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+                                    <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
                                         Forging Achievement...
                                     </p>
                                 </div>
@@ -145,7 +145,7 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                         </div>
 
                         <button 
-                            className="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-gray-400 hover:text-gray-200 transition-colors"
+                            className="w-full flex items-center justify-center gap-2 text-[11px] font-bold text-zinc-400 hover:text-zinc-200 transition-colors"
                             onClick={() => {
                                 cancelWorkout();
                                 onRestart();

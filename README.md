@@ -15,16 +15,16 @@ PlanR is a modern, offline-first Progressive Web App (PWA) for tracking workouts
 
 ## ✨ Features
 
-| Feature                     | Description                                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **🤖 AI Workout Architect** | Generate custom workout programs from a short goal description using Groq's Llama 3 70B. Features a 24-hour persistent prompt quota. |
-| **⚙️ PlanR Engine**         | A high-performance fallback generator that builds robust workouts from your local exercise library when AI prompts are exhausted.    |
-| **📈 Adaptive Performance** | Detects fatigue patterns and high RPE sessions across 7 days to automatically suggest **Deload Adjustments** and active recovery.    |
-| **🎙️ Voice Logging**        | Dictate your sets hands-free. Groq Whisper transcribes audio and extracts reps and weight automatically.                             |
-| **🏋️ Wger Data Engine**     | Powered by the global Wger exercise database for accurate exercise names, categories, and high-quality instructional media.          |
-| **🌙 Pro-UX Dark Mode**     | Premium dark mode by default with a lightning-fast theme toggle and animated splash screen branding.                                 |
-| **📊 Activity Feed**        | Chronological workout history with color-coded status badges: ✅ Completed, ⏸️ Paused, 🧪 Progressive.                               |
-| **🛡️ Security Hardened**    | Fully audited codebase with zero hardcoded secrets, proxy-obscured API calls, and hardened `.gitignore` policies.                    |
+| Feature                     | Description                                                                                                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **🤖 AI Workout Architect** | Generate custom workout programs from a short goal description using Groq's Llama 3 70B. Features a 24-hour persistent prompt quota.                                                                              |
+| **⚙️ PlanR Engine**         | A high-performance fallback generator that builds robust workouts from your local exercise library when AI prompts are exhausted.                                                                                 |
+| **📈 Adaptive Performance** | Detects fatigue patterns and high RPE sessions across 7 days to automatically suggest **Deload Adjustments** and active recovery.                                                                                 |
+| **🎙️ Voice Logging**        | Dictate your sets hands-free. Groq Whisper transcribes audio and extracts reps and weight automatically.                                                                                                          |
+| **🏋️ Wger Data Engine**     | Powered by the global Wger exercise database for accurate exercise names, categories, and an active media-fetching system that bypasses stale caches for high-quality, proxy-secured instructional videos/images. |
+| **🌙 Pro-UX Dark Mode**     | Premium dark mode by default with a lightning-fast theme toggle and animated splash screen branding.                                                                                                              |
+| **📊 Activity Feed**        | Chronological workout history with color-coded status badges: ✅ Completed, ⏸️ Paused, 🧪 Progressive.                                                                                                            |
+| **🛡️ Security Hardened**    | Fully audited codebase with zero hardcoded secrets, CORS/COEP media proxying via Vite, and hardened `.gitignore` policies.                                                                                        |
 
 ---
 

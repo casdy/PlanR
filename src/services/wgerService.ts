@@ -43,7 +43,15 @@ export function getExerciseImageUrl(ex: DbExercise): string {
   
   if (!rawUrl) return '';
 
-  // Proxy the URL to inject Cross-Origin-Resource-Policy headers
+  // Handle Wger exercises (both relative and absolute)
+  if (rawUrl.includes('wger.de') || rawUrl.startsWith('/media/')) {
+    const imagePath = rawUrl.replace(/^https?:\/\/wger\.de/, '');
+    // Ensure it starts with a slash
+    const normalizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+    return `/api/wger-media${normalizedPath}`;
+  }
+
+  // Proxy Exercisedb URLs to inject Cross-Origin-Resource-Policy headers
   return `/api/cdn-proxy?url=${encodeURIComponent(rawUrl)}`;
 }
 

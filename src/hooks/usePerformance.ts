@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
-import type { ExerciseLog, RecoveryLog } from '../engine/types';
+import type { ExerciseLog, RecoveryLog, DeloadResult } from '../engine/types';
 import { detectDeloadTrigger } from '../engine/deloadEngine';
 
 export function usePerformance() {
@@ -76,7 +76,7 @@ export function usePerformance() {
   /**
    * Phase 1.3: Checks if the engine recommends a deload based on recent performance/recovery.
    */
-  const checkDeloadStatus = async () => {
+  const checkDeloadStatus = async (): Promise<DeloadResult> => {
     if (!user || user.id === 'guest') return { isDeloadRecommended: false, fatigueLevel: 'Low', reason: '' };
 
     try {

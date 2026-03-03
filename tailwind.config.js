@@ -8,8 +8,8 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Custom deep dark colors for "slate-950" style
-                slate: {
+                // Custom deep dark colors for "zinc-950" style
+                zinc: {
                     950: '#020617',
                 },
                 zinc: {

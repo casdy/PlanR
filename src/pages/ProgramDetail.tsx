@@ -46,7 +46,7 @@ export const ProgramDetail = () => {
         }
     }, [user, id]);
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading program...</div>;
+    if (loading) return <div className="p-8 text-center text-zinc-500">Loading program...</div>;
     if (!program) return <div className="p-8 text-center text-red-500">Program not found</div>;
 
     const handleStartWorkout = (dayId: string) => {

@@ -1,4 +1,4 @@
-import type { ExerciseLog, RecoveryLog } from './types';
+import type { ExerciseLog, RecoveryLog, DeloadResult } from './types';
 import { getBodyweightExercises, type DbExercise } from '../services/wgerService';
 
 /**
@@ -12,7 +12,7 @@ import { getBodyweightExercises, type DbExercise } from '../services/wgerService
 export function detectDeloadTrigger(
   performanceHistory: ExerciseLog[], 
   recoveryHistory: RecoveryLog[]
-) {
+): DeloadResult {
   let isDeloadRecommended = false;
   let reason = '';
   let fatigueLevel: 'Low' | 'Medium' | 'High' = 'Low';

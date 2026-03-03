@@ -134,7 +134,7 @@ export const CalendarView = () => {
                                 onClick={() => handleDateClick(day)}
                                 className={`
                                     relative h-16 lg:h-20 rounded-2xl border flex items-center justify-center cursor-pointer transition-all duration-300
-                                    ${isTodayDate ? 'border-primary/50 bg-primary/10' : 'border-white/10 dark:border-white/5 bg-white/5 dark:bg-slate-900/40 hover:bg-white/10'}
+                                    ${isTodayDate ? 'border-primary/50 bg-primary/10' : 'border-white/10 dark:border-white/5 bg-white/5 dark:bg-zinc-900/40 hover:bg-white/10'}
                                     ${isSelected ? 'ring-2 ring-primary border-transparent' : ''}
                                 `}
                             >
@@ -165,7 +165,7 @@ export const CalendarView = () => {
                             <Button 
                                 variant="ghost" 
                                 size="icon" 
-                                className="absolute right-0 top-0 rounded-full w-8 h-8 bg-gray-500/20"
+                                className="absolute right-0 top-0 rounded-full w-8 h-8 bg-zinc-500/20"
                                 onClick={() => setIsAssignModalOpen(false)}
                             >
                                 <X className="w-4 h-4" />

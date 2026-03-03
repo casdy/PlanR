@@ -9,6 +9,7 @@
 
 // Re-export the exercise-library type so consumers can import from one place.
 export type { DbExercise } from '../services/wgerService';
+export type { DeloadResult } from '../engine/types';
 
 /** Represents an authenticated or guest user of the app. */
 export interface User {

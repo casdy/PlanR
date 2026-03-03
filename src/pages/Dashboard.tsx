@@ -17,7 +17,7 @@ import { usePerformance } from '../hooks/usePerformance';
 import { ProgramService } from '../services/programService';
 import { LocalService } from '../services/localService';
 import { getExercisesByBodyPart, type DbExercise } from '../services/wgerService';
-import type { WorkoutProgram } from '../types';
+import type { WorkoutProgram, DeloadResult } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
@@ -36,7 +36,7 @@ const Tooltip = ({ children, content }: any) => {
     return (
         <div className="relative group">
             {children}
-            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity z-50 p-2 bg-black text-white text-xs rounded break-words w-max max-w-xs bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
+            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity z-50 p-2 bg-black text-white text-xs rounded break-words w-max max-w-xs bottom-full left-1/2 -tranzinc-x-1/2 mb-2 pointer-events-none">
                 {content}
             </div>
         </div>
@@ -49,7 +49,7 @@ export const Dashboard = () => {
     const { fetchRecentRecoveryLogs } = useRecovery();
     const { checkDeloadStatus } = usePerformance();
     const [recentScore, setRecentScore] = useState<number | null>(null);
-    const [fatigueInfo, setFatigueInfo] = useState<{ isDeloadRecommended: boolean, fatigueLevel: 'Low' | 'Medium' | 'High', reason: string } | null>(null);
+    const [fatigueInfo, setFatigueInfo] = useState<DeloadResult | null>(null);
     const navigate = useNavigate();
     
     const [programs, setPrograms] = useState<WorkoutProgram[]>([]);
@@ -449,7 +449,7 @@ export const Dashboard = () => {
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
                     <span className="relative z-10">Start Today's Workout</span>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:translate-x-1 transition-transform">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:tranzinc-x-1 transition-transform">
                         <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     {/* Pulsing effect */}
@@ -525,17 +525,17 @@ export const Dashboard = () => {
                                 </p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2 p-1.5 glass rounded-[1.25rem] dark:bg-zinc-950">
                             <Button 
-                                variant={trainingMode === 'casual' ? 'primary' : 'outline'} 
-                                className={cn("rounded-xl font-bold h-12", trainingMode !== 'casual' && "border-white/10")} 
+                                variant={trainingMode === 'casual' ? 'primary' : 'ghost'} 
+                                className={cn("rounded-xl font-bold h-11 transition-all", trainingMode === 'casual' ? "bg-zinc-800 text-white shadow-md border border-white/10" : "text-muted-foreground hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('casual')}
                             >
                                 Casual
                             </Button>
                             <Button 
-                                variant={trainingMode === 'serious' ? 'primary' : 'outline'} 
-                                className={cn("rounded-xl font-bold h-12 transition-all", trainingMode === 'serious' ? "bg-accent-cyan hover:bg-accent-cyan/90 text-white border-transparent" : "border-white/10 text-accent-cyan hover:bg-accent-cyan/10")} 
+                                variant={trainingMode === 'serious' ? 'primary' : 'ghost'} 
+                                className={cn("rounded-xl font-bold h-11 transition-all", trainingMode === 'serious' ? "bg-accent-cyan text-white shadow-md border-transparent" : "text-muted-foreground hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('serious')}
                             >
                                 Serious
@@ -610,7 +610,7 @@ export const Dashboard = () => {
                                     <p className="text-muted-foreground text-xs mt-1">Please try again later.</p>
                                 </div>
                             ) : isFetchingSuggestion ? (
-                                <div className="py-8 text-center bg-white/5 dark:bg-slate-900/40 rounded-3xl border border-dashed border-white/20">
+                                <div className="py-8 text-center bg-white/5 dark:bg-zinc-900/40 rounded-3xl border border-dashed border-white/20">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
                                     <p className="text-muted-foreground text-sm font-medium">Fetching expert suggestions...</p>
                                 </div>

@@ -53,16 +53,16 @@ export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
 
   if (loading) {
     return (
-      <div className={cn("relative overflow-hidden rounded-xl bg-slate-800/50 flex items-center justify-center", className)}>
-         <Loader2 className="w-6 h-6 text-slate-500 animate-spin" />
+      <div className={cn("relative overflow-hidden rounded-xl bg-zinc-800/50 flex items-center justify-center", className)}>
+         <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
       </div>
     );
   }
 
   if (!imageUrl) {
     return (
-      <div className={cn("relative overflow-hidden rounded-xl bg-slate-800 flex items-center justify-center", className)}>
-        <Dumbbell className="w-8 h-8 text-slate-500" />
+      <div className={cn("relative overflow-hidden rounded-xl bg-zinc-800 flex items-center justify-center", className)}>
+        <Dumbbell className="w-8 h-8 text-zinc-500" />
       </div>
     );
   }

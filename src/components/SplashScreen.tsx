@@ -26,7 +26,7 @@ export const SplashScreen = ({ show, message = 'INITIALISING...' }: SplashScreen
                 >
                     {/* Ambient glow background */}
                     <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+                        <div className="absolute top-1/4 left-1/2 -tranzinc-x-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
                         <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-purple-500/8 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
                     </div>
 

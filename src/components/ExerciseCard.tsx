@@ -50,7 +50,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                     e.stopPropagation();
                     setIsModalOpen(true);
                 }}
-                className="flex-shrink-0 min-w-[140px] max-w-[160px] bg-white/5 dark:bg-slate-900/40 p-4 rounded-2xl border border-white/10 dark:border-white/5 cursor-pointer hover:bg-white/10 dark:hover:bg-slate-900/60 transition-colors"
+                className="flex-shrink-0 min-w-[140px] max-w-[160px] bg-white/5 dark:bg-zinc-900/40 p-4 rounded-2xl border border-white/10 dark:border-white/5 cursor-pointer hover:bg-white/10 dark:hover:bg-zinc-900/60 transition-colors"
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
@@ -60,19 +60,19 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                     }
                 }}
             >
-                {/* Thumbnail image or fallback dumbbell */}
-                <div className="w-full aspect-square bg-white/10 dark:bg-white/5 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
+                {/* Thumbnail image or fallback dumbbell - Fixed for dark mode visibility */}
+                <div className="w-full aspect-square bg-white dark:bg-zinc-200 rounded-xl mb-3 flex items-center justify-center p-2 border border-border/50 shadow-inner overflow-hidden">
                     {isMediaLoading ? (
                         <Loader2 className="w-5 h-5 text-muted-foreground/40 animate-spin" />
                     ) : mediaUrl && !imageError ? (
                         <img
                             src={mediaUrl}
                             alt={exercise.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain drop-shadow-sm rounded-lg"
                             onError={() => setImageError(true)}
                         />
                     ) : (
-                        <Dumbbell className="w-7 h-7 text-muted-foreground/40" />
+                        <Dumbbell className="w-7 h-7 text-zinc-400" />
                     )}
                 </div>
 

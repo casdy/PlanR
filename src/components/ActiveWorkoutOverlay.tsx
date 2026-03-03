@@ -22,7 +22,7 @@ import type { WorkoutProgram, WorkoutDay } from '../types';
 import { supabase } from '../lib/supabase';
 import type { DbExercise } from '../services/wgerService';
 import { fetchWgerMedia } from '../services/wgerService';
-import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, Lightbulb, X, Dumbbell } from 'lucide-react';
+import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, X, Dumbbell } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
@@ -155,17 +155,22 @@ export const ActiveWorkoutOverlay = () => {
                 setWgerMediaUrl('');
                 
                 // Fetch details from our Supabase table
-                supabase
-                    .from('exercises')
-                    .select('*')
-                    .eq('name', exName)
-                    .single()
-                    .then(({ data, error }) => {
+                const fetchExercise = async () => {
+                    try {
+                        const { data, error } = await supabase
+                            .from('exercises')
+                            .select('*')
+                            .eq('name', exName)
+                            .single();
+                        
                         if (!error && data) {
                             setExerciseDetails(data as DbExercise);
                         }
-                    })
-                    .catch((e: Error) => console.error("Failed to load exercise info by name", e));
+                    } catch (e: any) {
+                        console.error("Failed to load exercise info by name", e);
+                    }
+                };
+                fetchExercise();
 
                 // Eagerly fetch authoritative media from Live API
                 fetchWgerMedia(exName).then(url => {
@@ -304,14 +309,14 @@ export const ActiveWorkoutOverlay = () => {
                     className="w-full h-8 pt-2 shrink-0 flex justify-center items-center cursor-grab active:cursor-grabbing active:opacity-50 select-none touch-none"
                     style={{ touchAction: 'none' }}
                 >
-                    <div className="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                    <div className="w-12 h-1.5 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
                 </motion.div>
 
                 {isMinimized ? (
                     <div className="px-6 pb-2 shrink-0 flex justify-between items-center min-h-[4rem]">
                         <div onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }} className="flex-1 cursor-pointer">
                             <h3 className="font-bold text-lg truncate pr-2">{currentExercise.name}</h3>
-                            <p className="text-sm text-gray-500">{formatTime(elapsedSeconds)} / {formatTime(timerDuration)}</p>
+                            <p className="text-sm text-zinc-500">{formatTime(elapsedSeconds)} / {formatTime(timerDuration)}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             {status === 'running' ? (
@@ -429,7 +434,7 @@ export const ActiveWorkoutOverlay = () => {
 
                             {/* Controls */}
                             <div className="grid grid-cols-4 gap-3 relative">
-                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); cancelWorkout(); }} className="flex-col h-20 gap-2 border-none bg-gray-50 dark:bg-slate-800">
+                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); cancelWorkout(); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
                                     <Square className="w-5 h-5 fill-red-500 text-red-500" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">End</span>
                                 </Button>
@@ -474,7 +479,7 @@ export const ActiveWorkoutOverlay = () => {
                                     )}
                                 </div>
 
-                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); nextExercise(day.exercises.length - 1); }} className="flex-col h-20 gap-2 border-none bg-gray-50 dark:bg-slate-800">
+                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); nextExercise(day.exercises.length - 1); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
                                     <SkipForward className="w-5 h-5 opacity-60" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Skip</span>
                                 </Button>
@@ -488,7 +493,7 @@ export const ActiveWorkoutOverlay = () => {
                                             exit={{ opacity: 0, scale: 0.9, y: 10 }}
                                             className="absolute -top-12 left-0 right-0 flex justify-center z-20 pointer-events-none"
                                         >
-                                            <div className="bg-slate-800 text-white px-4 py-2 rounded-full text-xs font-medium shadow-lg border border-slate-700 flex items-center gap-2">
+                                            <div className="bg-zinc-800 text-white px-4 py-2 rounded-full text-xs font-medium shadow-lg border border-zinc-700 flex items-center gap-2">
                                                 {voiceFeedback.includes("Logged") ? <Check className="w-3 h-3 text-emerald-400" /> : <Loader2 className="w-3 h-3 animate-spin" />}
                                                 {voiceFeedback}
                                             </div>
@@ -501,7 +506,7 @@ export const ActiveWorkoutOverlay = () => {
                             {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`]?.length > 0 && (
                                 <div className="flex flex-wrap gap-2">
                                     {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`].map((set, i) => (
-                                        <div key={i} className="bg-white/5 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-white/5">
+                                        <div key={i} className="bg-white/5 dark:bg-zinc-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-white/5">
                                             Set {i + 1}: {set.reps} × {set.weight}lbs
                                         </div>
                                     ))}

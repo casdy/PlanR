@@ -106,7 +106,7 @@ export const Login = () => {
                             {isLoading ? 'Authenticating...' : (
                                 <>
                                     Log In
-                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:tranzinc-x-1 transition-transform" />
                                 </>
                             )}
                         </Button>
@@ -134,7 +134,7 @@ export const Login = () => {
                         }}
                         disabled={isLoading}
                         variant="secondary"
-                        className="w-full h-14 rounded-2xl text-lg font-bold group bg-white text-black hover:bg-gray-100 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
+                        className="w-full h-14 rounded-2xl text-lg font-bold group bg-white text-black hover:bg-zinc-100 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
                     >
                         <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                             <path
