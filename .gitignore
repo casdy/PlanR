@@ -1,15 +1,20 @@
 # ─── Dependencies ────────────────────────────────────────────────────────────
 node_modules/
+.pnpm-store/
 
 # ─── Build Output ─────────────────────────────────────────────────────────────
 /dist
 /dist-ssr
+*.tsbuildinfo
 
 # ─── Environment / Secrets ───────────────────────────────────────────────────
 # Never commit real secrets. Keep .env.example for reference.
 .env
 .env.local
 .env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 !.env.example
 
 # ─── Logs ─────────────────────────────────────────────────────────────────────
@@ -29,13 +34,21 @@ pnpm-debug.log*
 .vite/
 .cache/
 .npm/
+.eslintcache
+.stylelintcache
 coverage/
+.next/
 
 # ─── Editor / IDE ─────────────────────────────────────────────────────────────
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
 .vscode/mcp.json
 .idea/
+*.iws
+*.iml
+*.ipr
 .DS_Store
 Thumbs.db
 *.suo
@@ -52,8 +65,14 @@ Desktop.ini
 # ─── Antigravity AI Agent ─────────────────────────────────────────────────────
 .gemini/
 .agent/
+.agents/
+brain/
+implementation_plan.md
+walkthrough.md
+task.md
 
 .vercel
 
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 supabase/.temp/
+supabase/.storage/

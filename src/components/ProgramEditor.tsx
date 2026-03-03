@@ -9,8 +9,8 @@
  */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getExercisesByTarget } from '../services/exerciseDBService';
-import type { ExerciseDBItem } from '../services/exerciseDBService';
+import { getExercisesByMuscle, getExerciseImageUrl } from '../services/wgerService';
+import type { DbExercise } from '../services/wgerService';
 import type { WorkoutProgram, Exercise } from '../types';
 import { ProgramService } from '../services/programService';
 import { Card } from './ui/Card';
@@ -25,7 +25,7 @@ interface ProgramEditorProps {
 export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
     const [swapModalOpen, setSwapModalOpen] = useState(false);
     const [loadingAlternatives, setLoadingAlternatives] = useState(false);
-    const [alternatives, setAlternatives] = useState<ExerciseDBItem[]>([]);
+    const [alternatives, setAlternatives] = useState<DbExercise[]>([]);
     const [targetExercise, setTargetExercise] = useState<{ dayId: string; exIndex: number; exId: string; muscle: string } | null>(null);
 
     // Hardcode a default muscle map for our default exercises if we can't infer it.
@@ -50,7 +50,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
         setLoadingAlternatives(true);
 
         try {
-            const results = await getExercisesByTarget(target);
+            const results = await getExercisesByMuscle(target);
             // Filter out the exact same exercise, grab 3
             const filtered = results.filter(e => e.name.toLowerCase() !== currentExercise.name.toLowerCase()).slice(0, 3);
             setAlternatives(filtered);
@@ -61,7 +61,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
         }
     };
 
-    const handleConfirmSwap = async (newApiEx: ExerciseDBItem) => {
+    const handleConfirmSwap = async (newApiEx: DbExercise) => {
         if (!targetExercise) return;
 
         // Clone deeply
@@ -168,9 +168,9 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                                                 <Card key={i} className="rounded-2xl border-white/10 dark:border-white/5 bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer overflow-hidden p-0" onClick={() => handleConfirmSwap(alt)}>
                                                     <div className="flex gap-4 items-center">
                                                         <div className="w-24 h-24 bg-white/5 flex items-center justify-center shrink-0">
-                                                                {alt.gifUrl ? (
+                                                                {getExerciseImageUrl(alt) ? (
                                                                     <img 
-                                                                        src={alt.gifUrl} 
+                                                                        src={getExerciseImageUrl(alt)} 
                                                                         alt={alt.name} 
                                                                         className="w-full h-full object-cover mix-blend-multiply" 
                                                                         loading="lazy" 
@@ -180,13 +180,13 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                                                                         }}
                                                                     />
                                                                 ) : null}
-                                                                <Dumbbell className="w-8 h-8 text-primary fallback-icon" style={{ display: alt.gifUrl ? 'none' : 'block' }} />
+                                                                <Dumbbell className="w-8 h-8 text-primary fallback-icon" style={{ display: getExerciseImageUrl(alt) ? 'none' : 'block' }} />
                                                         </div>
                                                         <div className="flex-1 min-w-0 py-3 pr-4">
                                                             <p className="font-bold text-sm truncate">{alt.name}</p>
                                                             <div className="flex gap-2 text-[10px] uppercase font-black text-muted-foreground mt-1">
-                                                                <span className="bg-background px-2 py-0.5 rounded-full">{alt.target}</span>
-                                                                <span className="bg-background px-2 py-0.5 rounded-full truncate">{alt.equipment.replace('_', ' ')}</span>
+                                                                <span className="bg-background px-2 py-0.5 rounded-full">{alt.target || targetExercise?.muscle}</span>
+                                                                <span className="bg-background px-2 py-0.5 rounded-full truncate">{(alt.equipment || 'bodyweight').replace('_', ' ')}</span>
                                                             </div>
                                                         </div>
                                                     </div>

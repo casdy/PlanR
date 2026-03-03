@@ -7,6 +7,9 @@
  * services, and stores import from here to ensure consistency.
  */
 
+// Re-export the exercise-library type so consumers can import from one place.
+export type { DbExercise } from '../services/wgerService';
+
 /** Represents an authenticated or guest user of the app. */
 export interface User {
   id: string;
@@ -29,6 +32,11 @@ export interface UserProfile {
     activeProgramId: string;
     timerDuration: number;
   };
+  /** Adaptive Performance Engine fields */
+  training_mode?: 'casual' | 'serious';
+  experience_level?: 'beginner' | 'intermediate' | 'advanced';
+  mev_multiplier?: number;
+  mrv_multiplier?: number;
   createdAt: Date;
 }
 

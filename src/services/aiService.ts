@@ -11,7 +11,7 @@
  */
 import { groqService } from './groqService';
 import { quotaService } from './quotaService';
-import { getExercisesByBodyPart } from './exerciseDBService';
+import { getExercisesByBodyPart } from './wgerService';
 import type { WorkoutProgram } from '../types';
 
 // Body-part keyword detection for ExerciseDB fallback
@@ -47,7 +47,7 @@ async function buildProgramFromExerciseDB(goal: string): Promise<WorkoutProgram>
         id: crypto.randomUUID(),
         userId: 'generated',
         title: `${bodyPart.replace(/(^\w|\s\w)/g, m => m.toUpperCase())} Focus`,
-        description: `AI quota reached. Auto-generated ${bodyPart} workout via ExerciseDB.`,
+        description: `AI quota reached. Auto-generated ${bodyPart} workout via the PlanR Engine.`,
         icon: 'flame',
         colorTheme: 'orange',
         version: 1,

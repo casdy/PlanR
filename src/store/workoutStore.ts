@@ -20,6 +20,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { LocalService } from '../services/localService';
+import { supabase } from '../lib/supabase';
 import type { WorkoutLog } from '../types';
 
 type WorkoutStatus = 'idle' | 'running' | 'paused' | 'finished';
@@ -64,8 +65,8 @@ interface WorkoutState {
     resetTimer: () => void;
 
     // AI/Voice logging
-    exerciseLogs: Record<string, { reps?: number, weight?: number }[]>;
-    logExerciseSet: (programId: string, dayId: string, exerciseIndex: number, reps: number, weight: number) => void;
+    exerciseLogs: Record<string, { reps?: number, weight?: number, rpe?: number, name?: string }[]>;
+    logExerciseSet: (programId: string, dayId: string, exerciseIndex: number, reps: number, weight: number, rpe?: number, exerciseName?: string) => void;
     
     // Achievement badges
     lastBadgeUrl: string | null;
@@ -186,12 +187,36 @@ export const useWorkoutStore = create<WorkoutState>()(
                 let totalVolume = 0;
                 let exerciseCount = 0;
                 
-                Object.values(exerciseLogs).forEach(sets => {
+                const dbLogs: any[] = [];
+                Object.entries(exerciseLogs).forEach(([key, sets]) => {
+                    const [_prog, _day, exIdxStr] = key.split('-');
+                    const exIdx = parseInt(exIdxStr, 10);
+                    // We need the exercise ID. Since we only have index, we'd need to fetch the program.
+                    // For simplicity in Phase 1 without restructuring, we save the program/day/idx data,
+                    // but ideally we'd pass the actual exercise ID during logExerciseSet.
+                    // We will save using a composite ID or let the backend know.
                     if (sets.length > 0) exerciseCount++;
                     sets.forEach(set => {
                         totalVolume += (set.reps || 0) * (set.weight || 0);
+                        if (userId && userId !== 'guest') {
+                            dbLogs.push({
+                                user_id: userId,
+                                exercise_id: set.name || `prog_${_prog}_idx_${exIdx}`, // Use name for APE matching
+                                weight: set.weight || 0,
+                                reps: set.reps || 0,
+                                sets: 1, // each entry is 1 set
+                                rpe: set.rpe, // V1.2 Intelligent Progression
+                                performed_at: new Date().toISOString()
+                            });
+                        }
                     });
                 });
+                
+                if (dbLogs.length > 0) {
+                    supabase.from('exercise_logs').insert(dbLogs).then(({error}) => {
+                        if (error) console.error("Failed to push exercise_logs to Supabase APE:", error);
+                    });
+                }
 
                 const streak = await LocalService.getCurrentStreak(userId);
                 let title = "BEAST MODE";
@@ -308,10 +333,11 @@ export const useWorkoutStore = create<WorkoutState>()(
             resetTimer: () => set({ elapsedSeconds: 0 }),
 
             exerciseLogs: {},
-            logExerciseSet: (programId, dayId, exerciseIndex, reps, weight) => {
+            logExerciseSet: (programId, dayId, exerciseIndex, reps, weight, rpe, exerciseName) => {
                 // Input validation: ensure no negative reps or weights
                 const validReps = Math.max(0, reps);
                 const validWeight = Math.max(0, weight);
+                const validRpe = rpe !== undefined ? Math.max(1, Math.min(10, rpe)) : undefined;
                 
                 const key = `${programId}-${dayId}-${exerciseIndex}`;
                 set((state) => {
@@ -319,7 +345,7 @@ export const useWorkoutStore = create<WorkoutState>()(
                     return {
                         exerciseLogs: {
                             ...state.exerciseLogs,
-                            [key]: [...currentLogs, { reps: validReps, weight: validWeight }]
+                            [key]: [...currentLogs, { reps: validReps, weight: validWeight, rpe: validRpe, name: exerciseName }]
                         }
                     };
                 });

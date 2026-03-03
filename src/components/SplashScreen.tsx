@@ -7,21 +7,22 @@
  * the component handles its own enter/exit animation via Framer Motion.
  */
 import { motion, AnimatePresence } from 'framer-motion';
+import { Dumbbell } from 'lucide-react';
 
 interface SplashScreenProps {
     show: boolean;
     message?: string;
 }
 
-export const SplashScreen = ({ show, message = 'Loading...' }: SplashScreenProps) => {
+export const SplashScreen = ({ show, message = 'INITIALISING...' }: SplashScreenProps) => {
     return (
         <AnimatePresence>
             {show && (
                 <motion.div
                     initial={{ opacity: 1 }}
-                    exit={{ opacity: 0, scale: 1.05 }}
-                    transition={{ duration: 0.5, ease: 'easeInOut' }}
-                    className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-background overflow-hidden"
+                    exit={{ opacity: 0, scale: 1.02, filter: 'blur(15px)' }}
+                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#09090b] text-white overflow-hidden"
                 >
                     {/* Ambient glow background */}
                     <div className="absolute inset-0 pointer-events-none">
@@ -39,19 +40,7 @@ export const SplashScreen = ({ show, message = 'Loading...' }: SplashScreenProps
                         {/* Outer glow ring */}
                         <div className="absolute inset-0 rounded-[2.5rem] bg-primary/20 blur-xl scale-110 animate-pulse" />
                         <div className="relative w-24 h-24 rounded-[2rem] bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl shadow-primary/40">
-                            <svg
-                                viewBox="0 0 48 48"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-12 h-12 text-white"
-                            >
-                                {/* Dumbbell icon */}
-                                <rect x="4" y="21" width="8" height="6" rx="2" fill="currentColor" />
-                                <rect x="36" y="21" width="8" height="6" rx="2" fill="currentColor" />
-                                <rect x="10" y="17" width="6" height="14" rx="2" fill="currentColor" />
-                                <rect x="32" y="17" width="6" height="14" rx="2" fill="currentColor" />
-                                <rect x="16" y="22" width="16" height="4" rx="2" fill="currentColor" />
-                            </svg>
+                                <Dumbbell className="w-12 h-12 text-white" />
                         </div>
                     </motion.div>
 
@@ -65,7 +54,7 @@ export const SplashScreen = ({ show, message = 'Loading...' }: SplashScreenProps
                         <h1 className="text-5xl font-black tracking-tighter mb-1">
                             Plan<span className="text-primary italic">R</span>
                         </h1>
-                        <p className="text-muted-foreground text-sm font-medium tracking-widest uppercase">
+                        <p className="text-white/50 text-sm font-medium tracking-widest uppercase">
                             Your Fitness OS
                         </p>
                     </motion.div>
@@ -96,7 +85,7 @@ export const SplashScreen = ({ show, message = 'Loading...' }: SplashScreenProps
                                 />
                             ))}
                         </div>
-                        <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em]">
+                        <p className="text-xs text-white/50 font-bold uppercase tracking-[0.2em]">
                             {message}
                         </p>
                     </motion.div>

@@ -2,42 +2,49 @@
  * @file src/components/ExerciseCard.tsx
  * @description Card UI for displaying a single exercise suggestion on the Dashboard.
  *
- * Shows the exercise name, body part, equipment, and a GIF demo fetched from
- * ExerciseDB. Tapping the card expands a detail panel with step-by-step instructions.
+ * Shows the exercise name, category, equipment, and a demo image/gif.
+ * Tapping the card expands a detail panel with step-by-step instructions
+ * and the exercise description — all sourced from the Supabase `exercises` table.
  */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, X, Dumbbell, Loader2 } from 'lucide-react';
+import { X, Dumbbell, Loader2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { createPortal } from 'react-dom';
-import { getExerciseDetails } from '../services/exerciseDBService';
-import type { ExerciseDBItem } from '../services/exerciseDBService';
+import type { DbExercise } from '../services/wgerService';
+import { fetchWgerMedia } from '../services/wgerService';
 
 interface ExerciseCardProps {
-    exercise: ExerciseDBItem;
-    iconUrl?: string | null;
+    exercise: DbExercise;
 }
 
-export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) => {
+export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [detailedExercise, setDetailedExercise] = useState<ExerciseDBItem>(exercise);
-    const [loadingDetails, setLoadingDetails] = useState(false);
     const [imageError, setImageError] = useState(false);
+    const [mediaUrl, setMediaUrl] = useState<string>('');
+    const [isMediaLoading, setIsMediaLoading] = useState(true);
 
     useEffect(() => {
-        if (isModalOpen && (!detailedExercise.videoUrl || detailedExercise.instructions.length === 0)) {
-            setLoadingDetails(true);
-            getExerciseDetails(exercise.id)
-                .then(details => setDetailedExercise(details))
-                .catch(err => console.error("Failed to load details", err))
-                .finally(() => setLoadingDetails(false));
-        }
-    }, [isModalOpen, exercise.id]);
+        let isMounted = true;
+        setIsMediaLoading(true);
+        setImageError(false);
+
+        fetchWgerMedia(exercise.name).then(url => {
+            if (isMounted) {
+                setMediaUrl(url);
+                setIsMediaLoading(false);
+            }
+        }).catch(() => {
+            if (isMounted) setIsMediaLoading(false);
+        });
+
+        return () => { isMounted = false; };
+    }, [exercise.name]);
 
     return (
         <>
-            {/* Default Clean UI View (SVG) */}
-            <div 
+            {/* Compact card shown in the horizontal scroll strip */}
+            <div
                 onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -53,24 +60,30 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
                     }
                 }}
             >
-                {iconUrl ? (
-                    <div className="w-12 h-12 bg-white/10 dark:bg-white/5 rounded-xl mb-3 flex items-center justify-center p-2">
-                        <img 
-                            src={iconUrl} 
-                            alt={exercise.name} 
-                            className="w-full h-full object-contain filter invert opacity-80" 
+                {/* Thumbnail image or fallback dumbbell */}
+                <div className="w-full aspect-square bg-white/10 dark:bg-white/5 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
+                    {isMediaLoading ? (
+                        <Loader2 className="w-5 h-5 text-muted-foreground/40 animate-spin" />
+                    ) : mediaUrl && !imageError ? (
+                        <img
+                            src={mediaUrl}
+                            alt={exercise.name}
+                            className="w-full h-full object-cover"
+                            onError={() => setImageError(true)}
                         />
-                    </div>
-                ) : (
-                    <div className="w-12 h-12 bg-white/10 dark:bg-white/5 rounded-xl mb-3 flex items-center justify-center">
-                        <Activity className="w-6 h-6 text-muted-foreground/50" />
-                    </div>
-                )}
-                
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">{exercise.target}</p>
+                    ) : (
+                        <Dumbbell className="w-7 h-7 text-muted-foreground/40" />
+                    )}
+                </div>
+
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 truncate">
+                    {exercise.category || exercise.target || 'Exercise'}
+                </p>
                 <p className="text-sm font-bold truncate leading-tight mb-2">{exercise.name}</p>
                 <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/60">
-                    <span className="bg-white/5 px-2 py-0.5 rounded-full capitalize">{exercise.equipment.replace('_', ' ')}</span>
+                    <span className="bg-white/5 px-2 py-0.5 rounded-full capitalize">
+                        {(exercise.equipment || 'bodyweight').replace(/_/g, ' ')}
+                    </span>
                 </div>
             </div>
 
@@ -101,18 +114,27 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
                                 <div className="pr-4">
                                     <h3 className="text-2xl font-black capitalize leading-tight">{exercise.name}</h3>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                        <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
-                                            {exercise.target}
-                                        </span>
-                                        <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                                            {exercise.equipment.replace('_', ' ')}
-                                        </span>
+                                        {(exercise.category || exercise.target) && (
+                                            <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
+                                                {exercise.category || exercise.target}
+                                            </span>
+                                        )}
+                                        {exercise.equipment && (
+                                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
+                                                {exercise.equipment.replace(/_/g, ' ')}
+                                            </span>
+                                        )}
+                                        {exercise.muscles?.map(m => (
+                                            <span key={m} className="text-[10px] uppercase font-black tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full">
+                                                {m}
+                                            </span>
+                                        ))}
                                     </div>
                                 </div>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="rounded-full bg-secondary/50 hover:bg-secondary shrink-0" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="rounded-full bg-secondary/50 hover:bg-secondary shrink-0"
                                     onClick={() => setIsModalOpen(false)}
                                 >
                                     <X className="w-5 h-5" />
@@ -121,28 +143,17 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
 
                             {/* Modal Body */}
                             <div className="p-6 overflow-y-auto space-y-8 scroll-smooth no-scrollbar">
-                                {/* GIF/Video Container */}
+                                {/* Media: wger live API image */}
                                 <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl shadow-md border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
-                                    {loadingDetails && (
+                                    {isMediaLoading ? (
                                         <div className="absolute inset-0 bg-zinc-100/80 dark:bg-zinc-800/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-opacity">
                                             <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Loading Media...</span>
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Loading Wger Media...</span>
                                         </div>
-                                    )}
-                                    {detailedExercise.videoUrl ? (
-                                        <video 
-                                            key={detailedExercise.videoUrl}
-                                            src={detailedExercise.videoUrl} 
-                                            className="w-full h-full object-contain transition-transform duration-500"
-                                            autoPlay
-                                            loop
-                                            muted
-                                            playsInline
-                                        />
-                                    ) : detailedExercise.gifUrl && !imageError ? (
-                                        <img 
-                                            src={detailedExercise.gifUrl} 
-                                            alt={`Demonstration of ${detailedExercise.name}`} 
+                                    ) : mediaUrl && !imageError ? (
+                                        <img
+                                            src={mediaUrl}
+                                            alt={`Demonstration of ${exercise.name}`}
                                             className="w-full h-full object-contain"
                                             loading="lazy"
                                             onError={() => setImageError(true)}
@@ -150,15 +161,27 @@ export const ExerciseCard = ({ exercise, iconUrl = null }: ExerciseCardProps) =>
                                     ) : (
                                         <div className="flex flex-col items-center text-muted-foreground/40">
                                             <Dumbbell className="w-16 h-16 mb-2" />
-                                            <span className="text-sm font-bold uppercase tracking-widest">No Video Available</span>
+                                            <span className="text-sm font-bold uppercase tracking-widest">No Image Available</span>
                                         </div>
                                     )}
                                 </div>
-                                {detailedExercise.instructions && detailedExercise.instructions.length > 0 && (
+
+                                {/* Description (wger exercises) */}
+                                {exercise.description && (
+                                    <div className="space-y-2">
+                                        <h4 className="text-lg font-black tracking-tight">About</h4>
+                                        <p className="text-sm text-foreground/70 leading-relaxed font-medium whitespace-pre-line">
+                                            {exercise.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Instructions (ExerciseDB exercises) */}
+                                {exercise.instructions && exercise.instructions.length > 0 && (
                                     <div className="space-y-4 relative">
                                         <h4 className="text-lg font-black tracking-tight">Instructions</h4>
                                         <ol className="space-y-4">
-                                            {detailedExercise.instructions.map((step, index) => (
+                                            {exercise.instructions.map((step, index) => (
                                                 <li key={index} className="flex gap-4">
                                                     <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-black shrink-0 mt-0.5">
                                                         {index + 1}

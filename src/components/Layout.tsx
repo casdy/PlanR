@@ -32,7 +32,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-background text-foreground transition-all duration-700 font-['Outfit'] flex flex-col overflow-hidden",
+            "fixed inset-0 bg-background text-foreground font-['Outfit'] flex flex-col overflow-hidden",
             theme === 'dark' ? 'dark' : ''
         )}>
             {/* Header - Minimal and clean */}
@@ -61,7 +61,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
                         {!authLoading && (
                             user ? (
-                                <div className="flex items-center gap-2">
+                                <Link to="/settings" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/30 border border-white/5">
                                         {user.isGuest ? (
                                             <Ghost className="w-4 h-4 text-muted-foreground" />
@@ -72,7 +72,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                             {user.isGuest ? 'Guest User' : (user.name || 'Athlete')}
                                         </span>
                                     </div>
-                                </div>
+                                </Link>
                             ) : (
                                 <Link to="/login">
                                     <Button size="sm" className="rounded-2xl px-5">
@@ -90,10 +90,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -15 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        exit={{ opacity: 0, y: 5 }}
+                        transition={{ duration: 0.40, ease: "easeOut" }}
                     >
                         {children}
                     </motion.div>

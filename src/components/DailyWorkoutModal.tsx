@@ -10,12 +10,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { X, Calendar, Play, Loader2, Dumbbell } from 'lucide-react';
-import type { ExerciseDBItem } from '../services/exerciseDBService';
+import type { DbExercise } from '../services/wgerService';
+import { getExerciseImageUrl } from '../services/wgerService';
 
 interface DailyWorkoutModalProps {
     isOpen: boolean;
     onClose: () => void;
-    exercises: ExerciseDBItem[];
+    exercises: DbExercise[];
     targetMuscle: string;
     onStartWorkout: () => void;
     onSaveToCalendar: () => void;
@@ -98,9 +99,9 @@ export const DailyWorkoutModal = ({
                                         <Card key={idx} className="p-5 bg-secondary/20 border-white/5 rounded-[2rem] flex flex-col items-center text-center gap-4 w-[240px] shrink-0 h-full">
                                             {/* Icon/Visual */}
                                             <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center shrink-0 p-4 border border-white/5 overflow-hidden">
-                                                {item.gifUrl ? (
+                                                {getExerciseImageUrl(item) ? (
                                                     <img 
-                                                        src={item.gifUrl} 
+                                                        src={getExerciseImageUrl(item)} 
                                                         alt={item.name} 
                                                         className="w-full h-full object-contain mix-blend-multiply rounded-xl"
                                                         loading="lazy"
@@ -118,7 +119,7 @@ export const DailyWorkoutModal = ({
                                                         {item.target}
                                                     </span>
                                                     <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full truncate max-w-full">
-                                                        {item.equipment.replace('_', ' ')}
+                                                        {(item.equipment || 'bodyweight').replace('_', ' ')}
                                                     </span>
                                                 </div>
                                             </div>

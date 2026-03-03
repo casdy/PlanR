@@ -11,7 +11,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Dumbbell, Loader2 } from 'lucide-react';
-import { getExerciseByName } from '../services/exerciseDBService';
+import { fetchWgerMedia } from '../services/wgerService';
 import { cn } from '../lib/utils';
 
 interface ExerciseImageProps {
@@ -31,15 +31,15 @@ export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
     }
 
     setLoading(true);
-    getExerciseByName(exerciseName)
-      .then((exercise) => {
+    fetchWgerMedia(exerciseName)
+      .then((url) => {
         if (isMounted) {
-          setImageUrl(exercise?.gifUrl || null);
+          setImageUrl(url || null);
           setLoading(false);
         }
       })
       .catch((err) => {
-        console.error("Failed to load exercise image", err);
+        console.error("Failed to load Wger exercise image", err);
         if (isMounted) {
           setImageUrl(null);
           setLoading(false);

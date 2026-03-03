@@ -19,8 +19,9 @@ import { useWorkoutStore } from '../store/workoutStore';
 import { useAuth } from '../hooks/useAuth';
 import { ProgramService } from '../services/programService';
 import type { WorkoutProgram, WorkoutDay } from '../types';
-import type { ExerciseDBItem } from '../services/exerciseDBService';
-import { getExerciseByName } from '../services/exerciseDBService';
+import { supabase } from '../lib/supabase';
+import type { DbExercise } from '../services/wgerService';
+import { fetchWgerMedia } from '../services/wgerService';
 import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, Lightbulb, X, Dumbbell } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -28,6 +29,10 @@ import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
 import { aiService } from '../services/aiService';
 import { groqService } from '../services/groqService';
 import { LocalService } from '../services/localService';
+import { useTrainingMode } from '../hooks/useTrainingMode';
+import { usePerformance } from '../hooks/usePerformance';
+import { adjustProgram } from '../engine/progressionEngine';
+import type { WorkoutTemplate } from '../engine/types';
 
 
 // Helper to format time properties
@@ -52,11 +57,17 @@ export const ActiveWorkoutOverlay = () => {
     const { user } = useAuth();
     const [program, setProgram] = React.useState<WorkoutProgram | null>(null);
     const [day, setDay] = React.useState<WorkoutDay | null>(null);
-    const [exerciseDetails, setExerciseDetails] = React.useState<ExerciseDBItem | null>(null);
+    const [exerciseDetails, setExerciseDetails] = React.useState<DbExercise | null>(null);
+    const [wgerMediaUrl, setWgerMediaUrl] = React.useState<string>('');
     const location = useLocation();
 
     // Keep track of the previous pathname to detect actual navigation events after starting
     const [lastPath, setLastPath] = React.useState(location.pathname);
+
+    // Adaptive Performance Engine specific states
+    const { trainingMode } = useTrainingMode();
+    const { fetchPerformanceHistory } = usePerformance();
+    const [currentRpe, setCurrentRpe] = React.useState<number>(8);
 
     // Handle Route Changes & Maximization Rules
     useEffect(() => {
@@ -87,16 +98,53 @@ export const ActiveWorkoutOverlay = () => {
                     progs = LocalService.getUserPrograms();
                 }
 
-                const p = progs.find(p => p.id === activeProgramId);
+                const p = progs.find(prog => prog.id === activeProgramId);
                 if (p) {
                     setProgram(p);
-                    const d = p.schedule.find(d => d.id === activeDayId);
-                    if (d) setDay(d);
+                    const d = p.schedule.find(dayProg => dayProg.id === activeDayId);
+                    if (d) {
+                        // Apply engine adjustments before setting into active state
+                        if (user && user.id !== 'guest') {
+                            const history = await fetchPerformanceHistory();
+                            
+                            // Transform for engine representation
+                            const template: WorkoutTemplate = {
+                                id: d.id,
+                                title: d.title,
+                                exercises: d.exercises.map(ex => ({
+                                    id: ex.name, // Engine keys off of exercise_id (using name for V1)
+                                    name: ex.name,
+                                    targetSets: ex.targetSets,
+                                    targetReps: ex.targetReps,
+                                    rpeTarget: undefined
+                                }))
+                            };
+
+                            const { adjustedTemplate } = adjustProgram(template, history, trainingMode);
+                            
+                            // Map adjustments back to the WorkoutDay format
+                            const adjustedDay: WorkoutDay = {
+                                ...d,
+                                exercises: d.exercises.map((ex, i) => {
+                                    const adj = adjustedTemplate.exercises[i];
+                                    return {
+                                        ...ex,
+                                        targetSets: adj.targetSets,
+                                        notes: adj.targetWeight ? `Target Weight: ${adj.targetWeight}lbs. ${ex.notes || ''}` : ex.notes
+                                    };
+                                })
+                            };
+                            setDay(adjustedDay);
+                        } else {
+                            // Guest mode retains original program layout
+                            setDay(d);
+                        }
+                    }
                 }
             }
         }
         load();
-    }, [activeProgramId, activeDayId, user]);
+    }, [activeProgramId, activeDayId, user, trainingMode]);
 
     // Fetch rich exercise details for the active screen
     useEffect(() => {
@@ -104,13 +152,25 @@ export const ActiveWorkoutOverlay = () => {
             const exName = day.exercises[activeExerciseIndex]?.name;
             if (exName) {
                 setExerciseDetails(null);
-                getExerciseByName(exName)
-                    .then((data: ExerciseDBItem | null) => {
-                        if (data) {
-                            setExerciseDetails(data);
+                setWgerMediaUrl('');
+                
+                // Fetch details from our Supabase table
+                supabase
+                    .from('exercises')
+                    .select('*')
+                    .eq('name', exName)
+                    .single()
+                    .then(({ data, error }) => {
+                        if (!error && data) {
+                            setExerciseDetails(data as DbExercise);
                         }
                     })
                     .catch((e: Error) => console.error("Failed to load exercise info by name", e));
+
+                // Eagerly fetch authoritative media from Live API
+                fetchWgerMedia(exName).then(url => {
+                    if (url) setWgerMediaUrl(url);
+                });
             }
         }
     }, [day, activeExerciseIndex]);
@@ -180,7 +240,8 @@ export const ActiveWorkoutOverlay = () => {
                     
                     const result = await aiService.parseWorkoutTranscript(transcription.text);
                     if (result && (result.reps > 0 || result.weight > 0)) {
-                        logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight);
+                        const exName = day?.exercises[activeExerciseIndex]?.name;
+                        logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight, currentRpe, exName);
                         if (day?.exercises[activeExerciseIndex]) {
                             const ex = day.exercises[activeExerciseIndex];
                             markExerciseCompleted(ex.id, ex.name);
@@ -201,7 +262,7 @@ export const ActiveWorkoutOverlay = () => {
             }
         }
         processAudio();
-    }, [audioBlob, activeProgramId, activeDayId, activeExerciseIndex, logExerciseSet]);
+    }, [audioBlob, activeProgramId, activeDayId, activeExerciseIndex, logExerciseSet, currentRpe]);
 
 
     if (status === 'idle' || status === 'finished' || !day || !program) return null;
@@ -306,33 +367,28 @@ export const ActiveWorkoutOverlay = () => {
                         {/* Expanded View Content */}
                         <div className="p-6 pb-8 overflow-y-auto space-y-8 scroll-smooth no-scrollbar w-full flex-1 overscroll-none">
                             {/* Media Container */}
-                            {exerciseDetails && (exerciseDetails.videoUrl || exerciseDetails.gifUrl) ? (
-                                <div className="w-full aspect-square sm:aspect-video bg-white rounded-2xl shadow-md border border-black/5 overflow-hidden flex items-center justify-center p-4 relative">
-                                    {exerciseDetails.videoUrl ? (
-                                        <video 
-                                            key={exerciseDetails.videoUrl} 
-                                            src={exerciseDetails.videoUrl} 
-                                            className="w-full h-full object-contain mix-blend-multiply"
-                                            autoPlay 
-                                            loop 
-                                            muted 
-                                            playsInline 
-                                        />
-                                    ) : (
-                                        <img 
-                                            src={exerciseDetails.gifUrl} 
-                                            alt={exerciseDetails.name} 
-                                            className="w-full h-full object-contain mix-blend-multiply" 
-                                            loading="lazy" 
-                                        />
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="w-full aspect-square sm:aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-muted-foreground/40 border border-white/5">
-                                    <Dumbbell className="w-16 h-16 mb-2" />
-                                    <span className="text-sm font-bold uppercase tracking-widest">No Media Available</span>
-                                </div>
-                            )}
+                            <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl shadow-md border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
+                                {wgerMediaUrl ? (
+                                    <img 
+                                        src={wgerMediaUrl} 
+                                        alt={currentExercise.name} 
+                                        className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" 
+                                        loading="lazy" 
+                                    />
+                                ) : exerciseDetails?.gif_url ? (
+                                    <img 
+                                        src={exerciseDetails.gif_url.startsWith('http') ? `/api/cdn-proxy?url=${encodeURIComponent(exerciseDetails.gif_url)}` : exerciseDetails.gif_url} 
+                                        alt={currentExercise.name} 
+                                        className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" 
+                                        loading="lazy" 
+                                    />
+                                ) : (
+                                    <div className="w-full aspect-square sm:aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-muted-foreground/40 border border-white/5">
+                                        <Dumbbell className="w-16 h-16 mb-2" />
+                                        <span className="text-sm font-bold uppercase tracking-widest">No Media Available</span>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Timer Display */}
                             <div className="flex flex-col items-center justify-center py-2">
@@ -341,6 +397,33 @@ export const ActiveWorkoutOverlay = () => {
                                 </div>
                                 <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
                                     TARGET: {formatTime(timerDuration)}
+                                </div>
+                            </div>
+                            
+                            {/* RPE Slider */}
+                            <div className="py-2 space-y-3">
+                                <div className="flex justify-between items-end px-1">
+                                    <div>
+                                        <label className="text-sm font-black tracking-tight block">RPE</label>
+                                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Rate of Perceived Exertion</span>
+                                    </div>
+                                    <span className={cn(
+                                        "text-2xl font-black",
+                                        currentRpe >= 9 ? "text-red-500" : currentRpe >= 7 ? "text-amber-500" : "text-emerald-500"
+                                    )}>{currentRpe}</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="1" 
+                                    max="10" 
+                                    step="0.5"
+                                    value={currentRpe} 
+                                    onChange={(e) => setCurrentRpe(parseFloat(e.target.value))}
+                                    className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                                />
+                                <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">
+                                    <span>1 (Easy)</span>
+                                    <span>10 (Max Effort)</span>
                                 </div>
                             </div>
 
@@ -444,18 +527,15 @@ export const ActiveWorkoutOverlay = () => {
                                 </div>
                             )}
 
-                            {/* Overview / Pro Tips fallback if available */}
-                            {exerciseDetails && exerciseDetails.exerciseTips && exerciseDetails.exerciseTips.length > 0 && (
-                                <div className="space-y-4 pt-4 border-t border-white/5">
-                                    <h4 className="text-lg font-black tracking-tight text-amber-500">Pro Tips</h4>
-                                    <ul className="space-y-3">
-                                        {exerciseDetails.exerciseTips.map((tip: string, idx: number) => (
-                                            <li key={idx} className="flex items-start gap-3">
-                                                <Lightbulb className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                                                <p className="text-sm text-amber-200/80 font-medium leading-relaxed">{tip}</p>
-                                            </li>
-                                        ))}
-                                    </ul>
+                            {/* Description Fallback (if instructions array is missing but we have a text description) */}
+                            {exerciseDetails && !exerciseDetails.instructions && exerciseDetails.description && (
+                                <div className="space-y-4">
+                                    <h4 className="text-xl font-black tracking-tight">Instructions</h4>
+                                    <div className="prose prose-sm dark:prose-invert">
+                                        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
+                                            {exerciseDetails.description.replace(/<[^>]+>/g, '')}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

@@ -3,16 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta http-equiv="Content-Security-Policy" content="
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
       default-src 'self';
       connect-src 'self' https://*.supabase.co ws://localhost:*;
-      img-src 'self' data: https://cdn.exercisedb.dev;
+      img-src 'self' data: https://cdn.exercisedb.dev https://v2.exercisedb.io https://wger.de;
       script-src 'self' 'unsafe-inline';
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
-    ">
+    "
+    />
     <title>PlanR</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #09090b; /* zinc-950 to match dark mode loader */
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

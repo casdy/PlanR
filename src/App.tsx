@@ -14,7 +14,7 @@
  */
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { History } from './pages/History'
@@ -24,6 +24,7 @@ import { Login } from './pages/Login'
 import { SignUp } from './pages/SignUp'
 import { SettingsPage } from './pages/Settings'
 import { CalendarView } from './pages/CalendarView'
+import { RecoveryCheckIn } from './pages/RecoveryCheckIn'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { SplashScreen } from './components/SplashScreen'
@@ -64,6 +65,10 @@ const AppRoutes = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+
+            {/* Redirects & Fallbacks */}
+            <Route path="/dashboard" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
             
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
@@ -72,6 +77,7 @@ const AppRoutes = () => {
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/program/:id" element={<ProgramDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/recovery" element={<RecoveryCheckIn />} />
             </Route>
           </Routes>
         </Layout>
