@@ -32,12 +32,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <div className={cn(
-            "fixed inset-0 bg-background text-foreground font-['Outfit'] flex flex-col overflow-hidden",
-            theme === 'dark' ? 'dark' : ''
+            "fixed inset-0 flex justify-center transition-colors duration-500",
+            theme === 'dark' ? 'bg-zinc-950 dark' : 'bg-zinc-100'
         )}>
+            <div className="relative w-full max-w-[430px] h-full bg-background text-foreground font-['Outfit'] flex flex-col shadow-2xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
             {/* Header - Minimal and clean */}
             <header className="sticky top-0 z-50 glass border-b border-border/40 py-2">
-                <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+                <div className="w-full max-w-[430px] mx-auto px-4 h-14 flex items-center justify-between">
                     <motion.div 
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -86,7 +87,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </header>
 
             {/* Main Content - Mobile spacing focus. Scrollable inner area */}
-            <main id="main-scroll-area" className="flex-1 w-full max-w-3xl mx-auto px-4 py-6 pb-32 overflow-y-auto overflow-x-hidden no-scrollbar">
+            <main id="main-scroll-area" className="flex-1 w-full max-w-[430px] mx-auto px-4 py-6 pb-32 overflow-y-auto overflow-x-hidden no-scrollbar bg-background shadow-2xl">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={location.pathname}
@@ -102,8 +103,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
             {/* Floating Bottom Nav - Optimized for one-hand mobile use */}
             {user && (
-                <div className="fixed bottom-6 sm:bottom-8 inset-x-0 flex justify-center z-50 px-4 sm:px-6">
-                    <nav className="w-full max-w-md glass rounded-[2.5rem] border border-white/20 dark:border-white/5 shadow-2xl shadow-black/20 flex justify-between items-center h-16 sm:h-20 px-2 sm:px-4">
+                <div className="fixed bottom-6 sm:bottom-8 inset-x-0 mx-auto w-full max-w-[430px] flex justify-center z-50 px-4">
+                    <nav className="w-full glass rounded-[2.5rem] border border-white/20 dark:border-white/5 shadow-2xl shadow-black/20 flex justify-between items-center h-[4.5rem] px-2">
                         {navItems.map((item) => {
                             const isActive = location.pathname === item.path;
                             const Icon = item.icon;
@@ -151,6 +152,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <ActiveWorkoutOverlay />
             <WorkoutSummary onRestart={() => window.location.href = '/'} />
             <Toast />
+            </div>
         </div>
     );
 };

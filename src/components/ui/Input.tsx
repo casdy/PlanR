@@ -19,7 +19,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 )}
                 <div className="relative group">
                     {Icon && (
-                        <div className="absolute left-4 top-1/2 -tranzinc-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors duration-200">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors duration-200">
                             <Icon size={18} />
                         </div>
                     )}

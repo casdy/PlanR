@@ -106,7 +106,7 @@ export const Login = () => {
                             {isLoading ? 'Authenticating...' : (
                                 <>
                                     Log In
-                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:tranzinc-x-1 transition-transform" />
+                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </Button>

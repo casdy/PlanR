@@ -173,7 +173,8 @@ export const DailyWorkoutModal = ({
                             {!assignedWorkout && (
                                 <Button 
                                     variant="outline" 
-                                    className="h-14 rounded-2xl gap-2 font-bold border-2 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground focus:ring-4 focus:ring-primary/20 transition-all active:scale-95"
+                                    size="lg"
+                                    className="rounded-2xl gap-2 font-bold border-2 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground focus:ring-4 focus:ring-primary/20 transition-all active:scale-95"
                                     onClick={onSaveToCalendar}
                                     disabled={isLoading || exercises.length === 0}
                                 >
@@ -183,7 +184,8 @@ export const DailyWorkoutModal = ({
                             )}
                             <Button 
                                 variant="primary" 
-                                className={`h-14 rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20 hover:brightness-110 focus:ring-4 focus:ring-primary/30 transition-all active:scale-95 ${assignedWorkout ? 'col-span-2' : ''}`}
+                                size="lg"
+                                className={`rounded-2xl gap-2 font-bold shadow-lg shadow-primary/20 hover:brightness-110 focus:ring-4 focus:ring-primary/30 transition-all active:scale-95 ${assignedWorkout ? 'col-span-2' : ''}`}
                                 onClick={onStartWorkout}
                                 disabled={isLoading || (!assignedWorkout && exercises.length === 0)}
                             >

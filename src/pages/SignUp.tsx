@@ -140,7 +140,7 @@ export const SignUp = () => {
                             {isLoading ? 'Creating Account...' : (
                                 <>
                                     Get Started
-                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:tranzinc-x-1 transition-transform" />
+                                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
                         </Button>

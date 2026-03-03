@@ -36,7 +36,7 @@ const Tooltip = ({ children, content }: any) => {
     return (
         <div className="relative group">
             {children}
-            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity z-50 p-2 bg-black text-white text-xs rounded break-words w-max max-w-xs bottom-full left-1/2 -tranzinc-x-1/2 mb-2 pointer-events-none">
+            <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity z-50 p-2 bg-black text-white text-xs rounded break-words w-max max-w-xs bottom-full left-1/2 -translate-x-1/2 mb-2 pointer-events-none">
                 {content}
             </div>
         </div>
@@ -449,7 +449,7 @@ export const Dashboard = () => {
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
                     <span className="relative z-10">Start Today's Workout</span>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:tranzinc-x-1 transition-transform">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:translate-x-1 transition-transform">
                         <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     {/* Pulsing effect */}
@@ -525,17 +525,17 @@ export const Dashboard = () => {
                                 </p>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 p-1.5 glass rounded-[1.25rem] dark:bg-zinc-950">
+                        <div className="grid grid-cols-2 gap-2 p-1.5 glass rounded-[1.25rem] bg-zinc-100/50 dark:bg-zinc-950">
                             <Button 
                                 variant={trainingMode === 'casual' ? 'primary' : 'ghost'} 
-                                className={cn("rounded-xl font-bold h-11 transition-all", trainingMode === 'casual' ? "bg-zinc-800 text-white shadow-md border border-white/10" : "text-muted-foreground hover:bg-white/5")} 
+                                className={cn("rounded-xl font-bold transition-all", trainingMode === 'casual' ? "bg-white text-zinc-900 border border-black/5 shadow-sm dark:bg-zinc-800 dark:text-white dark:shadow-md dark:border-white/10" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('casual')}
                             >
                                 Casual
                             </Button>
                             <Button 
                                 variant={trainingMode === 'serious' ? 'primary' : 'ghost'} 
-                                className={cn("rounded-xl font-bold h-11 transition-all", trainingMode === 'serious' ? "bg-accent-cyan text-white shadow-md border-transparent" : "text-muted-foreground hover:bg-white/5")} 
+                                className={cn("rounded-xl font-bold transition-all", trainingMode === 'serious' ? "bg-primary text-primary-foreground shadow-md border-transparent" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('serious')}
                             >
                                 Serious
@@ -585,9 +585,8 @@ export const Dashboard = () => {
                                 </div>
                                 <div className="flex gap-2">
                                     <Button 
-                                        size="sm"
                                         variant="outline"
-                                        className="rounded-xl border-primary/20 text-primary hover:bg-primary/10 z-20"
+                                        className="rounded-xl border-primary/20 text-primary hover:bg-primary/10 z-20 text-sm h-10 px-4"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleSaveToCalendar();

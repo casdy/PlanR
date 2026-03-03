@@ -198,7 +198,7 @@ export const SettingsPage = () => {
                                             )}>
                                                 <div className={cn(
                                                     "bg-white w-4 h-4 rounded-full shadow-md transition-transform duration-300",
-                                                    item.active ? "transform tranzinc-x-6" : ""
+                                                    item.active ? "transform translate-x-6" : ""
                                                 )} />
                                             </div>
                                         ) : (

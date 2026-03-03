@@ -148,8 +148,9 @@ export const RoutineGenerator = ({ onRoutineGenerated }: { onRoutineGenerated: (
                 onClick={handleGenerate}
                 disabled={isGenerating || !goal}
                 variant="primary"
+                size="lg"
                 className={cn(
-                    "w-full h-12 gap-2 font-bold rounded-2xl transition-all duration-500 shadow-lg shadow-primary/20",
+                    "w-full gap-2 font-bold rounded-2xl transition-all duration-500 shadow-lg shadow-primary/20",
                     isGenerating && "opacity-70"
                 )}
             >
