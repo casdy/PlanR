@@ -15,6 +15,7 @@ import * as React from 'react';
 import { User, Bell, Shield, Moon, LogOut, ChevronRight, Download, RefreshCcw, Activity, Play, Sun, Vibrate, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
+import { useLanguage } from '../hooks/useLanguage';
 import { Card, CardContent } from '../components/ui/Card';
 import { cn } from '../lib/utils';
 
@@ -35,6 +36,7 @@ type SettingsSection = {
 export const SettingsPage = () => {
     const { user, logout, resetApp } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { t } = useLanguage();
     
     // State Hooks for various settings
     const [soundsEnabled, setSoundsEnabled] = React.useState(() => localStorage.getItem('planr-sounds') !== 'false');
@@ -71,41 +73,41 @@ export const SettingsPage = () => {
 
     const sections: SettingsSection[] = [
         {
-            title: 'Account',
+            title: t('account'),
             items: [
-                { icon: User, label: 'Profile Information', value: user?.name || (user?.isGuest ? 'Guest User' : 'Athlete') },
-                { icon: Bell, label: 'Notifications', value: 'Enabled', action: () => alert("Notification settings (Coming Soon)") },
+                { icon: User, label: t('profile_information'), value: user?.name || (user?.isGuest ? t('guest_user') : t('athlete')) },
+                { icon: Bell, label: t('notifications'), value: t('notifications_value'), action: () => alert("Notification settings (Coming Soon)") },
             ]
         },
         {
-            title: 'Workout Preferences',
+            title: t('workout_preferences'),
             items: [
                 { 
                     icon: Play, 
-                    label: 'Auto-Advance Exercises', 
-                    value: autoAdvance ? 'On' : 'Off',
+                    label: t('auto_advance'), 
+                    value: autoAdvance ? t('on') : t('off'),
                     action: () => toggleSetting('planr-auto-advance', setAutoAdvance),
                     isToggle: true,
                     active: autoAdvance
                 },
                 { 
                     icon: Activity, 
-                    label: 'Default Rest Timer', 
+                    label: t('default_rest_timer'), 
                     value: restTimer,
                     action: cycleRestTimer
                 },
                 { 
                     icon: Bell, 
-                    label: 'Workout Sounds', 
-                    value: soundsEnabled ? 'On' : 'Off',
+                    label: t('workout_sounds'), 
+                    value: soundsEnabled ? t('on') : t('off'),
                     action: () => toggleSetting('planr-sounds', setSoundsEnabled),
                     isToggle: true,
                     active: soundsEnabled
                 },
                 { 
                     icon: Sparkles, 
-                    label: 'Voice Navigation (Groq)', 
-                    value: voiceNav ? 'On' : 'Off',
+                    label: t('voice_navigation'), 
+                    value: voiceNav ? t('on') : t('off'),
                     action: () => toggleSetting('planr-voice-nav', setVoiceNav),
                     isToggle: true,
                     active: voiceNav
@@ -113,28 +115,28 @@ export const SettingsPage = () => {
             ]
         },
         {
-            title: 'App Settings',
+            title: t('app_settings'),
             items: [
                 { 
                     icon: theme === 'dark' ? Moon : Sun, 
-                    label: 'Dark Mode', 
-                    value: theme === 'dark' ? 'On' : 'Off',
+                    label: t('dark_mode'), 
+                    value: theme === 'dark' ? t('on') : t('off'),
                     action: toggleTheme,
                     isToggle: true,
                     active: theme === 'dark'
                 },
                 { 
                     icon: Vibrate, 
-                    label: 'Haptic Feedback', 
-                    value: hapticFeedback ? 'On' : 'Off',
+                    label: t('haptic_feedback'), 
+                    value: hapticFeedback ? t('on') : t('off'),
                     action: () => toggleSetting('planr-haptics', setHapticFeedback),
                     isToggle: true,
                     active: hapticFeedback
                 },
                 { 
                     icon: Shield, 
-                    label: 'Reduce Motion', 
-                    value: reduceMotion ? 'On' : 'Off',
+                    label: t('reduce_motion'), 
+                    value: reduceMotion ? t('on') : t('off'),
                     action: () => toggleSetting('planr-reduce-motion', setReduceMotion),
                     isToggle: true,
                     active: reduceMotion
@@ -142,11 +144,11 @@ export const SettingsPage = () => {
             ]
         },
         {
-            title: 'Data Management',
+            title: t('data_management'),
             items: [
                 { 
                     icon: Download, 
-                    label: 'Export Workout Data',
+                    label: t('export_data'),
                     action: handleExport
                 },
             ]
@@ -156,8 +158,8 @@ export const SettingsPage = () => {
     return (
         <div className="space-y-8 pb-36">
             <header>
-                <h1 className="text-4xl font-black tracking-tighter">Settings</h1>
-                <p className="text-muted-foreground font-medium">Manage your app experience & data</p>
+                <h1 className="text-4xl font-black tracking-tighter">{t('settings')}</h1>
+                <p className="text-muted-foreground font-medium">{t('settings_subtitle')}</p>
             </header>
 
             <div className="space-y-8">
@@ -221,7 +223,7 @@ export const SettingsPage = () => {
                              className="w-full flex items-center justify-center p-5 hover:bg-destructive/10 transition-colors text-destructive font-bold gap-2 border-b border-destructive/10"
                          >
                              <LogOut className="w-5 h-5" />
-                             Sign Out
+                             {t('sign_out')}
                          </button>
                          <button 
                              onClick={() => {
@@ -232,7 +234,7 @@ export const SettingsPage = () => {
                              className="w-full flex items-center justify-center p-5 hover:bg-destructive/10 transition-colors text-destructive/50 hover:text-destructive font-black uppercase text-xs tracking-widest gap-2"
                          >
                              <RefreshCcw className="w-4 h-4" />
-                             Reset App Data
+                             {t('reset_app_data')}
                          </button>
                      </CardContent>
                 </Card>

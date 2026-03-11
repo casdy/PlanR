@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { ArrowLeft, Activity, Moon, Zap, Smile } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../hooks/useLanguage';
 
 export function RecoveryCheckIn() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export function RecoveryCheckIn() {
   const [stress, setStress] = useState(5);
   const [energy, setEnergy] = useState(5);
   const [result, setResult] = useState<{ score: number, insight: string } | null>(null);
+  const { t } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +67,8 @@ export function RecoveryCheckIn() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Recovery Check-in</h1>
-            <p className="text-sm text-text-muted">Help the engine adapt your next session</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">{t('recovery_checkin')}</h1>
+            <p className="text-sm text-text-muted">{t('help_engine_adapt')}</p>
           </div>
         </div>
       </header>
@@ -81,10 +83,10 @@ export function RecoveryCheckIn() {
         {!result ? (
           <form onSubmit={handleSubmit} className="space-y-8">
             <Card className="p-5 md:p-6 space-y-8">
-              {renderSlider('Sleep Quality', <Moon className="w-4 h-4 text-indigo-400" />, sleep, setSleep, 'Poor', 'Excellent')}
-              {renderSlider('Muscle Soreness', <Activity className="w-4 h-4 text-rose-400" />, soreness, setSoreness, 'Extremely Sore', 'Fresh')}
-              {renderSlider('Stress Levels', <Zap className="w-4 h-4 text-amber-400" />, stress, setStress, 'High Stress', 'Relaxed')}
-              {renderSlider('Energy Levels', <Smile className="w-4 h-4 text-emerald-400" />, energy, setEnergy, 'Exhausted', 'Energetic')}
+              {renderSlider(t('sleep_quality'), <Moon className="w-4 h-4 text-indigo-400" />, sleep, setSleep, t('poor'), t('excellent'))}
+              {renderSlider(t('muscle_soreness'), <Activity className="w-4 h-4 text-rose-400" />, soreness, setSoreness, t('extremely_sore'), t('fresh'))}
+              {renderSlider(t('stress_levels'), <Zap className="w-4 h-4 text-amber-400" />, stress, setStress, t('high_stress'), t('relaxed'))}
+              {renderSlider(t('energy_levels'), <Smile className="w-4 h-4 text-emerald-400" />, energy, setEnergy, t('exhausted'), t('energetic'))}
             </Card>
 
             <Button
@@ -95,7 +97,7 @@ export function RecoveryCheckIn() {
               isLoading={loading}
               disabled={loading}
             >
-              Analyze Recovery
+              {t('analyze_recovery')}
             </Button>
           </form>
         ) : (
@@ -108,7 +110,7 @@ export function RecoveryCheckIn() {
               <div className="w-16 h-16 rounded-full bg-accent-cyan/20 flex items-center justify-center mx-auto mb-2">
                 <span className="text-2xl font-bold text-accent-cyan">{result.score}</span>
               </div>
-              <h2 className="text-xl font-bold text-white">Analysis Complete</h2>
+              <h2 className="text-xl font-bold text-white">{t('analysis_complete')}</h2>
               <p className="text-text-muted leading-relaxed">
                 {result.insight}
               </p>
@@ -120,7 +122,7 @@ export function RecoveryCheckIn() {
               className="w-full"
               onClick={() => navigate('/')}
             >
-              Return to Dashboard
+              {t('return_to_dashboard')}
             </Button>
           </motion.div>
         )}

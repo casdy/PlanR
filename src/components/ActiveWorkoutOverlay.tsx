@@ -26,6 +26,7 @@ import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, X, Du
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { useVoiceRecorder } from '../hooks/useVoiceRecorder';
+import { useLanguage } from '../hooks/useLanguage';
 import { aiService } from '../services/aiService';
 import { groqService } from '../services/groqService';
 import { LocalService } from '../services/localService';
@@ -49,6 +50,7 @@ export const ActiveWorkoutOverlay = () => {
         tick, nextExercise, pauseWorkout, resumeWorkout, cancelWorkout,
         exerciseLogs, logExerciseSet, markExerciseCompleted
     } = useWorkoutStore();
+    const { t } = useLanguage();
 
     const { isRecording, startRecording, stopRecording, audioBlob } = useVoiceRecorder();
     const [isProcessingVoice, setIsProcessingVoice] = React.useState(false);
@@ -238,7 +240,7 @@ export const ActiveWorkoutOverlay = () => {
         async function processAudio() {
             if (audioBlob && activeProgramId && activeDayId) {
                 setIsProcessingVoice(true);
-                setVoiceFeedback("Transcribing...");
+                setVoiceFeedback(t('transcribing'));
                 try {
                     const transcription = await groqService.transcribeAudio(audioBlob);
                     setVoiceFeedback(`Parsing: "${transcription.text}"`);
@@ -254,12 +256,12 @@ export const ActiveWorkoutOverlay = () => {
                         setVoiceFeedback(`Logged: ${result.reps} reps @ ${result.weight}lbs`);
                         setTimeout(() => setVoiceFeedback(null), 3000);
                     } else {
-                        setVoiceFeedback("Couldn't understand reps/weight.");
+                        setVoiceFeedback(t('couldnt_understand'));
                         setTimeout(() => setVoiceFeedback(null), 3000);
                     }
                 } catch (err) {
                     console.error("Voice processing failed", err);
-                    setVoiceFeedback("Voice processing error.");
+                    setVoiceFeedback(t('voice_processing_error'));
                     setTimeout(() => setVoiceFeedback(null), 3000);
                 } finally {
                     setIsProcessingVoice(false);
@@ -351,10 +353,10 @@ export const ActiveWorkoutOverlay = () => {
                                 ) : (
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
-                                            {currentExercise.targetSets} SETS
+                                            {currentExercise.targetSets} {t('sets')}
                                         </span>
                                         <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                                            {currentExercise.targetReps} REPS
+                                            {currentExercise.targetReps} {t('reps')}
                                         </span>
                                     </div>
                                 )}
@@ -390,7 +392,7 @@ export const ActiveWorkoutOverlay = () => {
                                 ) : (
                                     <div className="w-full aspect-square sm:aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-muted-foreground/40 border border-white/5">
                                         <Dumbbell className="w-16 h-16 mb-2" />
-                                        <span className="text-sm font-bold uppercase tracking-widest">No Media Available</span>
+                                        <span className="text-sm font-bold uppercase tracking-widest">{t('no_media')}</span>
                                     </div>
                                 )}
                             </div>
@@ -401,7 +403,7 @@ export const ActiveWorkoutOverlay = () => {
                                     {formatTime(elapsedSeconds)}
                                 </div>
                                 <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
-                                    TARGET: {formatTime(timerDuration)}
+                                    {t('target')}: {formatTime(timerDuration)}
                                 </div>
                             </div>
                             
@@ -410,7 +412,7 @@ export const ActiveWorkoutOverlay = () => {
                                 <div className="flex justify-between items-end px-1">
                                     <div>
                                         <label className="text-sm font-black tracking-tight block">RPE</label>
-                                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Rate of Perceived Exertion</span>
+                                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{t('rate_of_exertion')}</span>
                                     </div>
                                     <span className={cn(
                                         "text-2xl font-black",
@@ -427,8 +429,8 @@ export const ActiveWorkoutOverlay = () => {
                                     className="w-full accent-primary h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
                                 />
                                 <div className="flex justify-between text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">
-                                    <span>1 (Easy)</span>
-                                    <span>10 (Max Effort)</span>
+                                    <span>1 ({t('easy')})</span>
+                                    <span>10 ({t('max_effort')})</span>
                                 </div>
                             </div>
 
@@ -436,18 +438,18 @@ export const ActiveWorkoutOverlay = () => {
                             <div className="grid grid-cols-4 gap-3 relative">
                                 <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); cancelWorkout(); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
                                     <Square className="w-5 h-5 fill-red-500 text-red-500" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">End</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{t('end')}</span>
                                 </Button>
 
                                 {status === 'running' ? (
                                     <Button size="lg" onClick={(e) => { e.stopPropagation(); pauseWorkout(); }} className="flex-col h-20 gap-2 bg-yellow-500 hover:bg-yellow-600 border-none shadow-lg shadow-yellow-500/20">
                                         <Pause className="w-6 h-6 fill-white" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Pause</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-white">{t('pause')}</span>
                                     </Button>
                                 ) : (
                                     <Button size="lg" onClick={(e) => { e.stopPropagation(); resumeWorkout(); }} className="flex-col h-20 gap-2 bg-emerald-500 hover:bg-emerald-600 border-none shadow-lg shadow-emerald-500/20">
                                         <Play className="w-6 h-6 fill-white ml-1" />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Resume</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-white">{t('resume')}</span>
                                     </Button>
                                 )}
 
@@ -471,7 +473,7 @@ export const ActiveWorkoutOverlay = () => {
                                             <Mic className={cn("w-6 h-6 text-white", isRecording && "animate-bounce")} />
                                         )}
                                         <span className="text-[10px] font-bold uppercase tracking-wider text-white">
-                                            {isRecording ? "Listening" : "Log"}
+                                            {isRecording ? t('listening') : t('log_voice')}
                                         </span>
                                     </Button>
                                     {isRecording && (
@@ -481,7 +483,7 @@ export const ActiveWorkoutOverlay = () => {
 
                                 <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); nextExercise(day.exercises.length - 1); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
                                     <SkipForward className="w-5 h-5 opacity-60" />
-                                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">Skip</span>
+                                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{t('skip')}</span>
                                 </Button>
                                 
                                 {/* Voice Feedback Overlay */}
@@ -516,7 +518,7 @@ export const ActiveWorkoutOverlay = () => {
                             {/* Instructions */}
                             {exerciseDetails && exerciseDetails.instructions && exerciseDetails.instructions.length > 0 && (
                                 <div className="space-y-4">
-                                    <h4 className="text-xl font-black tracking-tight">Instructions</h4>
+                                    <h4 className="text-xl font-black tracking-tight">{t('instructions')}</h4>
                                     <ol className="space-y-4">
                                         {exerciseDetails.instructions.map((step: string, index: number) => (
                                             <li key={index} className="flex gap-4">
@@ -535,7 +537,7 @@ export const ActiveWorkoutOverlay = () => {
                             {/* Description Fallback (if instructions array is missing but we have a text description) */}
                             {exerciseDetails && !exerciseDetails.instructions && exerciseDetails.description && (
                                 <div className="space-y-4">
-                                    <h4 className="text-xl font-black tracking-tight">Instructions</h4>
+                                    <h4 className="text-xl font-black tracking-tight">{t('instructions')}</h4>
                                     <div className="prose prose-sm dark:prose-invert">
                                         <p className="text-sm text-foreground/80 leading-relaxed font-medium">
                                             {exerciseDetails.description.replace(/<[^>]+>/g, '')}
@@ -547,7 +549,7 @@ export const ActiveWorkoutOverlay = () => {
                             {/* Up Next */}
                             {nextEx && (
                                 <div className="pt-6 border-t border-white/5 opacity-80">
-                                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">Up Next</p>
+                                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{t('up_next')}</p>
                                     <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
                                         <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-black text-muted-foreground">
                                             {activeExerciseIndex + 2}

@@ -19,6 +19,7 @@ import { useAuth } from '../hooks/useAuth';
 import type { WorkoutLog, WorkoutProgram, WorkoutDay, Exercise } from '../types';
 import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
+import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
@@ -38,8 +39,9 @@ const LiveWorkoutCard = () => {
         pauseWorkout,
         setIsMinimized,
     } = useWorkoutStore();
+    const { t } = useLanguage();
 
-    const [programTitle, setProgramTitle] = React.useState('Active Session');
+    const [programTitle, setProgramTitle] = React.useState(t('active_session_ready'));
     const [dayTitle, setDayTitle] = React.useState('');
     const [currentExerciseName, setCurrentExerciseName] = React.useState('');
 
@@ -50,7 +52,7 @@ const LiveWorkoutCard = () => {
             const progs = LS.getUserPrograms();
             const prog = progs.find(p => p.id === activeProgramId);
             if (prog) {
-                setProgramTitle(prog.title || 'Active Session');
+                setProgramTitle(prog.title || t('active_session_ready'));
                 const day = prog.schedule?.find(d => d.id === activeDayId);
                 if (day) {
                     setDayTitle(day.title || '');
@@ -112,7 +114,7 @@ const LiveWorkoutCard = () => {
                                             ? "text-primary border-primary/30 bg-primary/10 animate-pulse"
                                             : "text-yellow-500 border-yellow-500/30 bg-yellow-500/10"
                                     )}>
-                                        {isRunning ? 'Live' : 'Paused'}
+                                        {isRunning ? t('live') : t('paused')}
                                     </span>
                                 </div>
                                 {dayTitle && (
@@ -134,21 +136,21 @@ const LiveWorkoutCard = () => {
                                 <Timer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
                             <p className="text-lg sm:text-xl font-black tabular-nums">{timeStr}</p>
-                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Duration</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">{t('duration')}</p>
                         </div>
                         <div className="bg-white/5 rounded-2xl p-2 sm:p-3 text-center">
                             <div className="flex items-center justify-center gap-1 text-emerald-400 mb-1">
                                 <Dumbbell className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
                             <p className="text-lg sm:text-xl font-black tabular-nums">{completedExerciseIds.length}</p>
-                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">Done</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5">{t('done')}</p>
                         </div>
                         <div className="bg-white/5 rounded-2xl p-2 sm:p-3 text-center">
                             <div className="flex items-center justify-center gap-1 text-orange-400 mb-1">
                                 <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             </div>
                             <p className="text-lg sm:text-xl font-black tabular-nums">{activeExerciseIndex + 1}/{totalExercises || '?'}</p>
-                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5 whitespace-nowrap overflow-hidden">Exercise</p>
+                            <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-muted-foreground font-bold mt-0.5 whitespace-nowrap overflow-hidden">{t('exercise')}</p>
                         </div>
                     </div>
 
@@ -156,7 +158,7 @@ const LiveWorkoutCard = () => {
                     {totalExercises > 0 && (
                         <div>
                             <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
-                                <span>Progress</span>
+                                <span>{t('progress')}</span>
                                 <span>{progressPct}%</span>
                             </div>
                             <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -181,7 +183,7 @@ const LiveWorkoutCard = () => {
                             }}
                         >
                             {isPaused ? <Play className="w-3.5 h-3.5 mr-1.5 fill-white" /> : <Zap className="w-3.5 h-3.5 mr-1.5" />}
-                            {isPaused ? 'Resume' : 'Open Workout'}
+                            {isPaused ? t('resume') : t('open_workout')}
                         </Button>
                         {isRunning && (
                             <Button
@@ -190,7 +192,7 @@ const LiveWorkoutCard = () => {
                                 className="rounded-full"
                                 onClick={() => { pauseWorkout(); }}
                             >
-                                Pause
+                                {t('pause')}
                             </Button>
                         )}
                     </div>
@@ -203,6 +205,7 @@ const LiveWorkoutCard = () => {
 // ─── History Page ────────────────────────────────────────────────────────────
 export const History = () => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const { resumeOldWorkout, startWorkout, status, activeSessionId } = useWorkoutStore();
     const [logs, setLogs] = React.useState<WorkoutLog[]>([]);
     const [programs, setPrograms] = React.useState<WorkoutProgram[]>([]);
@@ -234,9 +237,9 @@ export const History = () => {
             <header>
                 <h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
                     <Activity className="w-8 h-8 text-primary" />
-                    Activity <span className="text-primary italic">Feed</span>
+                    {t('activity_feed')}
                 </h1>
-                <p className="text-muted-foreground font-medium">Your recent triumphs and completed sessions.</p>
+                <p className="text-muted-foreground font-medium">{t('activity_subtitle')}</p>
             </header>
 
             <div className="space-y-4">
@@ -281,13 +284,13 @@ export const History = () => {
                                                         <h4 className="font-bold text-base truncate flex items-center gap-2 flex-wrap">
                                                             <span className="truncate">{programTitle}</span>
                                                             {!isComplete && !log.isPaused && (
-                                                                <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">Incomplete</span>
+                                                                <span className="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full shrink-0">{t('incomplete')}</span>
                                                             )}
                                                             {!isComplete && log.isPaused && (
-                                                                <span className="text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shrink-0">Paused</span>
+                                                                <span className="text-xs font-bold text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20 shrink-0">{t('paused')}</span>
                                                             )}
                                                             {isComplete && (
-                                                                <span className="text-[10px] font-black tracking-widest uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">Done</span>
+                                                                <span className="text-[10px] font-black tracking-widest uppercase text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">{t('done')}</span>
                                                             )}
                                                         </h4>
                                                         <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block mt-0.5">
@@ -302,7 +305,7 @@ export const History = () => {
                                                                 ))}
                                                                 {displayExerciseNames.length > 3 && (
                                                                     <span className="text-[10px] font-bold bg-white/5 border border-white/5 text-muted-foreground px-2 py-1 rounded-md">
-                                                                        +{displayExerciseNames.length - 3} more
+                                                                        +{displayExerciseNames.length - 3} {t('more')}
                                                                     </span>
                                                                 )}
                                                             </div>
@@ -315,12 +318,12 @@ export const History = () => {
                                                     <div className="flex gap-4 sm:gap-6 items-center">
                                                         <div>
                                                             <p className="text-lg font-black italic text-primary">{(log.totalTimeSpentSec / 60).toFixed(0)}m</p>
-                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Duration</p>
+                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">{t('duration')}</p>
                                                         </div>
                                                         <div className="w-px h-6 bg-border" />
                                                         <div>
                                                             <p className="text-lg font-black italic">{log.completedExerciseIds?.length || 0}</p>
-                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">Moves</p>
+                                                            <p className="text-[9px] sm:text-[10px] text-muted-foreground font-bold tracking-widest uppercase">{t('moves')}</p>
                                                         </div>
                                                     </div>
                                                     
@@ -333,7 +336,7 @@ export const History = () => {
                                                                     onClick={() => resumeOldWorkout(log)}
                                                                     className="h-8 sm:h-9 pr-3 pl-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:bg-primary/20 text-[11px] sm:text-xs font-black shadow-sm"
                                                                 >
-                                                                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 fill-primary/50" /> Resume
+                                                                    <Play className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 fill-primary/50" /> {t('resume')}
                                                                 </Button>
                                                                 <Button
                                                                     variant="outline"
@@ -341,7 +344,7 @@ export const History = () => {
                                                                     onClick={() => { handleDelete(log.id); startWorkout(log.programId, log.dayId, user?.id); }}
                                                                     className="h-8 sm:h-9 pr-3 pl-2.5 rounded-full bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20 text-[11px] sm:text-xs font-black shadow-sm"
                                                                 >
-                                                                    <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" /> Restart
+                                                                    <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1" /> {t('restart')}
                                                                 </Button>
                                                             </>
                                                         )}
@@ -369,8 +372,8 @@ export const History = () => {
                             <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 text-muted-foreground">
                                 <Activity className="w-8 h-8" />
                             </div>
-                            <h3 className="text-xl font-black mb-1">No Activity Yet</h3>
-                            <p className="text-muted-foreground font-medium max-w-xs mx-auto">Complete a workout to see your history appear here.</p>
+                            <h3 className="text-xl font-black mb-1">{t('no_activity')}</h3>
+                            <p className="text-muted-foreground font-medium max-w-xs mx-auto">{t('no_activity_desc')}</p>
                         </motion.div>
                     ) : null}
                 </AnimatePresence>

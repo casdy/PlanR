@@ -14,8 +14,10 @@ import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { SplashScreen } from '../components/SplashScreen';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const Login = () => {
+    const { t } = useLanguage();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -43,7 +45,7 @@ export const Login = () => {
 
     return (
         <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
-            <SplashScreen show={showSuccessSplash} message="Welcome back!" />
+            <SplashScreen show={showSuccessSplash} message={t('welcome_back')} />
             
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -60,8 +62,8 @@ export const Login = () => {
                     >
                         <LogIn className="w-10 h-10 text-primary-foreground" />
                     </motion.div>
-                    <h2 className="text-4xl font-black tracking-tight mb-2">Welcome Back</h2>
-                    <p className="text-muted-foreground font-medium">Progress awaits. Log in to your plan.</p>
+                    <h2 className="text-4xl font-black tracking-tight mb-2">{t('welcome_back')}</h2>
+                    <p className="text-muted-foreground font-medium">{t('login_subtitle')}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="glass p-8 rounded-[2.5rem] border-white/20 dark:border-white/5 space-y-6">
@@ -74,7 +76,7 @@ export const Login = () => {
                     <Input
                         id="email"
                         name="email"
-                        label="Email Address"
+                        label={t('email_address')}
                         placeholder="your@email.com"
                         type="email"
                         icon={Mail}
@@ -87,7 +89,7 @@ export const Login = () => {
                     <Input
                         id="password"
                         name="password"
-                        label="Password"
+                        label={t('password')}
                         placeholder="••••••••"
                         type="password"
                         icon={Lock}
@@ -103,9 +105,9 @@ export const Login = () => {
                             disabled={isLoading}
                             className="w-full h-14 rounded-2xl text-lg font-bold group"
                         >
-                            {isLoading ? 'Authenticating...' : (
+                            {isLoading ? t('authenticating') : (
                                 <>
-                                    Log In
+                                    {t('log_in_link')}
                                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
@@ -117,7 +119,7 @@ export const Login = () => {
                             <span className="w-full border-t border-white/20 dark:border-white/5" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with</span>
+                            <span className="bg-background px-2 text-muted-foreground font-medium">{t('or_continue_with')}</span>
                         </div>
                     </div>
 
@@ -160,22 +162,22 @@ export const Login = () => {
 
                 <div className="mt-8 text-center space-y-4">
                     <p className="text-muted-foreground font-medium">
-                        Don't have an account?{' '}
+                        {t('dont_have_account')} {' '}
                         <Link to="/signup" className="text-primary hover:underline font-bold decoration-2 underline-offset-4">
-                            Sign up now
+                            {t('sign_up_now')}
                         </Link>
                     </p>
                     
                     <div>
                         <button 
                             onClick={async () => {
-                                if (confirm('Trouble logging in? This will reset all local data. Continue?')) {
+                                if (confirm(t('trouble_logging_in'))) {
                                     await resetApp();
                                 }
                             }}
                             className="text-xs font-black uppercase tracking-widest text-muted-foreground/30 hover:text-primary transition-colors"
                         >
-                            Reset App Data
+                            {t('reset_app_data_trouble')}
                         </button>
                     </div>
                 </div>

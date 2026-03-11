@@ -1,10 +1,8 @@
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-  
+export default defineConfig(() => {
   return {
     plugins: [react()],
     optimizeDeps: {
@@ -18,9 +16,8 @@ export default defineConfig(({ mode }) => {
       proxy: {
   
         // /api/cdn-proxy?url=<encoded CDN URL>
-        // Fetches the image and injects CORP headers so they load under COEP.
         '/api/cdn-proxy': {
-          target: 'https://v2.exercisedb.io', // overridden in router, but must be https:// to force TLS agent
+          target: 'https://v2.exercisedb.io', // placeholder
           changeOrigin: true,
           secure: false,
           router: (req: any) => {
@@ -31,7 +28,7 @@ export default defineConfig(({ mode }) => {
                 const parsed = new URL(cdnUrl);
                 return `${parsed.protocol}//${parsed.host}`;
               }
-            } catch (e) { /* fallback */ }
+            } catch (e) {}
             return 'https://v2.exercisedb.io';
           },
           rewrite: (path) => {
@@ -42,7 +39,7 @@ export default defineConfig(({ mode }) => {
                 const url = new URL(cdnUrl);
                 return url.pathname + url.search;
               }
-            } catch (e) { /* fallback */ }
+            } catch (e) {}
             return path.replace(/^\/api\/cdn-proxy/, '');
           },
           configure: (proxy, _options) => {
@@ -53,8 +50,9 @@ export default defineConfig(({ mode }) => {
                   const cdnUrl = decodeURIComponent(urlMatch[1]);
                   const parsed = new URL(cdnUrl);
                   proxyReq.setHeader('Host', parsed.host);
+                  proxyReq.setHeader('Referer', `${parsed.protocol}//${parsed.host}/`);
                 }
-              } catch (e) { /* ignore */ }
+              } catch (e) {}
             });
             proxy.on('proxyRes', (_proxyRes, _req, res) => {
               res.setHeader('Access-Control-Allow-Origin', '*');
@@ -62,10 +60,10 @@ export default defineConfig(({ mode }) => {
             });
           }
         },
-        // Dedicated proxy for wger media to inject CORP headers securely MUST be before /api/wger
         '/api/wger-media': {
           target: 'https://wger.de',
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => path.replace(/^\/api\/wger-media/, ''),
           configure: (proxy, _options) => {
             proxy.on('proxyRes', (_proxyRes, _req, res) => {
@@ -77,79 +75,66 @@ export default defineConfig(({ mode }) => {
         '/api/wger': {
           target: 'https://wger.de',
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => path.replace(/^\/api\/wger/, '/api'),
-          configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq) => {
-              // Read key from .env.local (supports either exact match or VITE_ prefix)
-              const apiKey = env.Wger_Key || env.VITE_WGER_API_KEY || '';
-              if (apiKey) {
-                proxyReq.setHeader('Authorization', `Token ${apiKey}`);
-              }
-            });
-          }
         },
         '/api/exercisedb': {
           target: 'https://exercisedb.p.rapidapi.com',
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => {
             const url = new URL(path, 'http://localhost');
-            const endpoint = url.searchParams.get('endpoint'); // e.g., 'exercises'
+            const endpoint = url.searchParams.get('endpoint');
             return endpoint ? `/${endpoint}` : '/exercises';
           },
-          configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              // Strip any query params that aren't for the API
-              const originalUrl = new URL(req.url || '', 'http://localhost');
-              const newUrl = new URL(proxyReq.path, 'http://localhost');
-              
-              originalUrl.searchParams.forEach((value, key) => {
-                if (key !== 'endpoint') {
-                  newUrl.searchParams.append(key, value);
-                }
-              });
-              proxyReq.path = newUrl.pathname + newUrl.search;
-  
-              // Add the required headers for RapidAPI
-              const apiKey = env.RAPIDAPI_KEY || env.VITE_EXERCISEDB_API_KEY || '';
-              proxyReq.setHeader('x-rapidapi-key', apiKey);
-              proxyReq.setHeader('x-rapidapi-host', 'exercisedb.p.rapidapi.com');
-            });
-          }
         },
         '/api/workoutdb': {
-          // Direct API — free to use at workoutdb.is-app.in/api/
-          // Docs: https://workoutdb.is-app.in/docs
-          // Auth: x-rapidapi-key header (get a free key at https://rapidapi.com/ad733943/api/workout-db-api)
           target: 'https://workoutdb.is-app.in',
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => {
             const url = new URL(path, 'http://localhost');
             const endpoint = url.searchParams.get('endpoint'); 
-            // Prepend /api/ — the direct server hosts the API under /api/
             return endpoint ? `/api/${endpoint}` : '/api/workouts';
           },
+        },
+        // Dedicated proxy for Open Food Facts images
+        '/api/off-images': {
+          target: 'https://images.openfoodfacts.org',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/off-images/, ''),
           configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq, req, _res) => {
-              const originalUrl = new URL(req.url || '', 'http://localhost');
-              const newUrl = new URL(proxyReq.path, 'http://localhost');
-              
-              originalUrl.searchParams.forEach((value, key) => {
-                if (key !== 'endpoint') {
-                  newUrl.searchParams.append(key, value);
-                }
-              });
-              proxyReq.path = newUrl.pathname + newUrl.search;
-  
-              // Use WORKOUTDB_API_KEY if available (direct key from workoutdb.is-app.in),
-              // otherwise fall back to RAPIDAPI_KEY
-              const apiKey = env.WORKOUTDB_API_KEY || env.RAPIDAPI_KEY || env.VITE_RAPIDAPI_KEY || '';
-              if (apiKey) {
-                proxyReq.setHeader('x-rapidapi-key', apiKey);
-              }
-              proxyReq.setHeader('x-rapidapi-host', 'workoutdb.is-app.in');
+            proxy.on('proxyRes', (_proxyRes, _req, res) => {
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
             });
           }
-        }
+        },
+        '/api/off-static': {
+          target: 'https://static.openfoodfacts.org',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/off-static/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('proxyRes', (_proxyRes, _req, res) => {
+              res.setHeader('Access-Control-Allow-Origin', '*');
+              res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            });
+          }
+        },
+        '/api/off': {
+          target: 'https://world.openfoodfacts.org',
+          changeOrigin: true,
+          secure: false,
+          rewrite: (path) => path.replace(/^\/api\/off/, ''),
+          configure: (proxy, _options) => {
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.setHeader('Authorization', 'Basic b2ZmOm9mZg==');
+              proxyReq.setHeader('User-Agent', 'PlanR - WebDashboard - 1.0 - ojukwulabs@gmail.com');
+            });
+          }
+        },
         // All other /api/* calls go to Vercel serverless functions via vercel dev
       }
     }

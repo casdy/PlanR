@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const guestUser: User = {
             id: 'guest',
             email: 'guest@planr.app',
-            name: 'Guest Athlete'
+            name: 'Guest'
         };
         setUser(guestUser);
         localStorage.setItem('planr_user', JSON.stringify(guestUser));

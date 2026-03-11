@@ -2,11 +2,15 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 
 interface ProgressRingProps {
-    progress: number; // 0 to 1
+    progress: number; // 0 to 100 (percentage)
     size?: number;
     strokeWidth?: number;
     className?: string;
     children?: React.ReactNode;
+    /** Tailwind class for the progress stroke, e.g. 'text-orange-500' */
+    color?: string;
+    /** Tailwind class for the track/background stroke, e.g. 'text-orange-500/20' */
+    backgroundColor?: string;
 }
 
 export const ProgressRing = ({
@@ -14,16 +18,20 @@ export const ProgressRing = ({
     size = 256,
     strokeWidth = 8,
     className,
-    children
+    children,
+    color = 'text-primary',
+    backgroundColor = 'text-muted/30',
 }: ProgressRingProps) => {
     const radius = (size / 2) - (strokeWidth / 2);
     const circumference = 2 * Math.PI * radius;
-    const offset = circumference * (1 - progress);
+    // progress is 0-100%; convert to fraction for offset
+    const fraction = Math.min(Math.max(progress / 100, 0), 1);
+    const offset = circumference * (1 - fraction);
 
     return (
         <div className={cn("relative flex items-center justify-center", className)} style={{ width: size, height: size }}>
             <svg className="absolute inset-0 w-full h-full -rotate-90">
-                {/* Background Circle */}
+                {/* Background / Track Circle */}
                 <circle
                     cx={size / 2}
                     cy={size / 2}
@@ -31,7 +39,7 @@ export const ProgressRing = ({
                     stroke="currentColor"
                     strokeWidth={strokeWidth}
                     fill="transparent"
-                    className="text-muted/30"
+                    className={backgroundColor}
                 />
                 {/* Progress Circle */}
                 <circle
@@ -41,14 +49,14 @@ export const ProgressRing = ({
                     stroke="currentColor"
                     strokeWidth={strokeWidth}
                     fill="transparent"
-                    className="text-primary transition-all duration-1000 ease-in-out drop-shadow-[0_0_8px_rgba(var(--primary),0.3)]"
+                    className={cn(color, 'transition-all duration-1000 ease-in-out')}
                     style={{
                         strokeDasharray: circumference,
                         strokeDashoffset: offset,
                         strokeLinecap: 'round'
                     }}
                 />
-                {progress >= 1 && (
+                {fraction >= 1 && (
                     <circle
                         cx={size / 2}
                         cy={size / 2}
@@ -56,7 +64,7 @@ export const ProgressRing = ({
                         stroke="currentColor"
                         strokeWidth={strokeWidth}
                         fill="transparent"
-                        className="text-primary animate-ping opacity-20"
+                        className={cn(color, 'animate-ping opacity-20')}
                         style={{
                             strokeDasharray: circumference,
                             strokeDashoffset: 0,
@@ -71,3 +79,4 @@ export const ProgressRing = ({
         </div>
     );
 };
+

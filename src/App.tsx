@@ -14,17 +14,19 @@
  */
 import { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { LanguageProvider } from './hooks/useLanguage'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Dashboard } from './pages/Dashboard'
 import { History } from './pages/History'
-import { ProgramManager } from './pages/ProgramManager'
 import { ProgramDetail } from './pages/ProgramDetail'
 import { Login } from './pages/Login'
 import { SignUp } from './pages/SignUp'
 import { SettingsPage } from './pages/Settings'
 import { CalendarView } from './pages/CalendarView'
 import { RecoveryCheckIn } from './pages/RecoveryCheckIn'
+import { WebNutritionDashboard } from './pages/WebNutritionDashboard'
+import MobileScannerPreview from './pages/mobile/MobileScannerPreview'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { SplashScreen } from './components/SplashScreen'
@@ -38,15 +40,15 @@ const AppRoutes = () => {
 
   useEffect(() => {
     if (!loading) {
-      // Keep splash visible for a brief moment even after load finishes
+      // Keep splash visible for longer to ensure all modules are 'primed'
       // Start exit animation slightly before fully removing it
       const exitTimer = setTimeout(() => {
           setIsExiting(true);
-      }, 2000);
+      }, 3500);
       
       const removeTimer = setTimeout(() => {
           setShowSplash(false);
-      }, 2500); // 2000 + 500ms animation duration
+      }, 4000); // Increased to 4.0s
       
       return () => {
           clearTimeout(exitTimer);
@@ -65,6 +67,8 @@ const AppRoutes = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/nutrition-preview" element={<WebNutritionDashboard />} />
+            <Route path="/mobile-scanner-preview" element={<MobileScannerPreview />} />
 
             {/* Redirects & Fallbacks */}
             <Route path="/dashboard" element={<Navigate to="/" replace />} />
@@ -73,11 +77,11 @@ const AppRoutes = () => {
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/history" element={<History />} />
-              <Route path="/manage" element={<ProgramManager />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/program/:id" element={<ProgramDetail />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/recovery" element={<RecoveryCheckIn />} />
+              <Route path="/nutrition" element={<WebNutritionDashboard />} />
             </Route>
           </Routes>
         </Layout>
@@ -90,9 +94,11 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </LanguageProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

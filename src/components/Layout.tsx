@@ -8,7 +8,7 @@
  */
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost } from 'lucide-react';
+import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost, Leaf } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
@@ -16,18 +16,21 @@ import { ActiveWorkoutOverlay } from './ActiveWorkoutOverlay';
 import { WorkoutSummary } from './WorkoutSummary';
 import { useTheme } from '../hooks/useTheme';
 import { Toast } from './ui/Toast';
+import { useLanguage } from '../hooks/useLanguage';
+import { LanguagePicker } from './ui/LanguagePicker';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const { t, isRTL } = useLanguage();
     const location = useLocation();
 
     const navItems = [
-        { label: 'Home', icon: Home, path: '/' },
-        { label: 'Calendar', icon: Calendar, path: '/calendar' },
-        { label: 'Programs', icon: Dumbbell, path: '/manage' },
-        { label: 'Activity', icon: Activity, path: '/history' },
-        { label: 'Profile', icon: SettingsIcon, path: '/settings' },
+        { label: t('nav_home'), icon: Home, path: '/' },
+        { label: t('nav_calendar'), icon: Calendar, path: '/calendar' },
+        { label: t('nav_nutrition'), icon: Leaf, path: '/nutrition' },
+        { label: t('nav_activity'), icon: Activity, path: '/history' },
+        { label: t('nav_profile'), icon: SettingsIcon, path: '/settings' },
     ];
 
     return (
@@ -40,17 +43,19 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <header className="sticky top-0 z-50 glass border-b border-border/40 py-2">
                 <div className="w-full max-w-[430px] mx-auto px-4 h-14 flex items-center justify-between">
                     <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
+                        initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className="flex items-center gap-3"
                     >
                         <div className="bg-primary p-2 rounded-2xl glow-primary animate-float">
                             <Dumbbell className="w-5 h-5 text-primary-foreground" />
                         </div>
-                        <h1 className="text-2xl font-black tracking-tighter text-foreground italic">PLAN<span className="text-primary not-italic">R</span></h1>
+                        <h1 className="text-2xl font-black tracking-tighter text-foreground italic">PLAN<span className={cn("not-italic transition-colors duration-500", location.pathname === '/nutrition' ? "text-teal-500" : "text-primary")}>R</span></h1>
                     </motion.div>
 
                     <div className="flex items-center gap-2">
+                        <LanguagePicker />
+
                         <Button 
                             variant="ghost" 
                             size="icon" 
@@ -70,14 +75,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                             <User className="w-4 h-4 text-primary" />
                                         )}
                                         <span className="text-xs font-bold whitespace-nowrap hidden sm:inline-block">
-                                            {user.isGuest ? 'Guest User' : (user.name || 'Athlete')}
+                                            {user.isGuest ? t('guest_user') : (user.name || t('athlete'))}
                                         </span>
                                     </div>
                                 </Link>
                             ) : (
                                 <Link to="/login">
                                     <Button size="sm" className="rounded-2xl px-5">
-                                        Sign In
+                                        {t('sign_in')}
                                     </Button>
                                 </Link>
                             )
@@ -137,7 +142,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                                         />
                                         
                                         <span className={cn(
-                                            "text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest transition-opacity duration-300",
+                                            "text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest transition-opacity duration-300 text-center",
                                             isActive ? "opacity-100" : "opacity-40"
                                         )}>
                                             {item.label}
@@ -156,3 +161,4 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
     );
 };
+

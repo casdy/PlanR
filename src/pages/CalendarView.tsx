@@ -24,17 +24,36 @@ import {
     isSameDay, 
     isToday
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Dumbbell, Trash2, X, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Dumbbell, Trash2, X, Play, BookOpen } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../hooks/useLanguage';
+import { RoutineGenerator } from '../components/RoutineGenerator';
+import { LocalService } from '../services/localService';
+import { useNavigate } from 'react-router-dom';
+
+const iconMap: Record<string, React.ReactNode> = {
+    flame: <Dumbbell className="w-6 h-6" />, // Simplify for now
+    home: <BookOpen className="w-6 h-6" />,
+    dumbbell: <Dumbbell className="w-6 h-6" />,
+};
+
+const colorMap: Record<string, string> = {
+    orange: 'bg-orange-500/10 text-orange-500',
+    blue: 'bg-primary/10 text-primary',
+    emerald: 'bg-emerald-500/10 text-emerald-500',
+};
 
 export const CalendarView = () => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const { startWorkout, status: workoutStatus } = useWorkoutStore();
     const [currentDate, setCurrentDate] = useState(new Date());
     const [programs, setPrograms] = useState<WorkoutProgram[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState<'schedule' | 'library'>('schedule');
+    const navigate = useNavigate();
     
     // Zustand store
     const { plannedWorkouts, addPlannedWorkout, removePlannedWorkout } = useCalendarStore();
@@ -79,18 +98,60 @@ export const CalendarView = () => {
         setIsAssignModalOpen(false);
     };
 
+    const handleRoutineGenerated = async (newProgram: any) => {
+        const id = crypto.randomUUID();
+        const programToSave = {
+            ...newProgram,
+            id,
+            userId: user?.id || 'guest',
+            version: 1
+        };
+        LocalService.saveProgram(programToSave);
+        await ProgramService.saveProgram(programToSave);
+        
+        // Refresh programs list
+        setPrograms(await ProgramService.getUserPrograms(user?.id || 'guest'));
+        navigate(`/program/${id}`);
+    };
+
     return (
         <div className="space-y-6 pb-36">
-            <header className="flex flex-col gap-2">
-                <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
-                    <CalendarIcon className="w-8 h-8 text-primary" />
-                    Workout <span className="text-primary italic">Calendar</span>
-                </h1>
-                <p className="text-muted-foreground font-medium">Plan your gains ahead of time.</p>
+            <header className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
+                        <CalendarIcon className="w-8 h-8 text-primary" />
+                        {t('planning_hub')}
+                    </h1>
+                </div>
+                
+                {/* Mobile-First Tab Navigation */}
+                <div className="flex bg-white/5 dark:bg-zinc-900/50 p-1.5 rounded-2xl border border-white/10 dark:border-white/5 w-full">
+                    <button
+                        onClick={() => setActiveTab('schedule')}
+                        className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all ${activeTab === 'schedule' ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-white' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        {t('schedule')}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('library')}
+                        className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${activeTab === 'library' ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-white' : 'text-muted-foreground hover:text-white'}`}
+                    >
+                        {t('library')} <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-md text-[10px]">{programs.length}</span>
+                    </button>
+                </div>
             </header>
 
-            <Card className="glass border-white/10 dark:border-white/5 rounded-[2.5rem] p-6 lg:p-8 relative overflow-hidden">
-                {/* Month Navigation */}
+            <AnimatePresence mode="wait">
+                {activeTab === 'schedule' ? (
+                    <motion.div
+                        key="schedule"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <Card className="glass border-white/10 dark:border-white/5 rounded-[2.5rem] p-6 lg:p-8 relative overflow-hidden">
+                            {/* Month Navigation */}
                 <div className="flex items-center justify-between mb-8">
                     <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-2xl hover:bg-primary/20 hover:text-primary">
                         <ChevronLeft className="w-6 h-6" />
@@ -105,7 +166,7 @@ export const CalendarView = () => {
 
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 gap-2 mb-4">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                    {[t('day_sun'), t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat')].map(day => (
                         <div key={day} className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
                             {day}
                         </div>
@@ -151,6 +212,70 @@ export const CalendarView = () => {
                     })}
                 </div>
             </Card>
+            </motion.div>
+            ) : (
+                <motion.div
+                    key="library"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2 }}
+                    className="space-y-6"
+                >
+                    {/* AI Generator */}
+                    <RoutineGenerator onRoutineGenerated={handleRoutineGenerated} />
+
+                    {/* Saved Programs */}
+                    <section className="space-y-4">
+                        {programs.length === 0 ? (
+                            <Card className="p-8 rounded-[2rem] border-dashed border-white/10 text-center space-y-3 glass">
+                                <div className="w-14 h-14 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto">
+                                    <Plus className="w-7 h-7 text-primary" />
+                                </div>
+                                <p className="font-bold">{t('no_programs')}</p>
+                                <p className="text-sm text-muted-foreground">{t('no_programs_desc')}</p>
+                            </Card>
+                        ) : (
+                            <div className="space-y-3">
+                                {programs.map((prog, i) => {
+                                    const color = colorMap[prog.colorTheme || 'blue'] || colorMap.blue;
+                                    const workoutDays = prog.schedule.filter(d => d.type !== 'rest');
+                                    return (
+                                        <motion.div
+                                            key={prog.id}
+                                            initial={{ opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.05 }}
+                                        >
+                                            <Card
+                                                className="p-5 rounded-[2rem] border-white/10 dark:border-white/5 glass cursor-pointer hover:border-primary/30 transition-colors group"
+                                                onClick={() => navigate(`/program/${prog.id}`)}
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${color}`}>
+                                                        {iconMap[prog.icon || 'dumbbell'] || <Dumbbell className="w-6 h-6" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="font-black text-base truncate group-hover:text-primary transition-colors">{prog.title}</h3>
+                                                        <div className="flex items-center gap-3 mt-1">
+                                                            <span className="text-xs font-bold text-muted-foreground flex items-center gap-1">
+                                                                <BookOpen className="w-3 h-3" />
+                                                                {workoutDays.length} {t('workout_days')}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                                                </div>
+                                            </Card>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </section>
+                </motion.div>
+            )}
+            </AnimatePresence>
 
             {/* Assignment Modal / Bottom Sheet */}
             <AnimatePresence>
@@ -172,9 +297,9 @@ export const CalendarView = () => {
                             </Button>
                             
                             <h3 className="text-xl font-black mb-1">
-                                {isToday(selectedDate) ? 'Today' : format(selectedDate, 'EEEE, MMMM do')}
+                                {isToday(selectedDate) ? t('today') : format(selectedDate, 'EEEE, MMMM do')}
                             </h3>
-                            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-6">Plan your routine</p>
+                            <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-6">{t('plan_your_routine')}</p>
 
                             {/* Check if already assigned */}
                             {plannedWorkouts.find(w => w.date === formatDateKey(selectedDate)) ? (() => {
@@ -190,7 +315,7 @@ export const CalendarView = () => {
                                             </div>
                                             <div>
                                                 <p className="font-bold text-base leading-tight">
-                                                    {assignedProgram?.title || 'Workout Assigned'}
+                                                    {assignedProgram?.title || t('workout_assigned')}
                                                 </p>
                                                 <p className="text-xs text-muted-foreground mt-0.5">
                                                     {assignedDay?.title || 'You have a routine scheduled.'}
@@ -199,7 +324,7 @@ export const CalendarView = () => {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3">
                                         <Button variant="outline" className="w-full rounded-2xl border-destructive/20 text-destructive hover:bg-destructive/10" onClick={handleRemove}>
-                                            <Trash2 className="w-4 h-4 mr-2" /> Remove
+                                            <Trash2 className="w-4 h-4 mr-2" /> {t('remove')}
                                         </Button>
                                         <Button
                                             variant="primary"
@@ -214,7 +339,7 @@ export const CalendarView = () => {
                                             }}
                                         >
                                             <Play className="w-4 h-4" />
-                                            Start Now
+                                            {t('start_now')}
                                         </Button>
                                     </div>
                                 </div>
@@ -222,7 +347,7 @@ export const CalendarView = () => {
                             })() : (
                                 <div className="space-y-3">
                                     {programs.length === 0 ? (
-                                        <p className="text-sm text-center py-4 opacity-60">No saved programs found. Create one first!</p>
+                                        <p className="text-sm text-center py-4 opacity-60">{t('no_saved_programs')}</p>
                                     ) : (
                                         <div className="max-h-[40vh] overflow-y-auto no-scrollbar space-y-2 pr-2">
                                             {programs.map(prog => (

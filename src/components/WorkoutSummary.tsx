@@ -16,6 +16,7 @@ import { Card } from './ui/Card';
 import { Trophy, Share2, RotateCcw, Download, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { LocalService } from '../services/localService';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
     const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
@@ -23,6 +24,7 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
 
     const [isLogging, setIsLogging] = useState(false);
     const { user } = useAuth();
+    const { t } = useLanguage();
 
     useEffect(() => {
         const finalizeWorkout = async () => {
@@ -90,10 +92,10 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                     <div className="bg-gradient-to-b from-[#385cf0] to-[#513cf0] pt-10 pb-8 px-6 text-center text-white relative">
                         <Trophy className="w-14 h-14 mx-auto mb-3 text-[#F2DF3D]" strokeWidth={1.5} />
                         <h2 className="text-[22px] font-black tracking-wide mb-1">
-                            {achievementTitle || "BEAST MODE"}
+                            {achievementTitle || t('beast_mode')}
                         </h2>
                         <p className="text-white/80 text-[8px] font-black uppercase tracking-[0.2em] opacity-90">
-                            {achievementSubtitle || "NEW ACHIEVEMENT UNLOCKED"}
+                            {achievementSubtitle || t('new_achievement')}
                         </p>
                     </div>
 
@@ -121,7 +123,7 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                                 <div className="flex flex-col items-center gap-5 relative w-full h-full justify-center">
                                     <div className="w-12 h-12 rounded-full border-[3px] border-[#2a2d48] border-t-[#665DDC] animate-spin" />
                                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
-                                        Forging Achievement...
+                                        {t('forging_achievement')}
                                     </p>
                                 </div>
                             )}
@@ -135,12 +137,12 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                                 onClick={handleDownload} 
                                 disabled={!lastBadgeUrl}
                             >
-                                <Download className="w-3.5 h-3.5" strokeWidth={2.5} /> Save
+                                <Download className="w-3.5 h-3.5" strokeWidth={2.5} /> {t('save')}
                             </Button>
                             <Button 
                                 className="bg-[#5C45F4] hover:bg-[#6c57f5] gap-2 h-11 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-[#5C45F4]/20 transition-all"
                             >
-                                <Share2 className="w-3.5 h-3.5" strokeWidth={2.5} /> Share
+                                <Share2 className="w-3.5 h-3.5" strokeWidth={2.5} /> {t('share')}
                             </Button>
                         </div>
 
@@ -152,7 +154,7 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                             }}
                         >
                             <RotateCcw className="w-3.5 h-3.5" />
-                            Return to Dashboard
+                            {t('return_dashboard')}
                         </button>
                     </div>
                 </Card>

@@ -13,6 +13,7 @@ import { Card } from './ui/Card';
 import { X, Calendar, Play, Loader2, Dumbbell } from 'lucide-react';
 import type { DbExercise } from '../services/wgerService';
 import { fetchWgerMedia } from '../services/wgerService';
+import { useLanguage } from '../hooks/useLanguage';
 
 const ModalExerciseImage = ({ exerciseName }: { exerciseName: string }) => {
     const [mediaUrl, setMediaUrl] = useState<string>('');
@@ -76,6 +77,7 @@ export const DailyWorkoutModal = ({
     isLoading = false,
     assignedWorkout = null
 }: DailyWorkoutModalProps) => {
+    const { t } = useLanguage();
 
     return createPortal(
         <AnimatePresence>
@@ -99,10 +101,10 @@ export const DailyWorkoutModal = ({
                         <div className="p-6 border-b border-border/50 flex items-start justify-between bg-card z-10 sticky top-0">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">
-                                    {assignedWorkout ? 'Scheduled Routine' : 'Daily Suggestion'}
+                                    {assignedWorkout ? t('scheduled_routine') : t('daily_suggestion')}
                                 </p>
                                 <h3 className="text-2xl font-black capitalize leading-tight">
-                                    {assignedWorkout ? assignedWorkout.dayTitle : `Focus: ${targetMuscle}`}
+                                    {assignedWorkout ? assignedWorkout.dayTitle : `${t('focus')}: ${targetMuscle}`}
                                 </h3>
                             </div>
                             <Button 
@@ -125,15 +127,15 @@ export const DailyWorkoutModal = ({
                                     <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500/10 text-emerald-500 flex items-center justify-center shadow-inner shadow-emerald-500/20 mb-2 ring-1 ring-emerald-500/20">
                                         <Dumbbell className="w-10 h-10" />
                                     </div>
-                                    <h4 className="text-3xl font-black tracking-tighter text-center">Workout Assigned</h4>
+                                    <h4 className="text-3xl font-black tracking-tighter text-center">{t('workout_assigned')}</h4>
                                     <p className="text-muted-foreground font-medium text-lg max-w-sm text-center px-4 leading-snug">
-                                        You are scheduled to complete the <span className="text-primary font-bold italic">{assignedWorkout.programTitle}</span>.
+                                        {t('scheduled_to_complete')} <span className="text-primary font-bold italic">{assignedWorkout.programTitle}</span>.
                                     </p>
                                 </div>
                             ) : isLoading || exercises.length === 0 ? (
                                 <div className="py-12 flex flex-col items-center justify-center gap-4 w-full h-full">
                                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                                    <p className="text-sm font-bold text-muted-foreground animate-pulse">Forging your workout...</p>
+                                    <p className="text-sm font-bold text-muted-foreground animate-pulse">{t('forging_workout')}</p>
                                 </div>
                             ) : (
                                 <div className="flex gap-4 w-max h-full min-h-[280px]">
@@ -159,7 +161,7 @@ export const DailyWorkoutModal = ({
 
                                             {/* Default set/rep scheme suggestion for visual balance */}
                                             <div className="shrink-0 w-full pt-4 border-t border-white/5 mt-auto">
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">3 Sets</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">3 {t('sets')}</p>
                                                 <p className="text-xl font-black leading-none tabular-nums text-primary">10-12</p>
                                             </div>
                                         </Card>
@@ -179,7 +181,7 @@ export const DailyWorkoutModal = ({
                                     disabled={isLoading || exercises.length === 0}
                                 >
                                     <Calendar className="w-5 h-5 flex-shrink-0" />
-                                    <span className="truncate">Save to Calendar</span>
+                                    <span className="truncate">{t('save_to_calendar')}</span>
                                 </Button>
                             )}
                             <Button 
@@ -190,7 +192,7 @@ export const DailyWorkoutModal = ({
                                 disabled={isLoading || (!assignedWorkout && exercises.length === 0)}
                             >
                                 <Play className="w-5 h-5 flex-shrink-0 fill-current" />
-                                <span className="truncate">Start Now</span>
+                                <span className="truncate">{t('start_now')}</span>
                             </Button>
                         </div>
                     </motion.div>

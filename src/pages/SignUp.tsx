@@ -14,8 +14,10 @@ import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { SplashScreen } from '../components/SplashScreen';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const SignUp = () => {
+    const { t } = useLanguage();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -51,7 +53,7 @@ export const SignUp = () => {
 
     return (
         <div className="min-h-[85vh] flex flex-col items-center justify-center p-4">
-            <SplashScreen show={showSuccessSplash} message="Setting up your profile..." />
+            <SplashScreen show={showSuccessSplash} message={t('setting_up_profile')} />
             
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -68,8 +70,8 @@ export const SignUp = () => {
                     >
                         <UserPlus className="w-10 h-10 text-primary-foreground" />
                     </motion.div>
-                    <h2 className="text-4xl font-black tracking-tight mb-2">Join PlanR</h2>
-                    <p className="text-muted-foreground font-medium">Start your journey to a stronger you.</p>
+                    <h2 className="text-4xl font-black tracking-tight mb-2">{t('join_planr')}</h2>
+                    <p className="text-muted-foreground font-medium">{t('start_journey')}</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="glass p-8 rounded-[2.5rem] border-white/20 dark:border-white/5 space-y-5">
@@ -82,7 +84,7 @@ export const SignUp = () => {
                     <Input
                         id="name"
                         name="name"
-                        label="Full Name"
+                        label={t('full_name')}
                         placeholder="John Doe"
                         type="text"
                         icon={User}
@@ -95,7 +97,7 @@ export const SignUp = () => {
                     <Input
                         id="email"
                         name="email"
-                        label="Email Address"
+                        label={t('email_address')}
                         placeholder="your@email.com"
                         type="email"
                         icon={Mail}
@@ -108,7 +110,7 @@ export const SignUp = () => {
                     <Input
                         id="password"
                         name="password"
-                        label="Password"
+                        label={t('password')}
                         placeholder="••••••••"
                         type="password"
                         icon={Lock}
@@ -121,7 +123,7 @@ export const SignUp = () => {
                     <Input
                         id="confirmPassword"
                         name="confirmPassword"
-                        label="Confirm Password"
+                        label={t('confirm_password')}
                         placeholder="••••••••"
                         type="password"
                         icon={Lock}
@@ -137,9 +139,9 @@ export const SignUp = () => {
                             disabled={isLoading}
                             className="w-full h-14 rounded-2xl text-lg font-bold group bg-accent hover:bg-accent/90 border-none"
                         >
-                            {isLoading ? 'Creating Account...' : (
+                            {isLoading ? t('creating_account') : (
                                 <>
-                                    Get Started
+                                    {t('get_started')}
                                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}
@@ -151,7 +153,7 @@ export const SignUp = () => {
                             <span className="w-full border-t border-white/20 dark:border-white/5" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with</span>
+                            <span className="bg-background px-2 text-muted-foreground font-medium">{t('or_continue_with')}</span>
                         </div>
                     </div>
 
@@ -194,9 +196,9 @@ export const SignUp = () => {
 
                 <div className="mt-8 text-center">
                     <p className="text-muted-foreground font-medium">
-                        Already have an account?{' '}
+                        {t('already_have_account')} {' '}
                         <Link to="/login" className="text-primary hover:underline font-bold decoration-2 underline-offset-4">
-                            Log in instead
+                            {t('log_in_instead')}
                         </Link>
                     </p>
                 </div>

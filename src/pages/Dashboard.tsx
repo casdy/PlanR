@@ -23,10 +23,11 @@ import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 import { Loader2, Play, Activity, Flame, TrendingUp, ArrowRight, Calendar, Zap, ChevronRight, Droplets, AlertTriangle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { DailyWorkoutModal } from '../components/DailyWorkoutModal';
+import { HolisticInsights } from '../components/HolisticInsights';
 import { useCalendarStore } from '../store/calendarStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useToastStore } from '../store/toastStore';
@@ -43,7 +44,37 @@ const Tooltip = ({ children, content }: any) => {
     );
 };
 
+const POWERED_BY = ['Supabase', 'WgerDB', 'ExerciseDB'];
+
+const PoweredBy = () => {
+    const [idx, setIdx] = useState(0);
+    useEffect(() => {
+        const t = setInterval(() => setIdx(i => (i + 1) % POWERED_BY.length), 10800);
+        return () => clearInterval(t);
+    }, []);
+    return (
+        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground font-bold uppercase tracking-wider">
+            Powered by&nbsp;
+            <AnimatePresence mode="wait">
+                <motion.span
+                    key={idx}
+                    initial={{ y: -10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 10, opacity: 0 }}
+                    transition={{ duration: 0.18, ease: 'easeInOut' }}
+                    className="text-primary inline-block"
+                >
+                    {POWERED_BY[idx]}
+                </motion.span>
+            </AnimatePresence>
+        </span>
+    );
+};
+
+import { useLanguage } from '../hooks/useLanguage';
+
 export const Dashboard = () => {
+    const { t } = useLanguage();
     const { user, continueAsGuest, loading: authLoading } = useAuth();
     const { trainingMode, updateTrainingMode } = useTrainingMode();
     const { fetchRecentRecoveryLogs } = useRecovery();
@@ -150,32 +181,32 @@ export const Dashboard = () => {
     // --- Dynamic Health Tips ---
     const HEALTH_TIPS = [
         {
-            title: "Hydration Check",
-            desc: "Aim for 3 liters of water today to maximize muscle recovery and performance.",
+            title: t('tip_hydration_title'),
+            desc: t('tip_hydration_desc'),
             icon: Droplets,
             colorClass: "text-blue-500",
             bgClass: "bg-blue-500/20",
             cardClass: "border-blue-500/20 bg-blue-500/5 dark:bg-blue-900/10"
         },
         {
-            title: "Protein Power",
-            desc: "Consume 1.6-2.2g of protein per kg of body weight for optimal muscle synthesis.",
+            title: t('tip_protein_title'),
+            desc: t('tip_protein_desc'),
             icon: Flame,
             colorClass: "text-orange-500",
             bgClass: "bg-orange-500/20",
             cardClass: "border-orange-500/20 bg-orange-500/5 dark:bg-orange-900/10"
         },
         {
-            title: "Sleep & Recovery",
-            desc: "Get 7-9 hours of quality sleep tonight. Muscles grow while you rest, not while you train.",
+            title: t('tip_sleep_title'),
+            desc: t('tip_sleep_desc'),
             icon: Zap,
             colorClass: "text-purple-500",
             bgClass: "bg-purple-500/20",
             cardClass: "border-purple-500/20 bg-purple-500/5 dark:bg-purple-900/10"
         },
         {
-            title: "Stay Active",
-            desc: "Take a 10-minute walk after your meals to improve digestion and regulate blood sugar.",
+            title: t('tip_active_title'),
+            desc: t('tip_active_desc'),
             icon: Activity,
             colorClass: "text-emerald-500",
             bgClass: "bg-emerald-500/20",
@@ -274,7 +305,7 @@ export const Dashboard = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
                 <Loader2 className="animate-spin w-10 h-10 text-primary" />
-                <p className="text-muted-foreground font-medium animate-pulse">Building your dashboard...</p>
+                <p className="text-muted-foreground font-medium animate-pulse">{t('building_dashboard')}</p>
             </div>
         );
     }
@@ -380,19 +411,19 @@ export const Dashboard = () => {
                         <Play className="w-12 h-12 text-primary ml-1" />
                     </div>
                     <div className="space-y-4">
-                        <h2 className="text-5xl font-black tracking-tightest leading-tight">Ignite Your <span className="text-primary italic">Journey.</span></h2>
-                        <p className="text-muted-foreground max-w-sm mx-auto text-xl leading-relaxed font-medium">The ultimate companion for your fitness routine. Fast, simple, and beautifully powerful.</p>
+                        <h2 className="text-5xl font-black tracking-tightest leading-tight">{t('ignite_journey')}</h2>
+                        <p className="text-muted-foreground max-w-sm mx-auto text-xl leading-relaxed font-medium">{t('app_tagline')}</p>
                     </div>
                     <div className="flex flex-col gap-4 max-w-xs mx-auto w-full">
                         <Button className="h-16 text-lg rounded-3xl font-bold shadow-xl shadow-primary/20" onClick={handleGuestMode}>
-                            Continue as Guest
+                            {t('continue_as_guest')}
                         </Button>
                         <div className="grid grid-cols-2 gap-4">
                             <Button variant="outline" className="h-14 rounded-2xl font-bold border-white/10" onClick={() => navigate('/login')}>
-                                Log In
+                                {t('log_in')}
                             </Button>
                             <Button variant="primary" className="h-14 rounded-2xl font-bold" onClick={() => navigate('/signup')}>
-                                Sign Up
+                                {t('sign_up')}
                             </Button>
                         </div>
                     </div>
@@ -426,12 +457,12 @@ export const Dashboard = () => {
                     className="flex items-center gap-2 mb-1"
                 >
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-500">Active Session Ready</span>
+                    <span className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-500">{t('active_session_ready')}</span>
                 </motion.div>
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tighter">
-                    Hello, <span className="text-primary italic">{user.name || 'Athlete'}</span>
+                    {t('hello')}, <span className="text-primary italic">{user.name || t('athlete')}</span>
                 </h1>
-                <p className="text-muted-foreground text-base sm:text-lg font-medium">Ready to smash today's goals?</p>
+                <p className="text-muted-foreground text-base sm:text-lg font-medium">{t('ready_to_smash')}</p>
             </header>
 
             {/* Primary CTA */}
@@ -448,7 +479,7 @@ export const Dashboard = () => {
                     onClick={() => setIsModalOpen(true)}
                 >
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-0 group-hover:opacity-10 transition-opacity duration-500" />
-                    <span className="relative z-10">Start Today's Workout</span>
+                    <span className="relative z-10">{t('start_todays_workout')}</span>
                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:translate-x-1 transition-transform">
                         <ArrowRight className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
@@ -456,6 +487,11 @@ export const Dashboard = () => {
                     <div className="absolute -inset-1 bg-primary/20 rounded-[2.6rem] blur-xl animate-pulse -z-10" />
                 </Button>
             </motion.div>
+
+            {/* Smart Coaching Insights (Holistic Engine) */}
+            <section className="mt-2">
+                <HolisticInsights />
+            </section>
 
             {/* Recovery Tracking (Serious Mode) */}
             {trainingMode === 'serious' && (
@@ -470,10 +506,10 @@ export const Dashboard = () => {
                                     <Activity className="w-7 h-7" />
                                 </div>
                                 <div>
-                                    <h4 className="text-lg font-black tracking-tight group-hover:text-accent-cyan transition-colors">Recovery Status</h4>
+                                    <h4 className="text-lg font-black tracking-tight group-hover:text-accent-cyan transition-colors">{t('recovery_status')}</h4>
                                     <div className="flex gap-3">
                                         <p className="text-sm text-muted-foreground font-medium">
-                                            {recentScore ? `Last Score: ${recentScore}/10` : 'Log your daily recovery'}
+                                            {recentScore ? `${t('recovery_status')}: ${recentScore}/10` : t('log_daily_recovery')}
                                         </p>
                                         {fatigueInfo && (
                                             <p className={cn("text-sm font-bold uppercase", 
@@ -487,7 +523,7 @@ export const Dashboard = () => {
                                 </div>
                             </div>
                             <Button variant="secondary" className="rounded-xl pointer-events-none group-hover:bg-accent-cyan/10 group-hover:text-accent-cyan">
-                                Check In
+                                {t('check_in')}
                             </Button>
                         </div>
                     </Card>
@@ -500,7 +536,7 @@ export const Dashboard = () => {
                                     <AlertTriangle className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h4 className="text-red-500 font-bold">Deload Recommended</h4>
+                                    <h4 className="text-red-500 font-bold">{t('deload_recommended')}</h4>
                                     <p className="text-sm text-red-500/80 font-medium">{fatigueInfo.reason}</p>
                                     <p className="text-xs text-red-500/60 mt-1">Your next generated workout will have automatically reduced volume & intensity.</p>
                                 </div>
@@ -519,9 +555,9 @@ export const Dashboard = () => {
                                 <Zap className="w-7 h-7" />
                             </div>
                             <div>
-                                <h4 className="text-lg font-black tracking-tight">Adaptive Engine</h4>
+                                <h4 className="text-lg font-black tracking-tight">{t('adaptive_engine')}</h4>
                                 <p className="text-sm text-muted-foreground font-medium capitalize">
-                                    Current Mode: <span className="text-primary font-black tracking-widest uppercase">{trainingMode}</span>
+                                    {t('current_mode')} <span className="text-primary font-black tracking-widest uppercase">{t(trainingMode === 'casual' ? 'casual' : 'serious')}</span>
                                 </p>
                             </div>
                         </div>
@@ -531,14 +567,14 @@ export const Dashboard = () => {
                                 className={cn("rounded-xl font-bold transition-all", trainingMode === 'casual' ? "bg-white text-zinc-900 border border-black/5 shadow-sm dark:bg-zinc-800 dark:text-white dark:shadow-md dark:border-white/10" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('casual')}
                             >
-                                Casual
+                                {t('casual')}
                             </Button>
                             <Button 
                                 variant={trainingMode === 'serious' ? 'primary' : 'ghost'} 
                                 className={cn("rounded-xl font-bold transition-all", trainingMode === 'serious' ? "bg-primary text-primary-foreground shadow-md border-transparent" : "text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5")} 
                                 onClick={() => updateTrainingMode('serious')}
                             >
-                                Serious
+                                {t('serious')}
                             </Button>
                         </div>
                     </div>
@@ -549,7 +585,7 @@ export const Dashboard = () => {
             <section className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                     <h3 className="text-xl font-black tracking-tight flex items-center gap-2">
-                        Today's Focus:
+                        {t('todays_focus')}
                         <select 
                             value={suggestionMuscle}
                             onChange={(e) => fetchDailySuggestion(e.target.value)}
@@ -566,7 +602,7 @@ export const Dashboard = () => {
                     </h3>
                     {programs.length > 0 && (
                         <Link to={`/program/${programs[0].id}`} className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
-                            Open Active Workout <ChevronRight className="w-3 h-3" />
+                            {t('open_active_workout')} <ChevronRight className="w-3 h-3" />
                         </Link>
                     )}
                 </div>
@@ -580,8 +616,8 @@ export const Dashboard = () => {
                         <div className="p-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                                 <div>
-                                    <h4 className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">Daily Suggestion</h4>
-                                    <p className="text-xs text-muted-foreground font-bold uppercase tracking-wider">Powered by Supabase</p>
+                                    <h4 className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">{t('daily_suggestion')}</h4>
+                                    <PoweredBy />
                                 </div>
                                 <div className="flex gap-2">
                                     <Button 
@@ -592,7 +628,7 @@ export const Dashboard = () => {
                                             handleSaveToCalendar();
                                         }}
                                     >
-                                        Save as Program
+                                        {t('save_as_program')}
                                     </Button>
                                     <div className="w-10 h-10 rounded-2xl glass flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
                                         <Calendar className="w-5 h-5 text-primary" />
@@ -605,13 +641,13 @@ export const Dashboard = () => {
                                     <div className="w-10 h-10 bg-destructive/20 rounded-xl flex items-center justify-center mx-auto mb-3">
                                         <Activity className="w-5 h-5 text-destructive" />
                                     </div>
-                                    <p className="text-destructive font-medium text-sm">Could not load suggestions.</p>
-                                    <p className="text-muted-foreground text-xs mt-1">Please try again later.</p>
+                                    <p className="text-destructive font-medium text-sm">{t('could_not_load')}</p>
+                                    <p className="text-muted-foreground text-xs mt-1">{t('try_again_later')}</p>
                                 </div>
                             ) : isFetchingSuggestion ? (
                                 <div className="py-8 text-center bg-white/5 dark:bg-zinc-900/40 rounded-3xl border border-dashed border-white/20">
                                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
-                                    <p className="text-muted-foreground text-sm font-medium">Fetching expert suggestions...</p>
+                                    <p className="text-muted-foreground text-sm font-medium">{t('fetching_suggestions')}</p>
                                 </div>
                             ) : dailySuggestion.length > 0 ? (
                                 <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
@@ -631,11 +667,11 @@ export const Dashboard = () => {
             {/* Stats Overview */}
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <Card className="glass border-white/10 dark:border-white/5 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-6 flex flex-col items-center justify-center gap-3 sm:gap-4 group">
-                    <ProgressRing progress={workoutsThisWeek / 5} size={80} strokeWidth={7}>
+                    <ProgressRing progress={(workoutsThisWeek / 5) * 100} size={80} strokeWidth={7}>
                         <Zap className="w-5 h-5 text-primary" />
                     </ProgressRing>
                     <div className="text-center">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Weekly Goal</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{t('weekly_goal')}</p>
                         <h3 className="text-xl sm:text-2xl font-black tabular-nums">{workoutsThisWeek}<span className="text-sm opacity-40 ml-1">/ 5</span></h3>
                     </div>
                 </Card>
@@ -646,8 +682,8 @@ export const Dashboard = () => {
                             <Flame className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Streak</p>
-                            <h3 className="text-lg sm:text-xl font-black tabular-nums">{streak} Days</h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('streak')}</p>
+                            <h3 className="text-lg sm:text-xl font-black tabular-nums">{streak} {t('days')}</h3>
                         </div>
                     </Card>
                     <Card className="glass border-white/10 dark:border-white/5 rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex items-center gap-3 sm:gap-4">
@@ -655,7 +691,7 @@ export const Dashboard = () => {
                             <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Volume</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{t('volume')}</p>
                             <h3 className="text-lg sm:text-xl font-black tabular-nums">{(weeklyVolume / 1000).toFixed(1)}k <span className="text-xs font-medium opacity-50">kg</span></h3>
                         </div>
                     </Card>
@@ -683,10 +719,10 @@ export const Dashboard = () => {
                     <div>
                         <CardTitle className="text-lg font-black tracking-tight flex items-center gap-2">
                             <Calendar className="w-5 h-5 text-emerald-500" />
-                            Consistency Tracker
+                            {t('consistency_tracker')}
                         </CardTitle>
                         <p className="text-xs text-muted-foreground font-medium mt-1">
-                            Your {new Date().getFullYear()} Activity
+                            {t('your_activity', { year: new Date().getFullYear() })}
                         </p>
                     </div>
                 </CardHeader>
@@ -719,12 +755,12 @@ export const Dashboard = () => {
                         </div>
                     </div>
                     <div className="flex items-center justify-end gap-2 mt-4 text-[10px] uppercase font-black tracking-widest text-muted-foreground">
-                        <span>Less</span>
+                        <span>{t('less')}</span>
                         <div className="w-3 h-3 rounded-[3px] bg-zinc-200 dark:bg-white/10" />
                         <div className="w-3 h-3 rounded-[3px] bg-emerald-300 dark:bg-emerald-900/60" />
                         <div className="w-3 h-3 rounded-[3px] bg-emerald-500 dark:bg-emerald-600/80" />
                         <div className="w-3 h-3 rounded-[3px] bg-emerald-600 dark:bg-emerald-400" />
-                        <span>More</span>
+                        <span>{t('more')}</span>
                     </div>
                 </CardContent>
             </Card>

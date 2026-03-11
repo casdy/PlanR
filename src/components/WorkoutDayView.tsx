@@ -13,6 +13,7 @@ import { cn } from '../lib/utils';
 import { ShieldAlert, Sparkles, Wand2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ExerciseImage } from './ExerciseImage';
+import { useLanguage } from '../hooks/useLanguage';
 
 const RECOVERY_EXERCISES = [
     { id: 'rec-1', name: 'Cat-Cow Mobility', targetSets: 2, targetReps: '10' },
@@ -22,6 +23,7 @@ const RECOVERY_EXERCISES = [
 
 export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?: string }) => {
     const { activeIntensity, isRecoveryMode, scaleIntensity, swapToRecovery } = useWorkoutStore();
+    const { t } = useLanguage();
 
     const displayedDay = useMemo(() => {
         if (isRecoveryMode) {
@@ -77,7 +79,7 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
         <div className="space-y-6">
             <header className="flex items-center justify-between">
                 <div>
-                    <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">Current Protocol</p>
+                    <p className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-1">{t('current_protocol')}</p>
                     <h2 className="text-3xl font-black tracking-tighter">{programTitle || displayedDay.title}</h2>
                 </div>
                 {!isRecoveryMode && (
@@ -88,7 +90,7 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
                         className="rounded-xl border-orange-500/20 text-orange-500 hover:bg-orange-500/10 flex gap-2"
                     >
                         <ShieldAlert className="w-4 h-4" />
-                        Swap to Recovery
+                        {t('swap_to_recovery')}
                     </Button>
                 )}
             </header>
@@ -96,7 +98,7 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
             {!isRecoveryMode && (
                 <Card className="bg-secondary/30 border-none rounded-[2rem]">
                     <CardContent className="p-6">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Set Intensity Level</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">{t('set_intensity_level')}</p>
                         <div className="flex gap-2">
                             {(['light', 'standard', 'intense'] as const).map((level) => (
                                 <Button
@@ -108,7 +110,7 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
                                         activeIntensity === level && "glow-primary"
                                     )}
                                 >
-                                    {level}
+                                    {t(level as any)}
                                 </Button>
                             ))}
                         </div>
@@ -155,9 +157,9 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
                     <div className="w-12 h-12 bg-blue-500/10 rounded-2xl flex items-center justify-center mx-auto text-blue-500">
                         <Wand2 className="w-6 h-6" />
                     </div>
-                    <h3 className="text-xl font-black">AI Adaptation Active</h3>
+                    <h3 className="text-xl font-black">{t('ai_adaptation_active')}</h3>
                     <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
-                        Your routine was dynamically swapped to prioritize mobility and CNS recovery based on your session feedback.
+                        {t('ai_adaptation_desc')}
                     </p>
                 </div>
             )}

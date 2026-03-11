@@ -19,6 +19,7 @@ import { cn } from '../lib/utils';
 import { motion } from 'framer-motion';
 import { WorkoutDayView } from '../components/WorkoutDayView';
 import { ProgramEditor } from '../components/ProgramEditor';
+import { useLanguage } from '../hooks/useLanguage';
 
 export const ProgramDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export const ProgramDetail = () => {
     const [program, setProgram] = useState<WorkoutProgram | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
+    const { t } = useLanguage();
 
     useEffect(() => {
         if (id) {
@@ -46,8 +48,8 @@ export const ProgramDetail = () => {
         }
     }, [user, id]);
 
-    if (loading) return <div className="p-8 text-center text-zinc-500">Loading program...</div>;
-    if (!program) return <div className="p-8 text-center text-red-500">Program not found</div>;
+    if (loading) return <div className="p-8 text-center text-zinc-500">{t('loading_program')}</div>;
+    if (!program) return <div className="p-8 text-center text-red-500">{t('program_not_found')}</div>;
 
     const handleStartWorkout = (dayId: string) => {
         if (!program) return;
@@ -59,7 +61,7 @@ export const ProgramDetail = () => {
         <div className="space-y-10 pb-32">
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="rounded-2xl bg-secondary/50">
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                    <ChevronLeft className="w-4 h-4 mr-1" /> {t('back')}
                 </Button>
             </div>
 
@@ -100,8 +102,8 @@ export const ProgramDetail = () => {
             {isEditing ? (
                 <div className="pt-6 border-t border-white/10">
                     <div className="mb-6">
-                        <h2 className="text-2xl font-black">Edit Routine</h2>
-                        <p className="text-muted-foreground text-sm">Swap exercises seamlessly via API Ninjas.</p>
+                        <h2 className="text-2xl font-black">{t('edit_routine')}</h2>
+                        <p className="text-muted-foreground text-sm">{t('swap_exercises_seamlessly')}</p>
                     </div>
                     <ProgramEditor program={program} onUpdate={(p) => setProgram(p)} />
                 </div>

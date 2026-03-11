@@ -13,12 +13,14 @@ import { Button } from './ui/Button';
 import { createPortal } from 'react-dom';
 import type { DbExercise } from '../services/wgerService';
 import { fetchWgerMedia } from '../services/wgerService';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface ExerciseCardProps {
     exercise: DbExercise;
 }
 
 export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
+    const { t } = useLanguage();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [imageError, setImageError] = useState(false);
     const [mediaUrl, setMediaUrl] = useState<string>('');
@@ -77,7 +79,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                 </div>
 
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 truncate">
-                    {exercise.category || exercise.target || 'Exercise'}
+                    {exercise.category || exercise.target || t('exercise_fallback')}
                 </p>
                 <p className="text-sm font-bold truncate leading-tight mb-2">{exercise.name}</p>
                 <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground/60">
@@ -148,7 +150,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                                     {isMediaLoading ? (
                                         <div className="absolute inset-0 bg-zinc-100/80 dark:bg-zinc-800/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 transition-opacity">
                                             <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
-                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Loading Wger Media...</span>
+                                            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t('loading_wger_media')}</span>
                                         </div>
                                     ) : mediaUrl && !imageError ? (
                                         <img
@@ -161,7 +163,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                                     ) : (
                                         <div className="flex flex-col items-center text-muted-foreground/40">
                                             <Dumbbell className="w-16 h-16 mb-2" />
-                                            <span className="text-sm font-bold uppercase tracking-widest">No Image Available</span>
+                                            <span className="text-sm font-bold uppercase tracking-widest">{t('no_image_available')}</span>
                                         </div>
                                     )}
                                 </div>
@@ -169,7 +171,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                                 {/* Description (wger exercises) */}
                                 {exercise.description && (
                                     <div className="space-y-2">
-                                        <h4 className="text-lg font-black tracking-tight">About</h4>
+                                        <h4 className="text-lg font-black tracking-tight">{t('about')}</h4>
                                         <p className="text-sm text-foreground/70 leading-relaxed font-medium whitespace-pre-line">
                                             {exercise.description}
                                         </p>
@@ -179,7 +181,7 @@ export const ExerciseCard = ({ exercise }: ExerciseCardProps) => {
                                 {/* Instructions (ExerciseDB exercises) */}
                                 {exercise.instructions && exercise.instructions.length > 0 && (
                                     <div className="space-y-4 relative">
-                                        <h4 className="text-lg font-black tracking-tight">Instructions</h4>
+                                        <h4 className="text-lg font-black tracking-tight">{t('instructions')}</h4>
                                         <ol className="space-y-4">
                                             {exercise.instructions.map((step, index) => (
                                                 <li key={index} className="flex gap-4">

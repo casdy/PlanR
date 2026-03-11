@@ -17,6 +17,7 @@ import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { RefreshCw, ShieldAlert, X, Loader2 } from 'lucide-react';
 import { WgerImage } from './ui/WgerImage';
+import { useLanguage } from '../hooks/useLanguage';
 
 interface ProgramEditorProps {
     program: WorkoutProgram;
@@ -28,6 +29,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
     const [loadingAlternatives, setLoadingAlternatives] = useState(false);
     const [alternatives, setAlternatives] = useState<DbExercise[]>([]);
     const [targetExercise, setTargetExercise] = useState<{ dayId: string; exIndex: number; exId: string; muscle: string } | null>(null);
+    const { t } = useLanguage();
 
     // Hardcode a default muscle map for our default exercises if we can't infer it.
     // In a real app, 'muscle' would be saved on the `Exercise` type natively.
@@ -97,7 +99,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                     {day.type === 'rest' || day.type === 'active_recovery' ? (
                         <div className="p-4 bg-secondary/30 rounded-2xl flex items-center gap-3 text-muted-foreground border border-dashed border-border/50">
                             <ShieldAlert className="w-5 h-5" />
-                            <span className="font-bold text-sm">Rest day / Recovery. No active exercises.</span>
+                            <span className="font-bold text-sm">{t('rest_day_no_exercises')}</span>
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -118,7 +120,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                                         className="h-8 text-xs gap-1 rounded-xl"
                                         onClick={() => handleOpenSwap(day.id, idx, ex)}
                                     >
-                                        <RefreshCw className="w-3 h-3" /> Swap
+                                        <RefreshCw className="w-3 h-3" /> {t('swap_exercise')}
                                     </Button>
                                 </Card>
                             ))}
@@ -144,7 +146,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                         >
                             <div className="p-6 border-b border-border/50 flex items-center justify-between sticky top-0 bg-card z-10">
                                 <div>
-                                    <h3 className="text-xl font-black">Swap Exercise</h3>
+                                    <h3 className="text-xl font-black">{t('swap_exercise')}</h3>
                                     <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
                                         Target: {targetExercise?.muscle}
                                     </p>
@@ -158,12 +160,12 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                                 {loadingAlternatives ? (
                                     <div className="py-12 flex flex-col items-center justify-center gap-3">
                                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                                        <p className="text-sm text-muted-foreground font-medium animate-pulse">Finding alternatives via ExerciseDB...</p>
+                                        <p className="text-sm text-muted-foreground font-medium animate-pulse">{t('finding_alternatives')}</p>
                                     </div>
                                 ) : (
                                     <>
                                         {alternatives.length === 0 ? (
-                                            <div className="text-center py-8 text-muted-foreground">No alternatives found for this muscle group.</div>
+                                            <div className="text-center py-8 text-muted-foreground">{t('no_alternatives_found')}</div>
                                         ) : (
                                             alternatives.map((alt, i) => (
                                                 <Card key={i} className="rounded-2xl border-white/10 dark:border-white/5 bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer overflow-hidden p-0" onClick={() => handleConfirmSwap(alt)}>
