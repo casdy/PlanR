@@ -1,0 +1,7 @@
+{
+  "name": "PlanR",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}

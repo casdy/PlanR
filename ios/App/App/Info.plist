@@ -6,8 +6,19 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>CFBundleDisplayName</key>
-        <string>PlanR</string>
+    <key>CFBundleDisplayName</key>
+    <string>PlanR</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.planr.app</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.planr.app</string>
+            </array>
+        </dict>
+    </array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

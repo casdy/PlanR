@@ -13,6 +13,8 @@
  *  - "/history" | "/manage" | "/calendar" | "/program/:id" | "/settings" → Protected (login required)
  */
 import { useState, useEffect } from 'react'
+import { App as CapacitorApp } from '@capacitor/app'
+import { supabase } from './lib/supabase'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { LanguageProvider } from './hooks/useLanguage'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
@@ -39,6 +41,38 @@ const AppRoutes = () => {
   // Show splash while auth is initialising
   const [showSplash, setShowSplash] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
+
+  useEffect(() => {
+    // Handle deep links for mobile OAuth
+    const setupDeepLink = async () => {
+      CapacitorApp.addListener('appUrlOpen', async (data) => {
+        console.log('[App] App opened with URL:', data.url);
+        
+        // Use a relative-safe parsing for the URL hash/query
+        const url = new URL(data.url);
+        const hash = url.hash;
+
+        if (hash && (hash.includes('access_token=') || hash.includes('refresh_token='))) {
+          console.log('[App] Detected OAuth tokens in deep link. Syncing with Supabase...');
+          
+          const params = new URLSearchParams(hash.substring(1));
+          const access_token = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
+
+          if (access_token && refresh_token) {
+             const { error } = await supabase.auth.setSession({
+                 access_token,
+                 refresh_token
+             });
+             if (error) console.error('[App] Failed to set session from deep link:', error);
+             else console.log('[App] Session established from deep link!');
+          }
+        }
+      });
+    };
+
+    setupDeepLink();
+  }, []);
 
   useEffect(() => {
     console.log('[App] Loading state:', loading, 'User:', user?.id || 'none');

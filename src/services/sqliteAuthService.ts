@@ -87,8 +87,14 @@ export const sqliteAuthService = {
     
     async loginWithGoogle(): Promise<void> {
         try {
+            const isNative = window.hasOwnProperty('Capacitor');
+            const redirectTo = isNative ? 'com.planr.app://login' : undefined;
+            
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
+                options: {
+                    redirectTo
+                }
             });
             if (error) throw error;
         } catch (error: any) {
