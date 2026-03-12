@@ -137,6 +137,22 @@ export default defineConfig(() => {
         },
         // All other /api/* calls go to Vercel serverless functions via vercel dev
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('lucide-react')) return 'vendor-lucide';
+              if (id.includes('framer-motion')) return 'vendor-motion';
+              if (id.includes('react')) return 'vendor-react';
+              if (id.includes('@capacitor')) return 'vendor-capacitor';
+              return 'vendor';
+            }
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000
     }
   }
 })

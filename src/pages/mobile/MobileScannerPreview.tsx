@@ -1,5 +1,4 @@
-import React from 'react';
-import { WebBarcodeScanner } from '../../components/nutrition/WebBarcodeScanner';
+import { NutritionScanner } from '../../components/nutrition/NutritionScanner';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -34,7 +33,7 @@ export default function MobileScannerPreview() {
         </p>
       </div>
 
-      <WebBarcodeScanner
+      <NutritionScanner
          isOpen={true}
          onClose={() => navigate('/nutrition-preview')}
          onScanSuccess={handleScanSuccess}

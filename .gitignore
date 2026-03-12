@@ -82,3 +82,14 @@ task.md
 # ─── Supabase ─────────────────────────────────────────────────────────────────
 supabase/.temp/
 supabase/.storage/
+
+# ─── Capacitor / Native ──────────────────────────────────────────────────────
+android/app/build/
+android/.gradle/
+android/local.properties
+ios/App/build/
+ios/App/DerivedData/
+ios/App/Pods/
+*.ipa
+*.apk
+*.aar

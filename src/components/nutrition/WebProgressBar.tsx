@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNutritionTheme } from './WebTheme';
+
 
 interface WebProgressBarProps {
   label: string;
@@ -11,7 +11,6 @@ interface WebProgressBarProps {
 }
 
 export const WebProgressBar: React.FC<WebProgressBarProps> = ({ label, current, target, color, unit = 'g' }) => {
-  const { theme } = useNutritionTheme();
   const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
 
   return (

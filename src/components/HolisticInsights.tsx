@@ -262,7 +262,7 @@ export const HolisticInsights = () => {
                     {ICON_MAP[currentInsight.icon]}
                 </div>
                 <h3 className="text-[11px] uppercase tracking-widest font-black text-muted-foreground">
-                    {t('smart_coach')} • {t(currentInsight.type as string).replace('_', ' ')}
+                    {t('smart_coach')} • {t(currentInsight.type as any).replace('_', ' ')}
                 </h3>
             </div>
             {insights.length > 1 && (
@@ -290,10 +290,10 @@ export const HolisticInsights = () => {
                 className="space-y-1.5"
             >
                 <h4 className="text-lg font-black tracking-tight text-foreground leading-tight">
-                    {t(currentInsight.title)}
+                    {t(currentInsight.title as any)}
                 </h4>
                 <p className="text-sm font-medium text-muted-foreground/90 leading-relaxed">
-                    {t(currentInsight.description, currentInsight.variables as any)}
+                    {t(currentInsight.description as any, currentInsight.variables as any)}
                 </p>
             </motion.div>
         </AnimatePresence>

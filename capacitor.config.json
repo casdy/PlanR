@@ -1,0 +1,6 @@
+{
+  "appId": "com.planr.app",
+  "appName": "PlanR",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

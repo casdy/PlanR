@@ -4,7 +4,7 @@ import { RefreshCw } from 'lucide-react';
 import { WebRingChart } from '../components/nutrition/WebRingChart';
 import { WebProgressBar } from '../components/nutrition/WebProgressBar';
 import { useNutritionTheme } from '../components/nutrition/WebTheme';
-import type { NutritionTargets } from '../mobile/types';
+import type { NutritionTargets } from '../types/nutrition';
 import { NutritionSearchBar, type UnifiedFoodProduct } from '../components/NutritionSearchBar';
 import { logNutrition, getDailyNutritionTotals } from '../engine/nutritionEngine';
 import type { DailyNutritionTotals } from '../engine/nutritionEngine';

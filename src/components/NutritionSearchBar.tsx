@@ -13,7 +13,7 @@ import { offService, type FoodProduct } from '../services/offService';
 import { searchUserFoodHistory } from '../engine/nutritionEngine';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { WebBarcodeScanner } from './nutrition/WebBarcodeScanner';
+import { NutritionScanner } from './nutrition/NutritionScanner';
 import { useLanguage } from '../hooks/useLanguage';
 
 // Unified type for display
@@ -314,15 +314,15 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-xs text-red-400 px-4"
+            className="text-xs text-red-500 dark:text-red-400 px-4 font-bold tracking-wide"
           >
             {scanError}
           </motion.p>
         )}
       </AnimatePresence>
 
-      {/* Full-Screen Barcode Scanner Modal */}
-      <WebBarcodeScanner
+      {/* Full-Screen Barcode Scanner Modal (Native ML Kit) */}
+      <NutritionScanner
          isOpen={isScanning}
          onClose={() => setIsScanning(false)}
          onScanSuccess={handleScanSuccess}

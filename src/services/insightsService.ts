@@ -1,5 +1,5 @@
 import type { DailyNutritionTotals } from '../engine/nutritionEngine';
-import type { NutritionTargets } from '../mobile/types';
+import type { NutritionTargets } from '../types/nutrition';
 
 /**
  * Deterministic Logic Engine for Generating Personalized Morning Briefings.

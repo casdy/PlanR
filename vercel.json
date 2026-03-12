@@ -14,6 +14,20 @@
           "value": "*"
         }
       ]
+    },
+    {
+      "source": "/api/off-images/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
+    },
+    {
+      "source": "/api/off-static/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Resource-Policy", "value": "cross-origin" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
+      ]
     }
   ],
   "rewrites": [
@@ -24,6 +38,18 @@
     {
       "source": "/api/wger/(.*)",
       "destination": "/api/wger?path=$1"
+    },
+    {
+       "source": "/api/off-images/(.*)",
+       "destination": "https://images.openfoodfacts.org/$1"
+    },
+    {
+       "source": "/api/off-static/(.*)",
+       "destination": "https://static.openfoodfacts.org/$1"
+    },
+    {
+       "source": "/api/off/(.*)",
+       "destination": "https://world.openfoodfacts.org/$1"
     },
     {
       "source": "/((?!api/)(?!.*\\.[a-zA-Z0-9]{1,5}$).*)",
