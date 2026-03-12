@@ -41,18 +41,21 @@ const AppRoutes = () => {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
+    console.log('[App] Loading state:', loading, 'User:', user?.id || 'none');
     if (!loading) {
-      // If guest, exit splash much faster (1s total)
-      // If registered, keep longer for data sync (4s total)
       const isGuest = user?.isGuest || !user;
       const exitDelay = isGuest ? 500 : 3500;
       const removeDelay = isGuest ? 1000 : 4000;
 
+      console.log(`[App] Auth loaded. Scheduling splash exit in ${exitDelay}ms and removal in ${removeDelay}ms`);
+
       const exitTimer = setTimeout(() => {
+          console.log('[App] Splash exiting (isExiting = true)');
           setIsExiting(true);
       }, exitDelay);
       
       const removeTimer = setTimeout(() => {
+          console.log('[App] Splash removed (showSplash = false)');
           setShowSplash(false);
       }, removeDelay);
       

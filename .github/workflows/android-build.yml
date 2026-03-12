@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   android-build:
     name: Android Build
@@ -32,7 +35,9 @@ jobs:
         run: npm run build
 
       - name: Capacitor Sync
-        run: npx cap sync android
+        run: |
+          ls -R dist
+          npx cap sync android --verbose
 
       - name: Build Android APK
         run: |
@@ -66,7 +71,7 @@ jobs:
         run: npm run build
 
       - name: Capacitor Sync
-        run: npx cap sync ios
+        run: npx cap sync ios --verbose
 
       - name: Pod Install
         run: |
