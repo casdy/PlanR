@@ -24,7 +24,7 @@ export const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [showSuccessSplash, setShowSuccessSplash] = useState(false);
     
-    const { login, loginWithGoogle, resetApp } = useAuth();
+    const { login, loginWithGoogle, resetApp, continueAsGuest } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -157,6 +157,19 @@ export const Login = () => {
                             />
                         </svg>
                         Google
+                    </Button>
+
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            continueAsGuest();
+                            setShowSuccessSplash(true);
+                            setTimeout(() => navigate('/'), 2500);
+                        }}
+                        variant="outline"
+                        className="w-full h-14 rounded-2xl text-lg font-bold border-2 border-primary/20 text-foreground hover:bg-primary/5 dark:border-white/10 dark:hover:bg-white/5 transition-all"
+                    >
+                        {t('continue_as_guest')}
                     </Button>
                 </form>
 

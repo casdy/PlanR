@@ -1,6 +1,44 @@
 import type { WorkoutTemplate, ExerciseLog, TrainingMode, EngineAdjustmentResult } from './types';
+import type { FitnessGoal } from '../types';
 
 export const PROGRESSION_CASUAL_INCREASE_PERCENT = 0.025; // +2.5%
+
+/**
+ * The Epley Formula for Estimated One-Rep Max (e1RM)
+ */
+export function calculateE1RM(weight: number, reps: number): number {
+  if (reps === 0) return 0;
+  if (reps === 1) return weight;
+  return weight * (1 + reps / 30);
+}
+
+/**
+ * Strength Retention Monitor
+ * 
+ * Logic: Compare recent 3 sessions avg e1RM vs prior 3 sessions avg e1RM.
+ * Trigger if recent < 90% of prior AND user is in a caloric deficit.
+ */
+export function checkStrengthRetention(
+  exerciseId: string,
+  workoutHistory: ExerciseLog[],
+  isNutritionDeficit: boolean
+): boolean {
+  // Filter history for this specific exercise
+  const logs = workoutHistory
+    .filter(log => log.exercise_id === exerciseId)
+    .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime());
+
+  if (logs.length < 6) return false; // Need at least 6 sessions to compare 3 vs 3
+
+  const recentAvg = logs.slice(0, 3).reduce((acc, log) => acc + calculateE1RM(log.weight, log.reps), 0) / 3;
+  const priorAvg = logs.slice(3, 6).reduce((acc, log) => acc + calculateE1RM(log.weight, log.reps), 0) / 3;
+
+  if (priorAvg === 0) return false;
+
+  const retentionRatio = recentAvg / priorAvg;
+
+  return retentionRatio < 0.9 && isNutritionDeficit;
+}
 
 /**
  * Adjusts a generated workout template based on previous performance data.
@@ -13,7 +51,8 @@ export const PROGRESSION_CASUAL_INCREASE_PERCENT = 0.025; // +2.5%
 export function adjustProgram(
   template: WorkoutTemplate,
   performanceHistory: ExerciseLog[],
-  trainingMode: TrainingMode = 'casual'
+  trainingMode: TrainingMode = 'casual',
+  goal: FitnessGoal = 'maintenance'
 ): EngineAdjustmentResult {
   const adjustmentsMade: string[] = [];
   
@@ -25,10 +64,25 @@ export function adjustProgram(
 
     const lastLog = recentLogs[0];
     
-    // Default fallback to keep original template stats
+    // Goal-Adaptive Adjustments (PRD Phase 2.1)
     let targetWeight = exercise.targetWeight;
     let targetSets = exercise.targetSets;
-    // We keep targetReps as string "8-12" from AI, could be parsed later if needed.
+    let targetReps = exercise.targetReps;
+    let restTimeSec = 90; // default
+
+    if (goal === 'fat_loss') {
+      targetSets = 3;
+      targetReps = "10-15";
+      restTimeSec = 60;
+    } else if (goal === 'muscle_gain') {
+      targetSets = 4;
+      targetReps = "8-12";
+      restTimeSec = 90;
+    } else if (goal === 'strength') {
+      targetSets = 5;
+      targetReps = "3-5";
+      restTimeSec = 180;
+    }
 
     if (lastLog) {
       if (trainingMode === 'casual') {
@@ -67,6 +121,8 @@ export function adjustProgram(
       ...exercise,
       targetWeight,
       targetSets,
+      targetReps,
+      restTimeSec,
     };
   });
 

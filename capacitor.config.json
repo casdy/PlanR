@@ -2,5 +2,13 @@
   "appId": "com.planr.app",
   "appName": "PlanR",
   "webDir": "dist",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "plugins": {
+    "LiveUpdates": {
+      "appId": "YOUR_APPFLOW_APP_ID",
+      "channel": "Production",
+      "autoUpdateMethod": "background",
+      "maxVersions": 2
+    }
+  }
 }

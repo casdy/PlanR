@@ -1,0 +1,97 @@
+name: Mobile Build
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  android-build:
+    name: Android Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'adopt'
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Capacitor Sync
+        run: npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  ios-build:
+    name: iOS Build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Capacitor Sync
+        run: npx cap sync ios
+
+      - name: Pod Install
+        run: |
+          cd ios/App
+          pod install
+
+      - name: Build iOS App
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphoneos -allowProvisioningUpdates build-for-testing CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-ios-debug
+          path: ios/App/build/Build/Products/Debug-iphoneos/App.app
+
+# How to trigger this workflow:
+# 1. Commit and push this file to your 'main' branch.
+# 2. Go to your GitHub repository on the website.
+# 3. Click the 'Actions' tab at the top.
+# 4. Select 'Mobile Build' (renamed from Android Build) from the left sidebar.
+# 5. Click 'Run workflow' -> 'Run workflow' button.
+# 6. Once complete, you'll see TWO artifacts: 'app-debug' (APK) and 'app-ios-debug' (.app bundle).
+
+# NOTE FOR iOS:
+# Building a signed .ipa that installs on physical devices REQIURES an Apple Developer Account
+# and setting up "Secrets" in your GitHub repo (P12 certificate and Provisioning Profile).
+# I've configured this to build an UN-SIGNED .app bundle which validates the build compiles correctly.

@@ -16,12 +16,12 @@ export const WebProgressBar: React.FC<WebProgressBarProps> = ({ label, current, 
   return (
     <div className="w-full mb-4">
       <div className="flex justify-between items-baseline mb-2">
-        <span className="text-sm font-bold text-white">{label}</span>
-        <span className="text-xs font-medium text-zinc-400">
+        <span className="text-sm font-bold text-slate-900 dark:text-white">{label}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
           {current}{unit} / {target}{unit}
         </span>
       </div>
-      <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+      <div className="h-2 w-full rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}

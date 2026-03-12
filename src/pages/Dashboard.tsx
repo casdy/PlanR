@@ -21,7 +21,7 @@ import type { WorkoutProgram, DeloadResult } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
-import { Loader2, Play, Activity, Flame, TrendingUp, ArrowRight, Calendar, Zap, ChevronRight, Droplets, AlertTriangle } from 'lucide-react';
+import { Loader2, Play, Activity, Flame, TrendingUp, ArrowRight, Calendar, Zap, ChevronRight, Droplets, AlertTriangle, Target, Ruler } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing } from '../components/ui/ProgressRing';
@@ -32,6 +32,12 @@ import { useCalendarStore } from '../store/calendarStore';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useToastStore } from '../store/toastStore';
 import { format } from 'date-fns';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
+import { MeasurementTracker } from '../components/MeasurementTracker';
+import { GoalSelectorModal } from '../components/GoalSelectorModal';
+import { getUserBiometrics, type UserBiometrics } from '../engine/calorieEngine';
+import { checkStrengthRetention } from '../engine/progressionEngine';
+import { supabase } from '../lib/supabase';
 
 const Tooltip = ({ children, content }: any) => {
     return (
@@ -78,7 +84,7 @@ export const Dashboard = () => {
     const { user, continueAsGuest, loading: authLoading } = useAuth();
     const { trainingMode, updateTrainingMode } = useTrainingMode();
     const { fetchRecentRecoveryLogs } = useRecovery();
-    const { checkDeloadStatus } = usePerformance();
+    const { checkDeloadStatus, fetchPerformanceHistory } = usePerformance();
     const [recentScore, setRecentScore] = useState<number | null>(null);
     const [fatigueInfo, setFatigueInfo] = useState<DeloadResult | null>(null);
     const navigate = useNavigate();
@@ -93,6 +99,11 @@ export const Dashboard = () => {
     const [suggestionError, setSuggestionError] = useState(false);
     const [isFetchingSuggestion, setIsFetchingSuggestion] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [biometrics, setBiometrics] = useState<UserBiometrics | null>(null);
+    const [isMeasurementModalOpen, setIsMeasurementModalOpen] = useState(false);
+    const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+    const [measurements, setMeasurements] = useState<any[]>([]);
+    const [showStrengthWarning, setShowStrengthWarning] = useState(false);
 
     const bodyPartsList = ['back', 'cardio', 'chest', 'lower arms', 'lower legs', 'neck', 'shoulders', 'upper arms', 'upper legs', 'waist'];
 
@@ -140,14 +151,46 @@ export const Dashboard = () => {
                         setFatigueInfo(status);
                     });
 
-                    const [progs, s, vol] = await Promise.all([
+                    const [progs, s, vol, bio] = await Promise.all([
                         ProgramService.getUserPrograms(userId),
                         LocalService.getCurrentStreak(userId),
-                        LocalService.getWeeklyVolume(userId)
+                        LocalService.getWeeklyVolume(userId),
+                        getUserBiometrics(userId)
                     ]);
                     setPrograms(progs);
                     setStreak(s);
                     setWeeklyVolume(vol);
+                    setBiometrics(bio);
+                    
+                    if (bio) {
+                        // Fetch measurements
+                        const { data: measData, error: measError } = await supabase
+                            .from('body_measurements')
+                            .select('*')
+                            .eq('user_id', userId)
+                            .order('date', { ascending: true });
+                        
+                        if (measError) {
+                            console.warn('[Dashboard] could not fetch body_measurements. Ensure migrations are run.', measError);
+                            setMeasurements([]);
+                        } else {
+                            setMeasurements(measData || []);
+                        }
+
+                        // Check strength retention for a primary compound lift (e.g., 'Bench Press' or first exercise found)
+                        // Fetch individual exercise logs for strength monitor
+                        const perfLogs = await fetchPerformanceHistory();
+                        if (perfLogs.length > 0) {
+                            // Find most frequent exercise as a proxy for a primary lift
+                            const counts: Record<string, number> = {};
+                            perfLogs.forEach(l => { counts[l.exercise_id] = (counts[l.exercise_id] || 0) + 1; });
+                            const primaryExerciseId = Object.keys(counts).sort((a,b) => counts[b] - counts[a])[0];
+                            
+                            const isDeficit = bio.weekly_goal_rate < 0;
+                            const hasStrengthDrop = checkStrengthRetention(primaryExerciseId, perfLogs, isDeficit);
+                            setShowStrengthWarning(hasStrengthDrop);
+                        }
+                    }
                     
                     // Simple logic for workouts this week
                     const logs = LocalService.getLogs(userId); // Pass userId to getLogs as well
@@ -493,6 +536,55 @@ export const Dashboard = () => {
                 <HolisticInsights />
             </section>
 
+            {/* Goal Alignment Widget & Strength Warning */}
+            <section className="px-2 space-y-4">
+                {biometrics && (
+                    <Card className="rounded-[2.5rem] border-white/10 dark:border-white/5 glass p-6 overflow-hidden">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-primary/10 text-primary rounded-2xl flex items-center justify-center shrink-0">
+                                    <Target className="w-7 h-7" />
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-black tracking-tight">Goal Alignment</h4>
+                                    <p className="text-sm text-muted-foreground font-medium capitalize">
+                                        Focus: <span className="text-primary font-black tracking-widest uppercase">
+                                            {biometrics.primary_fitness_goal?.replace('_', ' ') || 'Maintenance'}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            <Button 
+                                variant="outline" 
+                                className="rounded-xl border-white/10"
+                                onClick={() => setIsGoalModalOpen(true)}
+                            >
+                                Change Goal
+                            </Button>
+                        </div>
+                    </Card>
+                )}
+
+                {showStrengthWarning && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
+                        <Card className="rounded-3xl border-orange-500/30 bg-orange-500/10 p-5 flex gap-4">
+                            <div className="w-12 h-12 bg-orange-500/20 text-orange-500 rounded-2xl flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h4 className="text-orange-500 font-bold">Strength Warning</h4>
+                                <p className="text-sm text-orange-500/80 font-medium">
+                                    Strength is trending downward over your last 3 sessions. Consider increasing protein or reducing your caloric deficit in the Nutrition tab.
+                                </p>
+                            </div>
+                        </Card>
+                    </motion.div>
+                )}
+            </section>
+
             {/* Recovery Tracking (Serious Mode) */}
             {trainingMode === 'serious' && (
                 <section className="px-2 space-y-3">
@@ -713,6 +805,81 @@ export const Dashboard = () => {
                 </Card>
             </section>
 
+            {/* Body Measurement Tracking */}
+            <section className="px-2 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-black tracking-tight flex items-center gap-2">
+                        <Ruler className="w-5 h-5 text-orange-500" />
+                        Body Progress
+                    </h3>
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-primary font-bold hover:bg-primary/10"
+                        onClick={() => setIsMeasurementModalOpen(true)}
+                    >
+                        Log Stats <ArrowRight className="w-4 h-4 ml-1" />
+                    </Button>
+                </div>
+
+                <Card className="rounded-[2.5rem] border-white/10 dark:border-white/5 glass p-6 overflow-hidden">
+                    <div className="h-[200px] w-full mt-4">
+                        {measurements.length > 1 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={measurements}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                    <XAxis 
+                                        dataKey="date" 
+                                        stroke="#666" 
+                                        fontSize={10} 
+                                        tickFormatter={(str) => {
+                                            try {
+                                                return format(new Date(str), 'MMM d');
+                                            } catch {
+                                                return str;
+                                            }
+                                        }} 
+                                    />
+                                    <YAxis stroke="#666" fontSize={10} domain={['auto', 'auto']} />
+                                    <ChartTooltip 
+                                        contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '12px', fontSize: '12px' }}
+                                        itemStyle={{ color: '#fff' }}
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="waist_cm" 
+                                        stroke="#f97316" 
+                                        strokeWidth={3} 
+                                        dot={{ fill: '#f97316' }} 
+                                        name="Waist"
+                                    />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="left_bicep_cm" 
+                                        stroke="#3b82f6" 
+                                        strokeWidth={3} 
+                                        dot={{ fill: '#3b82f6' }} 
+                                        name="Bicep"
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex flex-col items-center justify-center text-center p-8 border border-dashed border-white/10 rounded-3xl">
+                                <Ruler className="w-8 h-8 text-white/20 mb-3" />
+                                <p className="text-muted-foreground text-sm">Need at least 2 data points to show progress</p>
+                                <Button 
+                                    variant="ghost" 
+                                    className="text-primary text-xs mt-2 underline"
+                                    onClick={() => setIsMeasurementModalOpen(true)}
+                                >
+                                    Log your first entry
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+            </section>
+
             {/* Consistency Tracker */}
             <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-white/10 dark:border-white/5 glass overflow-hidden">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -774,6 +941,34 @@ export const Dashboard = () => {
                 onSaveToCalendar={handleSaveToCalendar}
                 isLoading={loading || authLoading}
                 assignedWorkout={assignedWorkout}
+            />
+
+            <MeasurementTracker 
+                isOpen={isMeasurementModalOpen}
+                onClose={() => setIsMeasurementModalOpen(false)}
+                onSuccess={() => {
+                    // Refresh measurements
+                    if (user) {
+                        supabase
+                            .from('body_measurements')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .order('date', { ascending: true })
+                            .then(({ data }) => setMeasurements(data || []));
+                    }
+                }}
+            />
+
+            <GoalSelectorModal 
+                isOpen={isGoalModalOpen}
+                onClose={() => setIsGoalModalOpen(false)}
+                currentGoal={biometrics?.primary_fitness_goal}
+                userId={user?.id || ''}
+                onSuccess={() => {
+                    if (user) {
+                        getUserBiometrics(user.id).then(bio => setBiometrics(bio));
+                    }
+                }}
             />
         </div>
     );

@@ -11,6 +11,8 @@
 export type { DbExercise } from '../services/wgerService';
 export type { DeloadResult } from '../engine/types';
 
+export type FitnessGoal = 'fat_loss' | 'muscle_gain' | 'strength' | 'maintenance';
+
 /** Represents an authenticated or guest user of the app. */
 export interface User {
   id: string;
@@ -38,6 +40,7 @@ export interface UserProfile {
   experience_level?: 'beginner' | 'intermediate' | 'advanced';
   mev_multiplier?: number;
   mrv_multiplier?: number;
+  primary_fitness_goal?: FitnessGoal;
   createdAt: Date;
 }
 

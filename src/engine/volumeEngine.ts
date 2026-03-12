@@ -1,4 +1,5 @@
 import type { ExerciseLog } from './types';
+import type { FitnessGoal } from '../types';
 
 /**
  * Adaptive Performance Engine - Volume Engine (Phase 1.2+)
@@ -34,13 +35,20 @@ export function calculateWeeklyVolume(
 
 /**
  * Checks if a muscle group is approaching or exceeding Maximum Recoverable Volume (MRV).
+ * If goal is 'muscle_gain', the threshold is pushed closer to MRV.
  */
 export function checkMRVThreshold(
   muscleVolume: number, 
+  goal: FitnessGoal = 'maintenance',
   mrvThreshold = 10000 // default baseline MRV
 ) {
+  // If gaining muscle, we want to push closer to MRV, so maybe we flag "approaching" later?
+  // Actually PRD says: "pushes the volumeEngine closer to the user's Maximum Recoverable Volume (MRV)"
+  // This could mean we adjust the threshold or the recommendation.
+  const adjustedMRV = goal === 'muscle_gain' ? mrvThreshold * 1.1 : mrvThreshold;
+
   return { 
-    approachingMRV: muscleVolume >= mrvThreshold * 0.8, 
-    exceededMRV: muscleVolume > mrvThreshold 
+    approachingMRV: muscleVolume >= adjustedMRV * 0.8, 
+    exceededMRV: muscleVolume > adjustedMRV 
   };
 }

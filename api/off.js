@@ -1,36 +1,37 @@
 import { checkRateLimit } from './rate-limit.js';
 
 export default async function handler(req, res) {
-  // 1. Apply Rate Limiting
+  // 1. Rate Limiting
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   if (checkRateLimit(clientIp)) {
     return res.status(429).json({ error: 'Too many requests. Please slow down.' });
   }
 
-  // Extract the path requested after /api/wger/
-  // Since we'll rewrite /api/wger/(.*) to /api/wger?path=$1
+  // 2. Extract Path
   const path = req.query?.path || '';
   const searchParams = new URLSearchParams(req.query);
-  searchParams.delete('path'); // remove the rewritten path param
+  searchParams.delete('path'); 
   
   const queryString = searchParams.toString();
-  const url = `https://wger.de/api/${path}${queryString ? '?' + queryString : ''}`;
+  const url = `https://world.openfoodfacts.org/${path}${queryString ? '?' + queryString : ''}`;
+
+  // 3. Identification Headers (Mandatory for OFF)
+  // Format: AppName - Platform - Version - Contact
+  const version = process.env.VITE_APP_VERSION || '1.0.0';
+  const environment = process.env.NODE_ENV || 'development';
+  const userAgent = `PlanR - Web - ${version} (${environment}) - contact@planr.app`;
 
   const headers = {
     'Accept': 'application/json',
-    'User-Agent': 'PlanR/1.0',
+    'User-Agent': userAgent,
+    'X-Identify': userAgent // Sometimes used as an alternative
   };
-
-  if (process.env.VITE_WGER_API_KEY || process.env.Wger_Key) {
-    const key = process.env.VITE_WGER_API_KEY || process.env.Wger_Key;
-    headers['Authorization'] = `Token ${key}`;
-  }
 
   try {
     const response = await fetch(url, { headers });
     
     if (!response.ok) {
-      return res.status(response.status).json({ error: `Wger API responded with ${response.status}` });
+      return res.status(response.status).json({ error: `OpenFoodFacts API responded with ${response.status}` });
     }
 
     const data = await response.json();
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(200).json(data);
   } catch (err) {
-    console.error('[wger-proxy] Fetch error:', err.message);
+    console.error('[off-proxy] Fetch error:', err.message);
     return res.status(500).json({ error: 'Internal proxy error' });
   }
 }

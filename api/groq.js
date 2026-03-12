@@ -17,7 +17,15 @@ export const config = {
   },
 };
 
+import { checkRateLimit } from './rate-limit.js';
+
 export default async function handler(req, res) {
+  // 1. Rate Limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (checkRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

@@ -7,7 +7,15 @@
 // This adds Cross-Origin-Resource-Policy: cross-origin so media loads
 // correctly in browsers with Cross-Origin-Embedder-Policy: require-corp.
 
+import { checkRateLimit } from './rate-limit.js';
+
 export default async function handler(req, res) {
+  // 1. Rate Limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (checkRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

@@ -22,7 +22,7 @@ import { LanguagePicker } from './ui/LanguagePicker';
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const { t, isRTL } = useLanguage();
+    const { t } = useLanguage();
     const location = useLocation();
 
     const navItems = [
@@ -42,16 +42,19 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             {/* Header - Minimal and clean */}
             <header className="sticky top-0 z-50 glass border-b border-border/40 py-2">
                 <div className="w-full max-w-[430px] mx-auto px-4 h-14 flex items-center justify-between">
-                    <motion.div 
-                        initial={{ opacity: 0, x: isRTL ? 20 : -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-3"
-                    >
-                        <div className="bg-primary p-2 rounded-2xl glow-primary animate-float">
-                            <Dumbbell className="w-5 h-5 text-primary-foreground" />
+                        <div className="flex items-center gap-3">
+                            <div className="bg-primary p-2 rounded-2xl glow-primary animate-float">
+                                <Dumbbell className="w-5 h-5 text-primary-foreground" />
+                            </div>
+                            {location.pathname === '/nutrition' ? (
+                                <div className="flex flex-col -space-y-1.5">
+                                    <h1 className="text-2xl font-black tracking-tighter text-foreground italic uppercase">Fuel<span className="not-italic text-teal-500">R</span></h1>
+                                    <span className="text-[7px] font-black text-zinc-500 uppercase tracking-[0.25em] ml-0.5 whitespace-nowrap">powered by PLANR</span>
+                                </div>
+                            ) : (
+                                <h1 className="text-2xl font-black tracking-tighter text-foreground italic">PLAN<span className="not-italic text-primary">R</span></h1>
+                            )}
                         </div>
-                        <h1 className="text-2xl font-black tracking-tighter text-foreground italic">PLAN<span className={cn("not-italic transition-colors duration-500", location.pathname === '/nutrition' ? "text-teal-500" : "text-primary")}>R</span></h1>
-                    </motion.div>
 
                     <div className="flex items-center gap-2">
                         <LanguagePicker />

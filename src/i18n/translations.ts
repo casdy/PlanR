@@ -159,6 +159,12 @@ export const translations = {
     language: 'Language',
     remaining_label: 'Remaining',
     kcal: 'kcal',
+    notifications_calendar: 'Notifications & Calendar',
+    daily_motivation: 'Daily Motivation',
+    recovery_checkins: 'Recovery Check-ins',
+    weekly_measurements: 'Weekly Measurements',
+    workout_reminder_time: 'Workout Reminder Time',
+    sync_to_calendar: 'Sync to Calendar',
 
     // --- Active Workout Overlay ---
     end: 'End',

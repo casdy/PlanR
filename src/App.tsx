@@ -30,61 +30,75 @@ import MobileScannerPreview from './pages/mobile/MobileScannerPreview'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { SplashScreen } from './components/SplashScreen'
+import { OnboardingFlow } from './components/OnboardingFlow'
+import { useUserStore } from './store/userStore'
 
 // Inner app that can consume AuthContext
 const AppRoutes = () => {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
   // Show splash while auth is initialising
   const [showSplash, setShowSplash] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
     if (!loading) {
-      // Keep splash visible for longer to ensure all modules are 'primed'
-      // Start exit animation slightly before fully removing it
+      // If guest, exit splash much faster (1s total)
+      // If registered, keep longer for data sync (4s total)
+      const isGuest = user?.isGuest || !user;
+      const exitDelay = isGuest ? 500 : 3500;
+      const removeDelay = isGuest ? 1000 : 4000;
+
       const exitTimer = setTimeout(() => {
           setIsExiting(true);
-      }, 3500);
+      }, exitDelay);
       
       const removeTimer = setTimeout(() => {
           setShowSplash(false);
-      }, 4000); // Increased to 4.0s
+      }, removeDelay);
       
       return () => {
           clearTimeout(exitTimer);
           clearTimeout(removeTimer);
       };
     }
-  }, [loading]);
+  }, [loading, user]);
+
+  const { hasSeenOnboarding } = useUserStore();
 
   return (
     <>
       <SplashScreen show={showSplash && !isExiting} message="Initialising..." />
+      
       {(!showSplash || isExiting) && (
-        <Layout>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/nutrition-preview" element={<WebNutritionDashboard />} />
-            <Route path="/mobile-scanner-preview" element={<MobileScannerPreview />} />
+        user && !hasSeenOnboarding ? (
+          <OnboardingFlow />
+        ) : (
+          <Layout>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/nutrition-preview" element={<WebNutritionDashboard />} />
+              <Route path="/mobile-scanner-preview" element={<MobileScannerPreview />} />
 
-            {/* Redirects & Fallbacks */}
-            <Route path="/dashboard" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-            
-            {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/history" element={<History />} />
-              <Route path="/calendar" element={<CalendarView />} />
-              <Route path="/program/:id" element={<ProgramDetail />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/recovery" element={<RecoveryCheckIn />} />
-              <Route path="/nutrition" element={<WebNutritionDashboard />} />
-            </Route>
-          </Routes>
-        </Layout>
+              {/* Redirects & Fallbacks */}
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              
+              {/* Protected Routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/history" element={<History />} />
+                <Route path="/calendar" element={<CalendarView />} />
+                <Route path="/program/:id" element={<ProgramDetail />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/recovery" element={<RecoveryCheckIn />} />
+                <Route path="/nutrition" element={<WebNutritionDashboard />} />
+              </Route>
+              
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Layout>
+        )
       )}
     </>
   );

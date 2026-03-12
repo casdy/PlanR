@@ -66,7 +66,12 @@ dist-ssr/
 
 # ─── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
+Thumbs.db
 Desktop.ini
 
 # ─── Antigravity AI Agent ─────────────────────────────────────────────────────
@@ -87,9 +92,23 @@ supabase/.storage/
 android/app/build/
 android/.gradle/
 android/local.properties
+android/capacitor-cordova-android-plugins/
 ios/App/build/
 ios/App/DerivedData/
 ios/App/Pods/
+ios/App/capacitor-cordova-ios-plugins/
+ios/App/public/
 *.ipa
 *.apk
 *.aar
+*.app
+*.dSYM.zip
+*.dSYM
+
+# ─── Node / Vite ──────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+.eslintcache

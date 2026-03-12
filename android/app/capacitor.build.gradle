@@ -11,6 +11,9 @@ apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
     implementation project(':capacitor-mlkit-barcode-scanning')
     implementation project(':capacitor-mlkit-translation')
+    implementation project(':capacitor-live-updates')
+    implementation project(':capacitor-local-notifications')
+    implementation project(':ebarooni-capacitor-calendar')
 
 }
 

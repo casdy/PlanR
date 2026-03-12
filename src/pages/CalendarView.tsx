@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCalendarStore } from '../store/calendarStore';
 import { ProgramService } from '../services/programService';
 import type { WorkoutProgram } from '../types';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { 
@@ -24,7 +25,7 @@ import {
     isSameDay, 
     isToday
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Dumbbell, Trash2, X, Play, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Plus, Dumbbell, Trash2, X, Play, BookOpen, Sparkles, Clock } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../hooks/useLanguage';
@@ -57,6 +58,19 @@ export const CalendarView = () => {
     
     // Zustand store
     const { plannedWorkouts, addPlannedWorkout, removePlannedWorkout } = useCalendarStore();
+    const [pendingNotifications, setPendingNotifications] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                const { notifications } = await LocalNotifications.getPending();
+                setPendingNotifications(notifications);
+            } catch (e) {
+                console.error("Failed to fetch notifications", e);
+            }
+        };
+        fetchNotifications();
+    }, []);
 
     useEffect(() => {
         const load = async () => {
@@ -149,70 +163,117 @@ export const CalendarView = () => {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{ duration: 0.2 }}
+                        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
                     >
-                        <Card className="glass border-white/10 dark:border-white/5 rounded-[2.5rem] p-6 lg:p-8 relative overflow-hidden">
+                        <Card className="lg:col-span-2 glass border-white/10 dark:border-white/5 rounded-[2.5rem] p-6 lg:p-8 relative overflow-hidden">
                             {/* Month Navigation */}
-                <div className="flex items-center justify-between mb-8">
-                    <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-2xl hover:bg-primary/20 hover:text-primary">
-                        <ChevronLeft className="w-6 h-6" />
-                    </Button>
-                    <h2 className="text-2xl font-black tracking-tight uppercase">
-                        {format(currentDate, 'MMMM yyyy')}
-                    </h2>
-                    <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-2xl hover:bg-primary/20 hover:text-primary">
-                        <ChevronRight className="w-6 h-6" />
-                    </Button>
-                </div>
+                            <div className="flex items-center justify-between mb-8">
+                                <Button variant="ghost" size="icon" onClick={prevMonth} className="rounded-2xl hover:bg-primary/20 hover:text-primary">
+                                    <ChevronLeft className="w-6 h-6" />
+                                </Button>
+                                <h2 className="text-2xl font-black tracking-tight uppercase">
+                                    {format(currentDate, 'MMMM yyyy')}
+                                </h2>
+                                <Button variant="ghost" size="icon" onClick={nextMonth} className="rounded-2xl hover:bg-primary/20 hover:text-primary">
+                                    <ChevronRight className="w-6 h-6" />
+                                </Button>
+                            </div>
 
-                {/* Weekday Headers */}
-                <div className="grid grid-cols-7 gap-2 mb-4">
-                    {[t('day_sun'), t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat')].map(day => (
-                        <div key={day} className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                            {day}
+                            {/* Weekday Headers */}
+                            <div className="grid grid-cols-7 gap-2 mb-4">
+                                {[t('day_sun'), t('day_mon'), t('day_tue'), t('day_wed'), t('day_thu'), t('day_fri'), t('day_sat')].map(day => (
+                                    <div key={day} className="text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                                        {day}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-2 lg:gap-3">
+                                {Array.from({ length: monthStart.getDay() }).map((_, i) => (
+                                    <div key={`empty-${i}`} className="h-16 lg:h-20 rounded-2xl opacity-0" />
+                                ))}
+
+                                {days.map(day => {
+                                    const dateKey = formatDateKey(day);
+                                    const isTodayDate = isToday(day);
+                                    const hasWorkout = plannedWorkouts.find(w => w.date === dateKey);
+                                    const isSelected = selectedDate && isSameDay(day, selectedDate);
+
+                                    return (
+                                        <motion.div
+                                            key={day.toString()}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => handleDateClick(day)}
+                                            className={`
+                                                relative h-16 lg:h-20 rounded-2xl border flex items-center justify-center cursor-pointer transition-all duration-300
+                                                ${isTodayDate ? 'border-primary/50 bg-primary/10' : 'border-white/10 dark:border-white/5 bg-white/5 dark:bg-zinc-900/40 hover:bg-white/10'}
+                                                ${isSelected ? 'ring-2 ring-primary border-transparent' : ''}
+                                            `}
+                                        >
+                                            <span className={`text-sm font-bold ${isTodayDate ? 'text-primary' : ''}`}>
+                                                {format(day, 'd')}
+                                            </span>
+
+                                            {hasWorkout && (
+                                                <div className="absolute bottom-2 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                                            )}
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </Card>
+
+                        {/* Sidebar: Smart Routine & Selection Details */}
+                        <div className="space-y-6">
+                            {/* Smart Routine Section */}
+                            <Card className="p-6 bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-white/5 rounded-[2.5rem]">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
+                                    <Sparkles className="w-3 h-3 text-teal-500" />
+                                    Smart Routine
+                                </h3>
+                                <div className="space-y-3">
+                                    {pendingNotifications.length > 0 ? (
+                                        pendingNotifications.slice(0, 3).map((notif: any) => (
+                                            <div key={notif.id} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-100 dark:border-white/5 flex gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-teal-500/10 flex items-center justify-center flex-shrink-0">
+                                                    <Clock className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-[11px] font-bold truncate text-slate-900 dark:text-white">{notif.title}</p>
+                                                    <p className="text-[9px] text-zinc-500 dark:text-zinc-500 font-medium truncate">{notif.body}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-6 text-center border-2 border-dashed border-zinc-100 dark:border-zinc-800 rounded-3xl">
+                                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest leading-relaxed">
+                                                No active nudges. Your routine is clear.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+
+                            {selectedDate && (
+                                <Card className="p-6 border-zinc-200 dark:border-white/5 rounded-[2.5rem] bg-white dark:bg-zinc-900">
+                                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 mb-4">
+                                        {format(selectedDate, 'EEEE, MMM do')}
+                                    </h3>
+                                    {/* Additional date details can go here if needed, 
+                                        but modal handles assignment for now */}
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full rounded-2xl text-[11px] font-black uppercase tracking-widest"
+                                        onClick={() => setIsAssignModalOpen(true)}
+                                    >
+                                        {plannedWorkouts.find(w => w.date === formatDateKey(selectedDate)) ? "Edit Plan" : "Add Workout"}
+                                    </Button>
+                                </Card>
+                            )}
                         </div>
-                    ))}
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="grid grid-cols-7 gap-2 lg:gap-3">
-                    {/* Padding for start of month offsets */}
-                    {Array.from({ length: monthStart.getDay() }).map((_, i) => (
-                        <div key={`empty-${i}`} className="h-16 lg:h-20 rounded-2xl opacity-0" />
-                    ))}
-
-                    {/* Actual Days */}
-                    {days.map(day => {
-                        const dateKey = formatDateKey(day);
-                        const isTodayDate = isToday(day);
-                        const hasWorkout = plannedWorkouts.find(w => w.date === dateKey);
-                        const isSelected = selectedDate && isSameDay(day, selectedDate);
-
-                        return (
-                            <motion.div
-                                key={day.toString()}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleDateClick(day)}
-                                className={`
-                                    relative h-16 lg:h-20 rounded-2xl border flex items-center justify-center cursor-pointer transition-all duration-300
-                                    ${isTodayDate ? 'border-primary/50 bg-primary/10' : 'border-white/10 dark:border-white/5 bg-white/5 dark:bg-zinc-900/40 hover:bg-white/10'}
-                                    ${isSelected ? 'ring-2 ring-primary border-transparent' : ''}
-                                `}
-                            >
-                                <span className={`text-sm font-bold ${isTodayDate ? 'text-primary' : ''}`}>
-                                    {format(day, 'd')}
-                                </span>
-
-                                {/* Indicator dot if a workout is planned */}
-                                {hasWorkout && (
-                                    <div className="absolute bottom-2 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                                )}
-                            </motion.div>
-                        );
-                    })}
-                </div>
-            </Card>
-            </motion.div>
+                    </motion.div>
             ) : (
                 <motion.div
                     key="library"

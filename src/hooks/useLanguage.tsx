@@ -2,7 +2,7 @@
  * @file src/hooks/useLanguage.tsx
  * @description Provides language management with localStorage persistence and instant translation.
  */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { LangCode, TranslationKeys } from '../i18n/translations';
 import { VALID_LANG_CODES, DEFAULT_LANG, translations } from '../i18n/translations';
@@ -47,7 +47,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     document.documentElement.lang = lang;
   }, [lang, isRTL]);
 
-  const t = (key: keyof TranslationKeys, variables?: Record<string, string | number>): string => {
+  const t = useCallback((key: keyof TranslationKeys, variables?: Record<string, string | number>): string => {
     // Security: keys are strictly from the English dictionary type
     // Fallback to English if translation is missing for the current language
     let text = (translations[lang] as any)[key] || (translations[DEFAULT_LANG] as any)[key] || (key as string);
@@ -60,7 +60,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     return (text as string);
-  };
+  }, [lang]);
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, isRTL }}>

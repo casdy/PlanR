@@ -7,7 +7,14 @@ const API_KEY = process.env.WORKOUTDB_API_KEY || process.env.RAPIDAPI_KEY || pro
 // Use the free direct API endpoint — no RapidAPI subscription required
 const BASE_URL = 'https://workoutdb.is-app.in/api';
 
+import { checkRateLimit } from './rate-limit.js';
+
 export default async function handler(req, res) {
+  // 1. Rate Limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (checkRateLimit(clientIp)) {
+    return res.status(429).json({ error: 'Too many requests. Please slow down.' });
+  }
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

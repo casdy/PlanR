@@ -49,11 +49,11 @@ export const WebRingChart: React.FC<WebRingChartProps> = ({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider">{t('remaining_label')}</span>
-        <span className="text-3xl font-black text-white leading-none my-0.5">
+        <span className="text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">{t('remaining_label')}</span>
+        <span className="text-3xl font-black text-slate-900 dark:text-white leading-none my-0.5">
           {Math.max(0, target - current)}
         </span>
-        <span className="text-[9px] font-bold text-zinc-500 uppercase">{t('kcal')}</span>
+        <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-500 uppercase">{t('kcal')}</span>
       </div>
     </div>
   );

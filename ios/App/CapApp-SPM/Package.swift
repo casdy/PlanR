@@ -11,14 +11,20 @@ let package = Package(
             targets: ["CapApp-SPM"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.2.0")
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.2.0"),
+        .package(name: "CapacitorLiveUpdates", path: "..\..\..\node_modules\@capacitor\live-updates"),
+        .package(name: "CapacitorLocalNotifications", path: "..\..\..\node_modules\@capacitor\local-notifications"),
+        .package(name: "EbarooniCapacitorCalendar", path: "..\..\..\node_modules\@ebarooni\capacitor-calendar")
     ],
     targets: [
         .target(
             name: "CapApp-SPM",
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
-                .product(name: "Cordova", package: "capacitor-swift-pm")
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "CapacitorLiveUpdates", package: "CapacitorLiveUpdates"),
+                .product(name: "CapacitorLocalNotifications", package: "CapacitorLocalNotifications"),
+                .product(name: "EbarooniCapacitorCalendar", package: "EbarooniCapacitorCalendar")
             ]
         )
     ]

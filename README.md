@@ -1,94 +1,67 @@
 # 💪 PlanR — Intelligence-Driven Fitness Terminal
 
-PlanR is a high-performance, privacy-first fitness companion designed for everyone. It merges **Google ML Kit Vision**, **On-Device Translation**, and an **Adaptive Workout Engine** into a sleek, glassmorphic "Intelligence Terminal" interface.
+PlanR is a high-performance, privacy-first fitness companion designed for elite athletes and everyday enthusiasts. It merges **Google ML Kit Vision**, **On-Device Translation**, and an **Adaptive Workout Engine** into a stunning, glassmorphic "Intelligence Terminal" interface.
 
-Built as a hybrid Capacitor/React solution, PlanR delivers a seamless experience across Web, Android, and iOS.
+Built as a hybrid Capacitor/React solution, PlanR delivers a seamless, premium experience across Web, Android, and iOS.
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
-![ML Kit](https://img.shields.io/badge/Vision-Google_ML_Kit-4285F4?logo=google-cloud)
-![Security](https://img.shields.io/badge/Security-NIST_CSF_2.0-red)
-![Capacitor](https://img.shields.io/badge/Hybrid-Capacitor_7-119EFF?logo=capacitor)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Security](https://img.shields.io/badge/Security-NIST_CSF_2.0_Tier_3-red)
+![Capacitor](https://img.shields.io/badge/Hybrid-Capacitor_8_Bridge-119EFF?logo=capacitor)
 
 ---
 
 ## 🔥 Elite Features
 
 ### 🍎 Vision-Based Nutrition
-
-- **Native ML Kit Scanner**: Instant barcode detection for `EAN_13`, `EAN_8`, and `UPC_A`.
-- **Open Food Facts Bridge**: Direct integration with the world's largest open food database.
-- **Privacy First**: All barcode processing happens 100% on-device.
+- **Native ML Kit Scanner**: Low-latency barcode detection for `EAN_13`, `EAN_8`, and `UPC_A`.
+- **Open Food Facts Integration**: Seamless access to global food data with mandatory identity-header compliance.
+- **On-Device Privacy**: Barcode processing happens locally; your dietary habits stay on your device.
 
 ### 🌍 Zero-Latency Translation
-
-- **On-Device Inference**: Multilingual support (ES, FR, DE, etc.) powered locally by Google ML Kit.
-- **Offline Ready**: No internet required for UI translation after initial model download.
-- **Global Reach**: Seamless RTL (Right-to-Left) and LTR layout switching.
+- **On-Device Inference**: Multilingual support powered by local Google ML Kit models.
+- **Offline Reliability**: Full UI translation functionality without an internet connection.
 
 ### 🤖 Adaptive Performance Engine
+- **AI Workout Architect**: Personalized routines generated via **Groq Llama 3 (70B)**.
+- **Smart Fatigue Analysis**: Automatically adjusts volume and suggests deloads based on performance trends.
+- **Calendar Orchestration**: Intelligent synchronization of workout splits with your native mobile calendar.
 
-- **AI Workout Architect**: Generates custom programs using Groq Llama 3 (70B) based on your specific goals.
-- **Engine Fallback**: A deterministic local generator ensures you always have a workout, even when offline.
-- **Fatigue Analysis**: Automatically suggests **Deload Sessions** based on RPE and performance trends.
-
-### 🎙️ Voice Logic
-
-- **Whisper Integration**: Dictate your sets and reps. No more manual typing during heavy sessions.
+### 🛡️ Hardened Security Infrastructure
+PlanR is designed for maximum privacy and resilience, adhering to **NIST CSF 2.0 (Tier 3)** guidelines.
+- **API Gateways**: All third-party requests (Groq, Wger, ExerciseDB) are proxied via secure Vercel handlers with **IP-based Rate Limiting**.
+- **Data Isolation**: Multi-layered protection using **Supabase Row Level Security (RLS)**.
+- **Secure Headers**: Strict Content Security Policy (CSP), HSTS, and X-Frame-Options enforced at the edge.
+- **Incident Response**: Formalized protocols documented in [Incident Response Playbook](docs/incident_response.md).
 
 ---
 
 ## 🛠️ Hybrid Tech Stack
 
-| Layer                  | Technology                                  |
-| :--------------------- | :------------------------------------------ |
-| **Core UI**            | React 19 + TypeScript 5.9 + Vite 7          |
-| **Mobile Bridge**      | Capacitor 7 (Android / iOS)                 |
-| **Vision/Translation** | Google ML Kit (Platform Native SDKs)        |
-| **Styling**            | Vanilla CSS + Framer Motion (Glassmorphism) |
-| **AI Processing**      | Groq (Llama 3 70B & Whisper Large-v3)       |
-| **Database/Auth**      | Supabase (PostgreSQL with RLS + Auth)       |
+| Layer | Technology |
+| :--- | :--- |
+| **Core UI** | React 19 + TypeScript 5.9 + Vite 7 |
+| **Mobile Bridge** | Capacitor 8 (Platform Native SDKs) |
+| **Intelligence** | Google ML Kit (Vision & Translation) |
+| **Processing** | Groq (Llama 3 70B & Whisper Large-v3) |
+| **Backend** | Supabase (PostgreSQL RLS) + Vercel Edge |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Deployment
 
-### 1. Web Local Development
-
+### 1. Web Development
 ```bash
 npm install
 npm run dev
 ```
 
-### 2. Native Mobile Setup
-
-PlanR uses Capacitor to bridge web tech to native hardware.
-
+### 2. Native Mobile
 ```bash
-# 1. Build the web assets
 npm run build
-
-# 2. Sync with Android/iOS
 npx cap sync
-
-# 3. Open in IDE
-npx cap open android
-npx cap open ios
+npx cap open android # or ios
 ```
 
 ---
 
-## 📁 Project Architecture
-
-- `src/engine/`: Core logic for fatigue detection and workout generation.
-- `src/i18n/`: Central translation dictionaries and locale management.
-- `src/services/`: Hybrid bridges for ML Kit, Groq, and Supabase.
-- `src/components/nutrition/`: Native-optimized barcode scanner UI.
-- `android/` & `ios/`: Native platform project folders.
-
----
-
-## 📄 Privacy & Security
-
-PlanR follows the **NIST CSF 2.0** framework. User data is protected via Supabase **Row Level Security (RLS)**. Intelligence features (Barcode Scanning & Translation) prioritize **On-Device Processing** to ensure your biometric and dietary data never leave your hardware.
-
-Built with ❤️ by the PlanR Team.
+*Built with ❤️ for the future of fitness.*

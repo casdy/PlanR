@@ -7,3 +7,12 @@ project(':capacitor-mlkit-barcode-scanning').projectDir = new File('../node_modu
 
 include ':capacitor-mlkit-translation'
 project(':capacitor-mlkit-translation').projectDir = new File('../node_modules/@capacitor-mlkit/translation/android')
+
+include ':capacitor-live-updates'
+project(':capacitor-live-updates').projectDir = new File('../node_modules/@capacitor/live-updates/android')
+
+include ':capacitor-local-notifications'
+project(':capacitor-local-notifications').projectDir = new File('../node_modules/@capacitor/local-notifications/android')
+
+include ':ebarooni-capacitor-calendar'
+project(':ebarooni-capacitor-calendar').projectDir = new File('../node_modules/@ebarooni/capacitor-calendar/android')
