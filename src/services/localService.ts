@@ -16,7 +16,7 @@
  *  Guest users (userId === 'guest') are never synced to Supabase.
  */
 import type { WorkoutProgram, WorkoutLog, WorkoutDay } from '../types';
-import { DEFAULT_PROGRAMS } from './programService';
+import { DEFAULT_PROGRAMS } from './defaults';
 import {
     pushProgramToCloud,
     deleteProgramFromCloud,
