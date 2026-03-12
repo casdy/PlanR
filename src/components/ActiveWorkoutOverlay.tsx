@@ -96,7 +96,6 @@ export const ActiveWorkoutOverlay = () => {
                 if (user) {
                     progs = await ProgramService.getUserPrograms(user.id);
                 } else {
-                    const { LocalService } = await import('../services/localService');
                     progs = LocalService.getUserPrograms();
                 }
 

@@ -390,7 +390,6 @@ export const Dashboard = () => {
             }]
         };
         
-        const { LocalService } = await import('../services/localService');
         LocalService.saveProgram(newProgram);
         navigate(`/program/${id}`);
     };
@@ -427,7 +426,6 @@ export const Dashboard = () => {
             }]
         };
         
-        const { LocalService } = await import('../services/localService');
         LocalService.saveProgram(newProgram);
         
         // Add to Today's calendar
