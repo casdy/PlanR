@@ -12,8 +12,15 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables! Check your .env project settings.');
+  console.warn('PlanR: Supabase environment variables are missing. Cloud features will be disabled. This is expected in local development if no .env is provided.');
 }
 
-/** Shared Supabase client — import this anywhere database access is needed. */
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+/** 
+ * Shared Supabase client instance.
+ * Using an empty string fallback to prevent createClient from crashing if URL is missing,
+ * allowing the UI to load and show a meaningful error later if needed.
+ */
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', 
+  supabaseAnonKey || 'placeholder'
+);

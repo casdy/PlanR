@@ -15,6 +15,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { sqliteAuthService, type User } from '../services/sqliteAuthService';
 import { pullFromCloud } from '../services/syncService';
+import { supabase } from '../lib/supabase';
 
 /** Shape of the values exposed by the Auth context. */
 interface AuthContextType {
@@ -40,42 +41,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Restore the session from localStorage on first mount
         const storedUser = localStorage.getItem('planr_user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (e) {
+                console.error('[Auth] Failed to parse stored user:', e);
+                localStorage.removeItem('planr_user');
+            }
         }
+        
+        // Listen for OAuth redirects and other auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session?.user) {
+                const authUser: User = {
+                    id: session.user.id,
+                    email: session.user.email!,
+                    name: session.user.user_metadata?.name || 'Athlete'
+                };
+                setUser(authUser);
+                localStorage.setItem('planr_user', JSON.stringify(authUser));
+                // Pull cloud data (programs + logs) into localStorage after OAuth sign-in
+                pullFromCloud(authUser.id).catch(err =>
+                    console.error('[Auth] Cloud pull after OAuth failed:', err)
+                );
+            } else if (event === 'SIGNED_OUT') {
+                setUser(null);
+                localStorage.removeItem('planr_user');
+            }
+        });
+
         setLoading(false);
 
-        // Listen for OAuth redirects and other auth state changes
-        let authSubscription: any;
-        const initAuthListener = async () => {
-            const { supabase } = await import('../lib/supabase');
-            const { data } = supabase.auth.onAuthStateChange((event, session) => {
-                if (event === 'SIGNED_IN' && session?.user) {
-                    const authUser: User = {
-                        id: session.user.id,
-                        email: session.user.email!,
-                        name: session.user.user_metadata?.name || 'Athlete'
-                    };
-                    setUser(authUser);
-                    localStorage.setItem('planr_user', JSON.stringify(authUser));
-                    // Pull cloud data (programs + logs) into localStorage after OAuth sign-in
-                    pullFromCloud(authUser.id).catch(err =>
-                        console.error('[Auth] Cloud pull after OAuth failed:', err)
-                    );
-                } else if (event === 'SIGNED_OUT') {
-                    setUser(null);
-                    localStorage.removeItem('planr_user');
-                }
-            });
-            authSubscription = data.subscription;
-        };
-
-        initAuthListener();
-
         return () => {
-            // Unsubscribe from the Supabase listener when the provider unmounts
-            if (authSubscription) {
-                authSubscription.unsubscribe();
-            }
+            subscription.unsubscribe();
         };
     }, []);
 
@@ -109,9 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const loginWithGoogle = async () => {
          try {
              await sqliteAuthService.loginWithGoogle();
-             // The page will redirect to Google's consent screen.
-             // Session info will be handled automatically by Supabase Auth upon return, 
-             // we'll need a session listener to catch the login event (which we may already need to add).
          } catch (error: any) {
              throw error;
          }
@@ -121,12 +115,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         setUser(null);
         localStorage.removeItem('planr_user');
+        await supabase.auth.signOut();
         window.location.href = '/login';
     };
 
     /** Destroys the Supabase session AND clears all local state. Used by Settings → Reset App. */
     const resetApp = async () => {
-        const { supabase } = await import('../lib/supabase');
         await supabase.auth.signOut();
         localStorage.removeItem('planr_user');
         setUser(null);
