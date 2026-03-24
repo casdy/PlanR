@@ -32,7 +32,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
   const [errorMsg, setErrorMsg] = useState('');
   const [cameraError, setCameraError] = useState<string | null>(null);
 
-  const { lookupBarcode, recognizeFood, loading: nutritionLoading } = useNutrition();
+  const { lookupBarcode, recognizeFood } = useNutrition();
   const { addMeal, loading: mealLoading } = useMeals();
 
   // Initialize ZXing barcode reader
