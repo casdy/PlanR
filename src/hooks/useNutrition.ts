@@ -76,23 +76,70 @@ export function useNutrition() {
     }
   }, [getBarcode, saveBarcode]);
 
+  /**
+   * Compress any image blob to max 1024px (longest side) JPEG.
+   * This ensures both camera captures AND uploaded files are small enough for the API.
+   */
+  const compressBlob = useCallback(async (blob: Blob): Promise<Blob> => {
+    const MAX_DIM = 1024;
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(blob);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+
+        if (w > MAX_DIM || h > MAX_DIM) {
+          const scale = MAX_DIM / Math.max(w, h);
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas not supported'));
+        ctx.drawImage(img, 0, 0, w, h);
+
+        canvas.toBlob(
+          (result) => (result ? resolve(result) : reject(new Error('Compression failed'))),
+          'image/jpeg',
+          0.7,
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Failed to load image for compression'));
+      };
+      img.src = objectUrl;
+    });
+  }, []);
+
   const recognizeFood = useCallback(async (imageBlob: Blob): Promise<NutritionResult> => {
     setLoading(true);
     setError(null);
 
     try {
-      // Convert blob to base64 data URL
-      const base64data = await new Promise<string>((resolve, reject) => {
+      // Compress the image first to keep payload small
+      const compressed = await compressBlob(imageBlob);
+
+      // Convert blob to base64 data URL (will be "data:image/jpeg;base64,<data>")
+      const base64DataUrl = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = reject;
-        reader.readAsDataURL(imageBlob);
+        reader.readAsDataURL(compressed);
       });
+
+      console.log(`[Vision] Sending image: ${(base64DataUrl.length / 1024).toFixed(0)} KB base64`);
 
       const res = await fetch('/api/vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64data })
+        body: JSON.stringify({ image: base64DataUrl })
       });
 
       if (!res.ok) {
@@ -117,7 +164,7 @@ export function useNutrition() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [compressBlob]);
 
   return { lookupBarcode, recognizeFood, loading, error };
 }

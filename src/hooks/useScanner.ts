@@ -67,16 +67,27 @@ export function useScanner({
     const video = videoRef.current;
     if (!video || !video.videoWidth) return Promise.resolve(null);
 
+    // Resize to max 1024px on longest side to keep payload manageable for vision APIs
+    const MAX_DIM = 1024;
+    let w = video.videoWidth;
+    let h = video.videoHeight;
+
+    if (w > MAX_DIM || h > MAX_DIM) {
+      const scale = MAX_DIM / Math.max(w, h);
+      w = Math.round(w * scale);
+      h = Math.round(h * scale);
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = w;
+    canvas.height = h;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return Promise.resolve(null);
 
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, 0, 0, w, h);
     return new Promise((resolve) => {
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8);
+      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.7);
     });
   }, [videoRef]);
 

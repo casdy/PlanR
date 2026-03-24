@@ -55,10 +55,30 @@ export default async function handler(req: any, res: any) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) throw new Error('OPENROUTER_API_KEY missing');
 
-    // Ensure base64 data URL format
-    let base64Image = image;
-    if (!base64Image.includes(',')) {
-      base64Image = `data:image/jpeg;base64,${base64Image}`;
+    // ── Normalize the base64 data URL ──────────────────────────────
+    // The client sends "data:image/jpeg;base64,<data>".
+    // We need to ensure it's in this exact format for OpenRouter.
+    let imageUrl: string;
+
+    if (image.startsWith('data:image/')) {
+      // Already a proper data URL — use as-is
+      imageUrl = image;
+    } else if (image.startsWith('data:') && !image.startsWith('data:image/')) {
+      // Unusual data URL (e.g. "data:application/octet-stream;base64,...")
+      // Extract the raw base64 and re-wrap as JPEG
+      const base64Part = image.split(',')[1] || image;
+      imageUrl = `data:image/jpeg;base64,${base64Part}`;
+    } else {
+      // Raw base64 string with no data URL prefix
+      imageUrl = `data:image/jpeg;base64,${image}`;
+    }
+
+    // Safety: reject payloads over ~10 MB to avoid upstream timeouts
+    const payloadSizeKB = Math.round(imageUrl.length / 1024);
+    console.log(`[Vision] Image payload: ${payloadSizeKB} KB`);
+
+    if (imageUrl.length > 10_000_000) {
+      return res.status(413).json({ error: 'Image too large. Please use a smaller image.' });
     }
 
     // Try each model in order until one succeeds
@@ -82,7 +102,7 @@ export default async function handler(req: any, res: any) {
                 role: 'user',
                 content: [
                   { type: 'text', text: PROMPT },
-                  { type: 'image_url', image_url: { url: base64Image } },
+                  { type: 'image_url', image_url: { url: imageUrl } },
                 ],
               },
             ],
