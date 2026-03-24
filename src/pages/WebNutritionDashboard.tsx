@@ -8,7 +8,7 @@ import type { NutritionTargets } from '../types/nutrition';
 import { NutritionSearchBar, type UnifiedFoodProduct } from '../components/NutritionSearchBar';
 import { NutritionOnboarding } from '../components/NutritionOnboarding';
 import { ActivityCheckIn } from '../components/ActivityCheckIn';
-import { CameraScanner } from '../components/CameraScanner';
+
 import { logNutrition, getDailyNutritionTotals } from '../engine/nutritionEngine';
 import { getNutritionPlan, KG_TO_LBS } from '../engine/calorieEngine';
 import type { DailyNutritionTotals } from '../engine/nutritionEngine';
@@ -146,7 +146,7 @@ export const WebNutritionDashboard: React.FC = () => {
   const [dismissedBriefing, setDismissedBriefing] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
+
   
   // Healthier Alternatives State
   const [alternatives, setAlternatives] = useState<UnifiedFoodProduct[]>([]);
@@ -312,24 +312,14 @@ export const WebNutritionDashboard: React.FC = () => {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="min-h-screen bg-white dark:bg-zinc-950 text-slate-900 dark:text-white p-6 pb-24 max-w-md mx-auto font-sans relative selection:bg-teal-500 selection:text-white"
         >
-          {/* Top Search Bar & Camera Button */}
+          {/* Top Search Bar */}
           {!showOnboarding && (
-            <section className="mb-6 relative z-40 pt-2 opacity-90 hover:opacity-100 transition-opacity flex gap-2 w-full">
-              <div className="flex-1">
-                <NutritionSearchBar 
-                  onResult={handleSingleResult} 
-                  onResults={handleSearchResults} 
-                  onSearching={setIsSearching}
-                />
-              </div>
-              <button
-                onClick={() => setShowScanner(true)}
-                className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/40 transition-colors border border-zinc-200 dark:border-white/10"
-                aria-label="Scan Food or Barcode"
-              >
-                <RefreshCw className="w-5 h-5 hidden" /> {/* For padding matching */}
-                <span className="text-xl">📷</span>
-              </button>
+            <section className="mb-6 relative z-40 pt-2 opacity-90 hover:opacity-100 transition-opacity w-full">
+              <NutritionSearchBar 
+                onResult={handleSingleResult} 
+                onResults={handleSearchResults} 
+                onSearching={setIsSearching}
+              />
             </section>
           )}
 
@@ -787,16 +777,7 @@ export const WebNutritionDashboard: React.FC = () => {
         onComplete={handleOnboardingComplete} 
       />
 
-      {/* Camera Scanner Modal Overlay */}
-      {showScanner && (
-        <CameraScanner
-          onClose={() => setShowScanner(false)}
-          onSuccess={() => {
-             setShowScanner(false);
-             fetchNutritionData();
-          }}
-        />
-      )}
+
 
       {/* Ring Section */}
       <section className="bg-zinc-50 dark:bg-zinc-900 p-8 rounded-[40px] mb-8 flex flex-col items-center border border-zinc-100 dark:border-zinc-800">

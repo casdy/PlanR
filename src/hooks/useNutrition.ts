@@ -18,7 +18,7 @@ export function useNutrition() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lookupBarcode = useCallback(async (barcode: string): Promise<NutritionResult> => {
+  const lookupBarcode = useCallback(async (barcode: string): Promise<NutritionResult | null> => {
     setLoading(true);
     setError(null);
 
@@ -38,11 +38,12 @@ export function useNutrition() {
       }
 
       const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-      if (!res.ok) throw new Error("Failed to fetch from OpenFoodFacts");
+      if (!res.ok) return null;
       const data = await res.json();
 
       if (data.status !== 1) {
-        throw new Error("Product not found");
+        // Product not found in OFF — return null so scanner can fall back to AI vision
+        return null;
       }
 
       const nutriments = data.product.nutriments || {};
@@ -60,7 +61,7 @@ export function useNutrition() {
       return result;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Lookup failed');
-      throw err;
+      return null;
     } finally {
       setLoading(false);
     }

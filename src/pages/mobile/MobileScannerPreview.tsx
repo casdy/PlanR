@@ -1,17 +1,11 @@
-import { SmartScanner } from '../../components/SmartScanner';
+import { useState } from 'react';
+import { CameraScanner } from '../../components/CameraScanner';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function MobileScannerPreview() {
   const navigate = useNavigate();
-
-  const handleScanSuccess = (barcode: string) => {
-    alert(`Barcode Scanned: ${barcode}\n(Note: API fetch disabled in pure scanner preview)`);
-  };
-
-  const handleImageCapture = (base64Image: string) => {
-    alert(`Photo captured successfully! Data length: ${base64Image.length}`);
-  };
+  const [showScanner, setShowScanner] = useState(true);
 
   return (
     <div className="w-full h-screen bg-black text-white relative flex flex-col items-center justify-center">
@@ -37,12 +31,12 @@ export default function MobileScannerPreview() {
         </p>
       </div>
 
-      <SmartScanner
-         isOpen={true}
-         onClose={() => navigate('/nutrition-preview')}
-         onBarcodeScan={handleScanSuccess}
-         onImageCapture={handleImageCapture}
-      />
+      {showScanner && (
+        <CameraScanner
+          onClose={() => { setShowScanner(false); navigate('/nutrition-preview'); }}
+          onSuccess={() => { setShowScanner(false); navigate('/nutrition-preview'); }}
+        />
+      )}
     </div>
   );
 }

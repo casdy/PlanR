@@ -6,14 +6,14 @@
  * - Camera icon toggles an inline html5-qrcode scanner below the bar.
  * - On a successful scan, calls getFoodByBarcode and returns the result.
  */
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, Camera, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { offService, type FoodProduct } from '../services/offService';
 import { searchUserFoodHistory } from '../engine/nutritionEngine';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { SmartScanner } from './SmartScanner';
+
 import { useLanguage } from '../hooks/useLanguage';
 import { QuotaTracker } from './QuotaTracker';
 import { Badge } from './ui/Badge';
@@ -39,7 +39,6 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
   const { user } = useAuth();
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -164,36 +163,7 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
     }
   };
 
-  const handleScanSuccess = useCallback(
-    async (decodedText: string, screenshot?: string) => {
-      setScanError(null);
-      setIsLoading(true);
-      try {
-        // 1. Base System: Barcode Lookup
-        const product = await offService.getFoodByBarcode(decodedText);
-        if (product) {
-          setIsScanning(false);
-          onResult(product);
-        } else if (screenshot) {
-          // 2. AI Fallback: Vision Analysis
-          const aiProduct = await offService.analyzeImage(screenshot);
-          if (aiProduct) {
-            setIsScanning(false);
-            onResult(aiProduct);
-          } else {
-            setScanError(t('no_product_barcode', { code: decodedText }));
-          }
-        } else {
-          setScanError(t('no_product_barcode', { code: decodedText }));
-        }
-      } catch (err) {
-         setScanError(t('failed_fetch_barcode'));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [onResult, t]
-  );
+
 
   return (
     <div className={cn('w-full space-y-3 relative z-50', className)} ref={searchContainerRef}>
@@ -230,15 +200,6 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
           )}
         />
         <div className="absolute right-2 flex items-center gap-1">
-          {/* Camera scanner trigger */}
-          <button
-            type="button"
-            onClick={() => setIsScanning(true)}
-            className="p-2.5 rounded-full text-slate-400 hover:text-teal-400 hover:bg-slate-700/50 transition-all active:scale-95"
-            aria-label="Scan barcode"
-          >
-            <Camera className="w-5 h-5" />
-          </button>
 
           {/* Search button */}
           <button
@@ -337,30 +298,6 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
           </motion.p>
         )}
       </AnimatePresence>
-
-      {/* Full-Screen Smart Scanner Modal */}
-      <SmartScanner
-         isOpen={isScanning}
-         onClose={() => setIsScanning(false)}
-         onBarcodeScan={handleScanSuccess}
-         onImageCapture={async (b64) => {
-            setIsLoading(true);
-            setScanError(null);
-            try {
-              const product = await offService.analyzeImage(b64);
-              if (product) {
-                setIsScanning(false);
-                onResult(product);
-              } else {
-                setScanError(t('vision_analysis_failed'));
-              }
-            } catch (err) {
-              setScanError(t('vision_engine_error'));
-            } finally {
-              setIsLoading(false);
-            }
-         }}
-      />
     </div>
   );
 };

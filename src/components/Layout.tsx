@@ -6,9 +6,10 @@
  * The bottom nav provides tab-bar navigation between Dashboard, Programs, Calendar,
  * History, and Settings. The active tab is highlighted with a pill indicator.
  */
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost, Leaf } from 'lucide-react';
+import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost, Leaf, Camera } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
@@ -18,12 +19,14 @@ import { useTheme } from '../hooks/useTheme';
 import { Toast } from './ui/Toast';
 import { useLanguage } from '../hooks/useLanguage';
 import { LanguagePicker } from './ui/LanguagePicker';
+import { CameraScanner } from './CameraScanner';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { t } = useLanguage();
     const location = useLocation();
+    const [showScanner, setShowScanner] = useState(false);
 
     const navItems = [
         { label: t('nav_home'), icon: Home, path: '/' },
@@ -32,6 +35,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         { label: t('nav_activity'), icon: Activity, path: '/history' },
         { label: t('nav_profile'), icon: SettingsIcon, path: '/settings' },
     ];
+
+    const isNutritionPage = location.pathname === '/nutrition';
 
     return (
         <div className={cn(
@@ -109,6 +114,20 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </AnimatePresence>
             </main>
 
+            {/* Floating Camera FAB — above navbar, only on nutrition page */}
+            {user && isNutritionPage && (
+                <motion.button
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.3 }}
+                    onClick={() => setShowScanner(true)}
+                    className="fixed bottom-[7.5rem] right-[calc(50%-215px+16px)] sm:right-[calc(50%-215px+16px)] z-50 w-14 h-14 rounded-full bg-teal-500 text-white shadow-xl shadow-teal-500/30 flex items-center justify-center hover:bg-teal-600 active:scale-90 transition-all border-2 border-white/20"
+                    aria-label="Open Smart Scanner"
+                >
+                    <Camera className="w-6 h-6" />
+                </motion.button>
+            )}
+
             {/* Floating Bottom Nav - Optimized for one-hand mobile use */}
             {user && (
                 <div className="fixed bottom-6 sm:bottom-8 inset-x-0 mx-auto w-full max-w-[430px] flex justify-center z-50 px-4">
@@ -160,6 +179,14 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <ActiveWorkoutOverlay />
             <WorkoutSummary onRestart={() => window.location.href = '/'} />
             <Toast />
+
+            {/* Scanner Modal */}
+            {showScanner && (
+              <CameraScanner
+                onClose={() => setShowScanner(false)}
+                onSuccess={() => setShowScanner(false)}
+              />
+            )}
             </div>
         </div>
     );

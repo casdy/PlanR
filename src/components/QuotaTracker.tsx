@@ -13,6 +13,15 @@ interface QuotaData {
   sparks: number;
 }
 
+const LOCAL_QUOTA_KEY = 'planr_local_quota';
+const DEFAULT_MAX = 1500;
+
+function getLocalFallback(): QuotaData {
+  const raw = localStorage.getItem(LOCAL_QUOTA_KEY);
+  const remaining = raw !== null ? parseInt(raw, 10) : DEFAULT_MAX;
+  return { limit: DEFAULT_MAX, used: DEFAULT_MAX - remaining, remaining, tokensUsed: 0, tpmLimit: 1000000, sparks: remaining };
+}
+
 export const QuotaTracker: React.FC<{ className?: string }> = ({ className }) => {
   const [data, setData] = useState<QuotaData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,9 +32,13 @@ export const QuotaTracker: React.FC<{ className?: string }> = ({ className }) =>
       if (res.ok) {
         const json = await res.json();
         setData(json);
+      } else {
+        // Backend returned an error — use local fallback silently
+        setData(getLocalFallback());
       }
-    } catch (err) {
-      console.error('[QuotaTracker] Failed to fetch quota:', err);
+    } catch {
+      // Network error (ECONNREFUSED, 500, etc.) — use local fallback silently
+      setData(getLocalFallback());
     } finally {
       setLoading(false);
     }
@@ -33,7 +46,6 @@ export const QuotaTracker: React.FC<{ className?: string }> = ({ className }) =>
 
   useEffect(() => {
     fetchQuota();
-    // Refresh every 30 seconds to keep sparks in sync
     const interval = setInterval(fetchQuota, 30000);
     return () => clearInterval(interval);
   }, []);
