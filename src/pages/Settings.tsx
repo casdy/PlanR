@@ -22,6 +22,7 @@ import { useAppPermissions } from '../hooks/useAppPermissions';
 import { Card, CardContent } from '../components/ui/Card';
 import { Skeleton } from '../components/ui/Skeleton';
 import { cn } from '../lib/utils';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 import { Capacitor } from '@capacitor/core';
 import { sync } from '@capacitor/live-updates';
 
@@ -184,7 +185,9 @@ export const SettingsPage = () => {
                     value: recoveryCheckInEnabled ? t('on') : t('off'),
                     action: () => setRecoveryCheckInEnabled(!recoveryCheckInEnabled),
                     isToggle: true,
-                    active: recoveryCheckInEnabled
+                    active: recoveryCheckInEnabled,
+                    // Note: We'll add the tooltip in the rendering loop below for list items if needed, 
+                    // but for now let's just use it where we can.
                 },
                 { 
                     icon: Sparkles, 
@@ -369,7 +372,19 @@ export const SettingsPage = () => {
                                                 <item.icon className="w-5 h-5" />
                                             </div>
                                             <div className="text-left flex-1">
-                                                <p className="font-bold">{item.label}</p>
+                                                <div className="flex items-center gap-1">
+                                                    <p className="font-bold">{item.label}</p>
+                                                    {item.label === "Serious Mode" && (
+                                                        <PopoverTooltip title="Serious Mode">
+                                                            When enabled, the AI engine prioritizes high-intensity progressive overload and stricter recovery monitoring.
+                                                        </PopoverTooltip>
+                                                    )}
+                                                    {item.label === t('recovery_checkins') && (
+                                                        <PopoverTooltip title={t('recovery_checkins')}>
+                                                            Automated reminders to log your physical state so the engine can adapt your volume safely.
+                                                        </PopoverTooltip>
+                                                    )}
+                                                </div>
                                                 {item.value === undefined && (item.label === t('profile_information')) ? (
                                                     <Skeleton className="h-3 w-32 mt-1" />
                                                 ) : item.value && (

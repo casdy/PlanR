@@ -17,6 +17,14 @@ node_modules/
 .env.production.local
 !.env.example
 
+# Cryptographic Keys & Certs
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
 # Native Secrets
 android/app/google-services.json
 ios/App/App/GoogleService-Info.plist
@@ -42,6 +50,7 @@ pnpm-debug.log*
 .stylelintcache
 coverage/
 .next/
+.expo/
 
 # ─── Editor / IDE ─────────────────────────────────────────────────────────────
 .vscode/*
@@ -110,3 +119,10 @@ ios/App/public/
 
 # ─── Secure Internal Docs ────────────────────────────────────────────────────
 docs/incident_response.md
+
+# ─── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.python-version

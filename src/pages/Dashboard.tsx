@@ -38,6 +38,8 @@ import { GoalSelectorModal } from '../components/GoalSelectorModal';
 import { getUserBiometrics, type UserBiometrics } from '../engine/calorieEngine';
 import { checkStrengthRetention } from '../engine/progressionEngine';
 import { supabase } from '../lib/supabase';
+import { PopoverTooltip } from '../components/ui/Tooltip';
+import { AICoachDaily } from '../components/AICoachDaily';
 
 const Tooltip = ({ children, content }: any) => {
     return (
@@ -132,6 +134,11 @@ export const Dashboard = () => {
     };
 
     useEffect(() => {
+        // Force show the AI Coach for the user's current session so they can verify
+        if (localStorage.getItem('dev_force_ai_coach') === null) {
+            localStorage.setItem('dev_force_ai_coach', 'true');
+        }
+
         async function load() {
             try {
                 if (user) {
@@ -530,7 +537,8 @@ export const Dashboard = () => {
             </motion.div>
 
             {/* Smart Coaching Insights (Holistic Engine) */}
-            <section className="mt-2">
+            <section className="mt-2 space-y-6">
+                <AICoachDaily />
                 <HolisticInsights />
             </section>
 
@@ -544,7 +552,12 @@ export const Dashboard = () => {
                                     <Target className="w-7 h-7" />
                                 </div>
                                 <div>
-                                    <h4 className="text-lg font-black tracking-tight">Goal Alignment</h4>
+                                    <h4 className="text-lg font-black tracking-tight flex items-center">
+                                        Goal Alignment
+                                        <PopoverTooltip title="Adaptive Goals">
+                                            Your primary goal (Weight Loss, Muscle Gain, etc.) drives the AI's caloric and macronutrient targets. It also shifts the training volume to prioritize either hypertrophy or metabolic conditioning.
+                                        </PopoverTooltip>
+                                    </h4>
                                     <p className="text-sm text-muted-foreground font-medium capitalize">
                                         Focus: <span className="text-primary font-black tracking-widest uppercase">
                                             {biometrics.primary_fitness_goal?.replace('_', ' ') || 'Maintenance'}
@@ -596,7 +609,12 @@ export const Dashboard = () => {
                                     <Activity className="w-7 h-7" />
                                 </div>
                                 <div>
-                                    <h4 className="text-lg font-black tracking-tight group-hover:text-accent-cyan transition-colors">{t('recovery_status')}</h4>
+                                    <h4 className="text-lg font-black tracking-tight group-hover:text-accent-cyan transition-colors flex items-center">
+                                        {t('recovery_status')}
+                                        <PopoverTooltip title="Recovery Score">
+                                            Aggregated from your sleep quality, muscle soreness, stress levels, and energy. A score below 6/10 will cause the engine to suggest a 'Recovery Day' or reduced intensity.
+                                        </PopoverTooltip>
+                                    </h4>
                                     <div className="flex gap-3">
                                         <p className="text-sm text-muted-foreground font-medium">
                                             {recentScore ? `${t('recovery_status')}: ${recentScore}/10` : t('log_daily_recovery')}
@@ -645,7 +663,13 @@ export const Dashboard = () => {
                                 <Zap className="w-7 h-7" />
                             </div>
                             <div>
-                                <h4 className="text-lg font-black tracking-tight">{t('adaptive_engine')}</h4>
+                                <h4 className="text-lg font-black tracking-tight flex items-center">
+                                    {t('adaptive_engine')}
+                                    <PopoverTooltip title="Engine Modes">
+                                        <b>Casual:</b> Standard progression without recovery tracking.<br/><br/>
+                                        <b>Serious:</b> Full biometric integration. The engine adapts every set based on your fatigue logs.
+                                    </PopoverTooltip>
+                                </h4>
                                 <p className="text-sm text-muted-foreground font-medium capitalize">
                                     {t('current_mode')} <span className="text-primary font-black tracking-widest uppercase">{t(trainingMode === 'casual' ? 'casual' : 'serious')}</span>
                                 </p>
@@ -706,7 +730,12 @@ export const Dashboard = () => {
                         <div className="p-6">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                                 <div>
-                                    <h4 className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">{t('daily_suggestion')}</h4>
+                                    <h4 className="text-lg font-black tracking-tight group-hover:text-primary transition-colors flex items-center">
+                                        {t('daily_suggestion')}
+                                        <PopoverTooltip title="Smart Suggestions">
+                                            AI-generated workouts based on your lagging muscle groups and current frequency. These are one-off sessions that don't overwrite your main program.
+                                        </PopoverTooltip>
+                                    </h4>
                                     <PoweredBy />
                                 </div>
                                 <div className="flex gap-2">

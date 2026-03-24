@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "PlanR Preview",
+    "slug": "planr-preview",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "jsEngine": "hermes",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "softwareKeyboardLayoutMode": "pan"
+    }
+  }
+}

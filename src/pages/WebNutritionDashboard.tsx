@@ -8,6 +8,7 @@ import type { NutritionTargets } from '../types/nutrition';
 import { NutritionSearchBar, type UnifiedFoodProduct } from '../components/NutritionSearchBar';
 import { NutritionOnboarding } from '../components/NutritionOnboarding';
 import { ActivityCheckIn } from '../components/ActivityCheckIn';
+import { CameraScanner } from '../components/CameraScanner';
 import { logNutrition, getDailyNutritionTotals } from '../engine/nutritionEngine';
 import { getNutritionPlan, KG_TO_LBS } from '../engine/calorieEngine';
 import type { DailyNutritionTotals } from '../engine/nutritionEngine';
@@ -17,6 +18,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { offService } from '../services/offService';
 import { cn } from '../lib/utils';
 import { createPortal } from 'react-dom';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 
 const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -42,26 +44,28 @@ const ScoreBadge: React.FC<{ type: 'nutri' | 'nova' | 'eco'; value: string | num
   if (!value) return null;
 
   const colors: Record<string, string> = {
-    // Nutri-score & Eco-score shares same grade keys (a-e)
-    a: 'bg-emerald-600', 
-    b: 'bg-emerald-500', 
-    c: 'bg-yellow-500', 
-    d: 'bg-orange-500', 
-    e: 'bg-red-500',
-    // NOVA
-    1: 'bg-emerald-500', 
-    2: 'bg-yellow-500', 
-    3: 'bg-orange-500', 
-    4: 'bg-red-500',
+    a: 'bg-emerald-600', b: 'bg-emerald-500', c: 'bg-yellow-500', d: 'bg-orange-500', e: 'bg-red-500',
+    1: 'bg-emerald-500', 2: 'bg-yellow-500', 3: 'bg-orange-500', 4: 'bg-red-500',
   };
 
   const labels = { nutri: 'Nutri-Score', nova: 'NOVA', eco: 'Eco-Score' };
+  const tooltips = {
+    nutri: 'The Nutri-Score indicates the overall nutritional quality of a product from A (best) to E (worst).',
+    nova: 'The NOVA group classifies food processing: 1 (unprocessed) to 4 (ultra-processed).',
+    eco: 'The Eco-Score measures the environmental impact of a product from A (lowest) to E (highest).'
+  };
+
   const val = String(value).toLowerCase();
   const bgColor = colors[val] || 'bg-zinc-200 dark:bg-zinc-700';
 
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[8px] font-black uppercase tracking-tighter text-zinc-500 dark:text-zinc-400">{labels[type]}</span>
+    <div className="flex flex-col items-center gap-1 group/badge relative">
+      <div className="flex items-center gap-1">
+        <span className="text-[8px] font-black uppercase tracking-tighter text-zinc-500 dark:text-zinc-400">{labels[type]}</span>
+        <PopoverTooltip title={labels[type]}>
+          {tooltips[type]}
+        </PopoverTooltip>
+      </div>
       <div className={cn("px-2 py-0.5 rounded font-black text-xs uppercase text-white shadow-sm", bgColor)}>
         {val}
       </div>
@@ -138,9 +142,11 @@ export const WebNutritionDashboard: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [morningBriefing, setMorningBriefing] = useState<string | null>(null);
+  const [briefingTitleKey, setBriefingTitleKey] = useState<string>('morning_briefing');
   const [dismissedBriefing, setDismissedBriefing] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   
   // Healthier Alternatives State
   const [alternatives, setAlternatives] = useState<UnifiedFoodProduct[]>([]);
@@ -163,10 +169,24 @@ export const WebNutritionDashboard: React.FC = () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yTotals = await getDailyNutritionTotals(user.id, yesterday);
-      const briefing = generateMorningBriefing(yTotals, NUTRITION_TARGETS_MOCK, t);
+      
+      const hour = new Date().getHours();
+      let greetingKey = 'briefing_greeting_morning';
+      let titleKey = 'morning_briefing';
+
+      if (hour >= 12 && hour < 17) {
+        greetingKey = 'briefing_greeting_afternoon';
+        titleKey = 'afternoon_briefing';
+      } else if (hour >= 17 || hour < 5) {
+        greetingKey = 'briefing_greeting_evening';
+        titleKey = 'evening_briefing';
+      }
+
+      const briefing = generateMorningBriefing(yTotals, NUTRITION_TARGETS_MOCK, t, greetingKey);
       
       setDailyTotals(totals);
       setMorningBriefing(briefing);
+      setBriefingTitleKey(titleKey);
 
       if (!plan) {
         setShowOnboarding(true);
@@ -292,21 +312,36 @@ export const WebNutritionDashboard: React.FC = () => {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="min-h-screen bg-white dark:bg-zinc-950 text-slate-900 dark:text-white p-6 pb-24 max-w-md mx-auto font-sans relative selection:bg-teal-500 selection:text-white"
         >
-          {/* Top Search Bar - Blended but visible */}
+          {/* Top Search Bar & Camera Button */}
           {!showOnboarding && (
-            <section className="mb-6 relative z-40 pt-2 opacity-90 hover:opacity-100 transition-opacity">
-              <NutritionSearchBar 
-                onResult={handleSingleResult} 
-                onResults={handleSearchResults} 
-                onSearching={setIsSearching}
-              />
+            <section className="mb-6 relative z-40 pt-2 opacity-90 hover:opacity-100 transition-opacity flex gap-2 w-full">
+              <div className="flex-1">
+                <NutritionSearchBar 
+                  onResult={handleSingleResult} 
+                  onResults={handleSearchResults} 
+                  onSearching={setIsSearching}
+                />
+              </div>
+              <button
+                onClick={() => setShowScanner(true)}
+                className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-zinc-500 hover:text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-900/40 transition-colors border border-zinc-200 dark:border-white/10"
+                aria-label="Scan Food or Barcode"
+              >
+                <RefreshCw className="w-5 h-5 hidden" /> {/* For padding matching */}
+                <span className="text-xl">📷</span>
+              </button>
             </section>
           )}
 
           {/* Header */}
       <header className="relative z-10 mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-[10px] font-black tracking-[0.2em] text-zinc-500 dark:text-zinc-400 uppercase mb-1">{t('nutrition_score')}</h2>
+          <div className="flex items-center gap-1">
+            <h2 className="text-[10px] font-black tracking-[0.2em] text-zinc-500 dark:text-zinc-400 uppercase mb-1">{t('nutrition_score')}</h2>
+            <PopoverTooltip title={t('nutrition_score')}>
+              Your daily Nutrition Score reflects how well you are staying within your calorie and macro targets. A higher score indicates better adherence to your personalized plan.
+            </PopoverTooltip>
+          </div>
           <div className="flex items-baseline gap-2">
             {loadingTotals ? (
               <Skeleton className="h-14 w-24" />
@@ -339,9 +374,14 @@ export const WebNutritionDashboard: React.FC = () => {
             </div>
             
             <div className="relative z-10 flex flex-col items-center text-center">
-              <span className="text-[10px] font-black text-teal-600 dark:text-teal-500 uppercase tracking-[0.4em] mb-3">
-                Daily Budget
-              </span>
+              <div className="flex items-center gap-1 mb-3">
+                <span className="text-[10px] font-black text-teal-600 dark:text-teal-500 uppercase tracking-[0.4em]">
+                  Daily Budget
+                </span>
+                <PopoverTooltip title="Daily Budget">
+                  Your daily calorie budget is calculated based on your BMR, activity level, and weight goals.
+                </PopoverTooltip>
+              </div>
               <div className="flex items-baseline gap-2">
                 {loadingTotals ? (
                   <Skeleton className="h-16 w-32" />
@@ -412,7 +452,7 @@ export const WebNutritionDashboard: React.FC = () => {
           >
             <div className="flex justify-between items-start gap-3 relative z-10">
               <div className="flex-1">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 mb-1 block">{t('morning_briefing')}</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400 mb-1 block">{t(briefingTitleKey as any)}</span>
                 <p className="text-sm font-medium text-teal-900 dark:text-teal-50 leading-relaxed">{morningBriefing}</p>
               </div>
               <button 
@@ -529,6 +569,9 @@ export const WebNutritionDashboard: React.FC = () => {
                                   <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                     {t('better_for_you_alternatives')}
+                                    <PopoverTooltip title={t('better_for_you_alternatives')}>
+                                      We analyze thousands of products to find healthier swaps within the same category that have better Nutri-Scores and lower processing levels.
+                                    </PopoverTooltip>
                                   </div>
                                   
                                   {isFetchingAlternatives ? (
@@ -743,6 +786,17 @@ export const WebNutritionDashboard: React.FC = () => {
         isOpen={showOnboarding} 
         onComplete={handleOnboardingComplete} 
       />
+
+      {/* Camera Scanner Modal Overlay */}
+      {showScanner && (
+        <CameraScanner
+          onClose={() => setShowScanner(false)}
+          onSuccess={() => {
+             setShowScanner(false);
+             fetchNutritionData();
+          }}
+        />
+      )}
 
       {/* Ring Section */}
       <section className="bg-zinc-50 dark:bg-zinc-900 p-8 rounded-[40px] mb-8 flex flex-col items-center border border-zinc-100 dark:border-zinc-800">

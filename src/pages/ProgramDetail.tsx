@@ -20,6 +20,7 @@ import { motion } from 'framer-motion';
 import { WorkoutDayView } from '../components/WorkoutDayView';
 import { ProgramEditor } from '../components/ProgramEditor';
 import { useLanguage } from '../hooks/useLanguage';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 
 export const ProgramDetail = () => {
     const { id } = useParams<{ id: string }>();
@@ -82,6 +83,9 @@ export const ProgramDetail = () => {
                         <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-secondary/50 border border-border/40 text-sm font-bold">
                             <Clock className="w-4 h-4 text-primary" />
                             {program.schedule.length} Days / Week
+                            <PopoverTooltip title="Program Frequency">
+                                This indicates how many days per week this program recommends training. Consistency is key to seeing results!
+                            </PopoverTooltip>
                         </div>
                     </div>
                 </div>
@@ -103,7 +107,12 @@ export const ProgramDetail = () => {
                 <div className="pt-6 border-t border-white/10">
                     <div className="mb-6">
                         <h2 className="text-2xl font-black">{t('edit_routine')}</h2>
-                        <p className="text-muted-foreground text-sm">{t('swap_exercises_seamlessly')}</p>
+                        <div className="flex items-center gap-1">
+                            <p className="text-muted-foreground text-sm">{t('swap_exercises_seamlessly')}</p>
+                            <PopoverTooltip title={t('edit_routine')}>
+                                You can swap exercises if you don't have the required equipment or if you have an injury. The AI will suggest similar alternatives that target the same muscle groups.
+                            </PopoverTooltip>
+                        </div>
                     </div>
                     <ProgramEditor program={program} onUpdate={(p) => setProgram(p)} />
                 </div>

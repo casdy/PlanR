@@ -8,10 +8,13 @@ import type { NutritionTargets } from '../types/nutrition';
 export function generateMorningBriefing(
   yesterdayTotals: DailyNutritionTotals,
   targets: NutritionTargets,
-  t: (key: any, params?: any) => string
+  t: (key: any, params?: any) => string,
+  greetingKey: string = 'briefing_greeting_morning'
 ): string {
+  const greeting = t(greetingKey);
+
   if (yesterdayTotals.logCount === 0) {
-    return t('briefing_no_log');
+    return `${greeting} ${t('briefing_no_log')}`;
   }
 
   // Calculate Deltas
@@ -58,5 +61,5 @@ export function generateMorningBriefing(
     extraObservation = t('briefing_fat_high');
   }
 
-  return `${opening} ${proteinStatement}${extraObservation}`;
+  return `${greeting} ${opening} ${proteinStatement}${extraObservation}`;
 }

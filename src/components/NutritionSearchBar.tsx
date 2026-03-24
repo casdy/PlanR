@@ -13,8 +13,10 @@ import { offService, type FoodProduct } from '../services/offService';
 import { searchUserFoodHistory } from '../engine/nutritionEngine';
 import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
-import { NutritionScanner } from './nutrition/NutritionScanner';
+import { SmartScanner } from './SmartScanner';
 import { useLanguage } from '../hooks/useLanguage';
+import { QuotaTracker } from './QuotaTracker';
+import { Badge } from './ui/Badge';
 
 // Unified type for display
 export interface UnifiedFoodProduct extends FoodProduct {
@@ -38,7 +40,6 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [isProcessingScan, setIsProcessingScan] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -164,24 +165,34 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
   };
 
   const handleScanSuccess = useCallback(
-    async (decodedText: string) => {
-      setIsProcessingScan(true);
+    async (decodedText: string, screenshot?: string) => {
       setScanError(null);
+      setIsLoading(true);
       try {
+        // 1. Base System: Barcode Lookup
         const product = await offService.getFoodByBarcode(decodedText);
         if (product) {
           setIsScanning(false);
           onResult(product);
+        } else if (screenshot) {
+          // 2. AI Fallback: Vision Analysis
+          const aiProduct = await offService.analyzeImage(screenshot);
+          if (aiProduct) {
+            setIsScanning(false);
+            onResult(aiProduct);
+          } else {
+            setScanError(t('no_product_barcode', { code: decodedText }));
+          }
         } else {
           setScanError(t('no_product_barcode', { code: decodedText }));
         }
-      } catch {
+      } catch (err) {
          setScanError(t('failed_fetch_barcode'));
       } finally {
-        setIsProcessingScan(false);
+        setIsLoading(false);
       }
     },
-    [onResult]
+    [onResult, t]
   );
 
   return (
@@ -218,21 +229,15 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
             'transition-all duration-300'
           )}
         />
-
         <div className="absolute right-2 flex items-center gap-1">
-          {/* Barcode scanner toggle */}
+          {/* Camera scanner trigger */}
           <button
             type="button"
             onClick={() => setIsScanning(true)}
+            className="p-2.5 rounded-full text-slate-400 hover:text-teal-400 hover:bg-slate-700/50 transition-all active:scale-95"
             aria-label="Scan barcode"
-            className={cn(
-              'p-2 rounded-full transition-all duration-300',
-              isScanning
-                ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
-                : 'bg-slate-700/70 text-slate-300 hover:bg-teal-500/20 hover:text-teal-400'
-            )}
           >
-            <Camera className="w-4 h-4" />
+            <Camera className="w-5 h-5" />
           </button>
 
           {/* Search button */}
@@ -242,7 +247,7 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
             disabled={isLoading || !query.trim()}
             aria-label="Search"
             className={cn(
-              'px-4 py-2 rounded-full text-xs font-bold transition-all duration-300',
+              'ml-1 px-4 py-2 rounded-full text-xs font-bold transition-all duration-300',
               'bg-teal-500 text-white shadow-md shadow-teal-500/25',
               'hover:bg-teal-400 active:scale-95',
               'disabled:opacity-40 disabled:cursor-not-allowed'
@@ -251,6 +256,11 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
             {t('go')}
           </button>
         </div>
+      </div>
+
+      {/* AI Sparks Quota Tracker - PRD Required Placement */}
+      <div className="px-4">
+        <QuotaTracker />
       </div>
 
       {/* Intelligent Autocomplete Dropdown */}
@@ -285,7 +295,14 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
                       ) : 'NO IMG'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white truncate group-hover:text-teal-400">{p.product_name}</div>
+                      <div className="text-sm font-bold text-white truncate group-hover:text-teal-400 flex items-center gap-2">
+                        {p.product_name}
+                        {p.isAiGenerated && (
+                          <Badge variant="ai" className="scale-[0.6] origin-left lowercase">
+                            AI Identified
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-[10px] text-slate-500 truncate">{p.brands || t('unknown')} · {p.nutriments?.energy_kcal ? `${Math.round(p.nutriments.energy_kcal)} kcal` : ''}</div>
                     </div>
                   </button>
@@ -321,12 +338,28 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Full-Screen Barcode Scanner Modal (Native ML Kit) */}
-      <NutritionScanner
+      {/* Full-Screen Smart Scanner Modal */}
+      <SmartScanner
          isOpen={isScanning}
          onClose={() => setIsScanning(false)}
-         onScanSuccess={handleScanSuccess}
-         isProcessing={isProcessingScan}
+         onBarcodeScan={handleScanSuccess}
+         onImageCapture={async (b64) => {
+            setIsLoading(true);
+            setScanError(null);
+            try {
+              const product = await offService.analyzeImage(b64);
+              if (product) {
+                setIsScanning(false);
+                onResult(product);
+              } else {
+                setScanError(t('vision_analysis_failed'));
+              }
+            } catch (err) {
+              setScanError(t('vision_engine_error'));
+            } finally {
+              setIsLoading(false);
+            }
+         }}
       />
     </div>
   );

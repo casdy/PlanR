@@ -24,6 +24,7 @@ import { Button } from '../components/ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 
 // ─── Live Workout Card ──────────────────────────────────────────────────────
 // Renders entirely from store state so it re-renders every time the timer ticks.
@@ -238,6 +239,9 @@ export const History = () => {
                 <h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
                     <Activity className="w-8 h-8 text-primary" />
                     {t('activity_feed')}
+                    <PopoverTooltip title={t('activity_feed')}>
+                        Your Activity Feed is a chronological record of your training journey. It tracks every session, completed rep, and personal best. The AI uses this data to map your volume trends and fatigue levels.
+                    </PopoverTooltip>
                 </h1>
                 <p className="text-muted-foreground font-medium">{t('activity_subtitle')}</p>
             </header>

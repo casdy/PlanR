@@ -1,54 +1,67 @@
-const QUOTA_KEY = 'planr_prompt_quota';
-const RESET_KEY = 'planr_quota_reset_time';
-const DAILY_LIMIT = 5;
+/**
+ * @file src/services/quotaService.ts
+ * @description Frontend service to track and display AI Quota (Sparks).
+ * Bridges the gap between backend RPD/TPM tracking and frontend UI.
+ * Now includes a robust localStorage fallback to handle offline/dev-no-backend scenarios.
+ */
+
+const LOCAL_QUOTA_KEY = 'planr_local_quota';
+const DEFAULT_MAX_QUOTA = 1500;
+
+function getLocalQuota(): number {
+    const val = localStorage.getItem(LOCAL_QUOTA_KEY);
+    if (val === null) return DEFAULT_MAX_QUOTA;
+    return parseInt(val, 10);
+}
+
+function setLocalQuota(val: number) {
+    localStorage.setItem(LOCAL_QUOTA_KEY, val.toString());
+}
 
 export const quotaService = {
-    /** Returns true if the user still has Groq AI generation quota. */
-    canUseGroq(): boolean {
-        this.checkReset();
-        const used = Number(localStorage.getItem(QUOTA_KEY) || '0');
-        return used < DAILY_LIMIT;
-    },
-
-    /** Record a single usage. */
-    recordGroqUsage(): void {
-        this.checkReset();
-        const used = Number(localStorage.getItem(QUOTA_KEY) || '0');
-        localStorage.setItem(QUOTA_KEY, String(used + 1));
-        
-        // If we just hit the limit, set the reset time for 24 hours from now
-        if (used + 1 >= DAILY_LIMIT) {
-            const nextReset = Date.now() + 24 * 60 * 60 * 1000;
-            localStorage.setItem(RESET_KEY, String(nextReset));
+    /** Returns true if the user likely has quota left (optimistic check). */
+    async canUseGroq(): Promise<boolean> {
+        try {
+            const res = await fetch('/api/quota');
+            if (!res.ok) return getLocalQuota() > 0; 
+            const data = await res.json();
+            // Sync local with remote if remote is higher
+            if (data.remaining > getLocalQuota()) setLocalQuota(data.remaining);
+            return data.remaining > 0;
+        } catch {
+            // Fallback to local tracking if API is down (ECONNREFUSED)
+            return getLocalQuota() > 0;
         }
     },
 
-    /** How many prompts the user has left. */
-    getRemainingGroq(): number {
-        this.checkReset();
-        const used = Number(localStorage.getItem(QUOTA_KEY) || '0');
-        return Math.max(0, DAILY_LIMIT - used);
+    /** Trigger a backend decrement record. */
+    async recordGroqUsage(): Promise<void> {
+        // Optimistically decrement local first
+        const current = getLocalQuota();
+        setLocalQuota(Math.max(0, current - 1));
+
+        try {
+            await fetch('/api/quota?decrement=true');
+        } catch (err) {
+            // Silent catch to prevent console proxy spam
+            // We already decremented locally
+        }
+    },
+
+    /** How many prompts or "Sparks" are left. */
+    async getRemainingGroq(): Promise<number> {
+        try {
+            const res = await fetch('/api/quota');
+            if (!res.ok) return getLocalQuota();
+            const data = await res.json();
+            return data.remaining;
+        } catch {
+            return getLocalQuota();
+        }
     },
 
     /** Returns human-readable info on when more prompts are available. */
     getResetMessage(): string {
-        const resetTime = Number(localStorage.getItem(RESET_KEY) || '0');
-        if (!resetTime || Date.now() >= resetTime) return 'More available now';
-        
-        const diffMs = resetTime - Date.now();
-        const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
-        
-        if (diffHours >= 1) return `Next prompt in ~${diffHours}h`;
-        const diffMins = Math.ceil(diffMs / (1000 * 60));
-        return `Next prompt in ${diffMins}m`;
-    },
-
-    /** Internal check to reset quota if 24h passed. */
-    checkReset(): void {
-        const resetTime = Number(localStorage.getItem(RESET_KEY) || '0');
-        if (resetTime && Date.now() >= resetTime) {
-            localStorage.setItem(QUOTA_KEY, '0');
-            localStorage.removeItem(RESET_KEY);
-        }
+        return 'Refreshes every 24h';
     }
 };

@@ -1,37 +1,32 @@
 # 💪 PlanR — Intelligence-Driven Fitness Terminal
 
-PlanR is a high-performance, privacy-first fitness companion designed for elite athletes and everyday enthusiasts. It merges **Google ML Kit Vision**, **On-Device Translation**, and an **Adaptive Workout Engine** into a stunning, glassmorphic "Intelligence Terminal" interface.
+PlanR is a high-performance, privacy-first fitness companion designed for elite athletes and everyday enthusiasts. It merges **OpenRouter AI**, **On-Device Translation**, and an **Adaptive Workout Engine** into a stunning, glassmorphic "Intelligence Terminal" interface.
 
 Built as a hybrid Capacitor/React solution, PlanR delivers a seamless, premium experience across Web, Android, and iOS.
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![AI Engine](https://img.shields.io/badge/AI-OpenRouter-teal?logo=openai)
 ![Security](https://img.shields.io/badge/Security-NIST_CSF_2.0_Tier_3-red)
-![Capacitor](https://img.shields.io/badge/Hybrid-Capacitor_8_Bridge-119EFF?logo=capacitor)
 
 ---
 
 ## 🔥 Elite Features
 
-### 🍎 Vision-Based Nutrition
-- **Native ML Kit Scanner**: Low-latency barcode detection for `EAN_13`, `EAN_8`, and `UPC_A`.
-- **Open Food Facts Integration**: Seamless access to global food data with mandatory identity-header compliance.
-- **On-Device Privacy**: Barcode processing happens locally; your dietary habits stay on your device.
+### 🍎 Unified Vision Engine
+- **Multimodal AI**: Leverages OpenRouter (Llama 3.2 Vision) to identify food, supplements, and barcodes directly from photos.
+- **Fail-Safe Search**: Automatically falls back to AI vision if a barcode lookup in the Open Food Facts database fails.
+- **Micro-Macro Analysis**: Instant extraction of Calories, Protein, Carbs, and Fats from raw meal images.
 
-### 🌍 Zero-Latency Translation
-- **On-Device Inference**: Multilingual support powered by local Google ML Kit models.
-- **Offline Reliability**: Full UI translation functionality without an internet connection.
+### 🧠 Adaptive Holistic Coaching
+- **Neuro-Reporting**: Generates cached 7-day coaching plans based on your progress and biometrics.
+- **Time-Aware Briefings**: Dynamically adapts the dashboard briefing (Morning, Afternoon, Evening) based on the user's local time.
+- **Seamless Fallback**: The app maintains core functionality using local TypeScript engines if AI services are unavailable.
+- **Smart Fatigue Analysis**: Automatically adjusts volume and suggests deloads based on recovery logs (Sleep, Soreness, Stress).
 
-### 🤖 Adaptive Performance Engine
-- **AI Workout Architect**: Personalized routines generated via **Groq Llama 3 (70B)**.
-- **Smart Fatigue Analysis**: Automatically adjusts volume and suggests deloads based on performance trends.
-- **Calendar Orchestration**: Intelligent synchronization of workout splits with your native mobile calendar.
-
-### 🛡️ Hardened Security Infrastructure
-PlanR is designed for maximum privacy and resilience, adhering to **NIST CSF 2.0 (Tier 3)** guidelines.
-- **API Gateways**: All third-party requests (Groq, Wger, ExerciseDB) are proxied via secure Vercel handlers with **IP-based Rate Limiting**.
-- **Data Isolation**: Multi-layered protection using **Supabase Row Level Security (RLS)**.
-- **Secure Headers**: Strict Content Security Policy (CSP), HSTS, and X-Frame-Options enforced at the edge.
-- **Incident Response**: Formalized protocols documented in [Incident Response Playbook](docs/incident_response.md).
+### ⚡ Quota & Resiliency
+PlanR prioritizes system speed and cost-efficiency via a robust **AI Spark** quota system.
+- **Network Resilience**: Uses a dual-stage quota tracker with `localStorage` fallback to suppress proxy errors during backend downtime.
+- **Backend Tracking**: Vercel serverless functions track usage while ensuring a zero-latency frontend experience.
 
 ---
 
@@ -40,22 +35,34 @@ PlanR is designed for maximum privacy and resilience, adhering to **NIST CSF 2.0
 | Layer | Technology |
 | :--- | :--- |
 | **Core UI** | React 19 + TypeScript 5.9 + Vite 7 |
-| **Mobile Bridge** | Capacitor 8 (Platform Native SDKs) |
+| **AI Engine** | OpenRouter (Free Tier Routing) |
 | **Intelligence** | Google ML Kit (Vision & Translation) |
 | **Processing** | Groq (Llama 3 70B & Whisper Large-v3) |
-| **Backend** | Supabase (PostgreSQL RLS) + Vercel Edge |
+| **Backend** | Vercel Serverless (Node.js 22) + Supabase RLS |
 
 ---
 
 ## 🚀 Deployment
 
-### 1. Web Development
+### 1. Environment Configuration
+Create a `.env.local` file in the root directory:
+```env
+# AI API Keys
+OPENROUTER_API_KEY=your_openrouter_key
+GROQ_API_KEY=your_groq_key
+
+# Database
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_key
+```
+
+### 2. Run Locally
 ```bash
 npm install
 npm run dev
 ```
 
-### 2. Native Mobile
+### 3. Native Mobile (Capacitor)
 ```bash
 npm run build
 npx cap sync

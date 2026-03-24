@@ -32,6 +32,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { RoutineGenerator } from '../components/RoutineGenerator';
 import { LocalService } from '../services/localService';
 import { useNavigate } from 'react-router-dom';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 
 const iconMap: Record<string, React.ReactNode> = {
     flame: <Dumbbell className="w-6 h-6" />, // Simplify for now
@@ -135,6 +136,9 @@ export const CalendarView = () => {
                     <h1 className="text-3xl font-black tracking-tighter flex items-center gap-3">
                         <CalendarIcon className="w-8 h-8 text-primary" />
                         {t('planning_hub')}
+                        <PopoverTooltip title="Scheduling">
+                            Plan your workouts ahead of time to stay consistent. Your scheduled sessions appear on the Dashboard, and the AI uses this schedule to remind you of rest days and optimal volume windows.
+                        </PopoverTooltip>
                     </h1>
                 </div>
                 
@@ -232,6 +236,9 @@ export const CalendarView = () => {
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 mb-4 flex items-center gap-2">
                                     <Sparkles className="w-3 h-3 text-teal-500" />
                                     Smart Routine
+                                    <PopoverTooltip title="Dynamic Nudges">
+                                        The AI analyzes your recovery and past volume to suggest small 'nudges'—like an extra rest day or a high-intensity session—to keep your progress optimal.
+                                    </PopoverTooltip>
                                 </h3>
                                 <div className="space-y-3">
                                     {pendingNotifications.length > 0 ? (

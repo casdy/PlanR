@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { ArrowLeft, Activity, Moon, Zap, Smile } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../hooks/useLanguage';
+import { PopoverTooltip } from '../components/ui/Tooltip';
 
 export function RecoveryCheckIn() {
   const navigate = useNavigate();
@@ -67,7 +68,12 @@ export function RecoveryCheckIn() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">{t('recovery_checkin')}</h1>
+            <div className="flex items-center gap-1">
+              <h1 className="text-xl font-bold text-white tracking-tight">{t('recovery_checkin')}</h1>
+              <PopoverTooltip title={t('recovery_checkin')}>
+                By sharing how you feel, the AI Adaptive Engine can fine-tune your upcoming workouts. If you're feeling fresh, it might increase intensity; if you're sore, it will suggest recovery or lower volume.
+              </PopoverTooltip>
+            </div>
             <p className="text-sm text-text-muted">{t('help_engine_adapt')}</p>
           </div>
         </div>
@@ -110,7 +116,12 @@ export function RecoveryCheckIn() {
               <div className="w-16 h-16 rounded-full bg-accent-cyan/20 flex items-center justify-center mx-auto mb-2">
                 <span className="text-2xl font-bold text-accent-cyan">{result.score}</span>
               </div>
-              <h2 className="text-xl font-bold text-white">{t('analysis_complete')}</h2>
+              <div className="flex flex-col items-center gap-1">
+                <h2 className="text-xl font-bold text-white">{t('analysis_complete')}</h2>
+                <PopoverTooltip title="Recovery Score">
+                  Your Recovery Score (1-100) is calculated from your reported sleep, soreness, stress, and energy. A higher score means your body is ready for higher intensity training.
+                </PopoverTooltip>
+              </div>
               <p className="text-text-muted leading-relaxed">
                 {result.insight}
               </p>

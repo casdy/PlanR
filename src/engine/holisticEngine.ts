@@ -7,7 +7,10 @@
  * elite-level coaching insights dynamically.
  */
 import { supabase } from '../lib/supabase';
+import { generateLocalCoachingPlan } from './coachEngine';
 import { LocalService } from '../services/localService';
+
+const COACH_CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface HolisticInsight {
   id: string;
@@ -175,6 +178,70 @@ export async function generateHolisticInsights(userId: string): Promise<Holistic
           severity: 'info',
           icon: 'leaf'
         });
+    }
+    
+    // --- INTEGRATE GEMINI COACHING (PHASE 2) ---
+    try {
+      const cached = localStorage.getItem('planR_coaching_plan');
+      const cachedTs = localStorage.getItem('planR_coaching_plan_ts');
+      const isExpired = cachedTs && (Date.now() - parseInt(cachedTs) > COACH_CACHE_EXPIRY);
+      let coachPlan = cached ? JSON.parse(cached) : null;
+      
+      if (!coachPlan || isExpired) {
+        try {
+          const response = await fetch('/api/coach', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               metrics: { avgCalories, avgProtein, avgCarbs, workoutVolume },
+               goal: 'elite_performance'
+            })
+          });
+          
+          if (response.ok) {
+            coachPlan = await response.json();
+            LocalService.saveCoachingPlan(coachPlan);
+          } else {
+            console.warn('[HolisticEngine] API failed, using mock.');
+            throw new Error('404');
+          }
+        } catch (e) {
+          // Rule-based fallback using the original apps engine logic
+          coachPlan = await generateLocalCoachingPlan(userId);
+        }
+      }
+      
+      if (coachPlan && coachPlan.length > 0) {
+        const ts = parseInt(localStorage.getItem('planR_coaching_plan_ts') || Date.now().toString());
+        const daysSinceStart = Math.floor((Date.now() - ts) / (24 * 60 * 60 * 1000));
+        const todayIdx = daysSinceStart % 7;
+        const today = coachPlan[todayIdx] || coachPlan[0];
+
+        insights.push({
+          id: `gemini-motivation-${todayIdx}`,
+          type: 'behavior',
+          title: 'AI COACH: MOTIVATION',
+          description: today.motivation_message,
+          severity: 'success',
+          icon: 'zap'
+        }, {
+          id: `gemini-nutrition-${todayIdx}`,
+          type: 'food_quality',
+          title: 'AI COACH: NUTRITION',
+          description: today.nutrition_focus,
+          severity: 'info',
+          icon: 'leaf'
+        }, {
+          id: `gemini-workout-${todayIdx}`,
+          type: 'performance',
+          title: 'AI COACH: WORKOUT',
+          description: today.workout_focus,
+          severity: 'info',
+          icon: 'activity'
+        });
+      }
+    } catch (coachError) {
+      console.warn('[HolisticEngine] Coaching integration failed.', coachError);
     }
 
   } catch (error) {

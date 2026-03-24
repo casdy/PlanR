@@ -21,10 +21,11 @@ export const OnboardingFlow: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-[1000] bg-slate-900 flex flex-col overflow-hidden select-none">
-      {/* Skip Button */}
+      {/* Accessible Skip Button */}
       <button 
         onClick={complete}
-        className="absolute top-12 right-6 z-10 text-slate-500 font-bold text-sm hover:text-white transition-colors flex items-center gap-1"
+        aria-label="Skip onboarding"
+        className="absolute top-12 right-6 z-20 text-slate-200 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2 backdrop-blur-md border border-white/10 shadow-lg"
       >
         Skip <X className="w-4 h-4" />
       </button>

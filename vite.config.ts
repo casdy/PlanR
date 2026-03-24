@@ -136,6 +136,20 @@ export default defineConfig(() => {
           }
         },
         // All other /api/* calls go to Vercel serverless functions via vercel dev
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+          // Only proxy if not already handled by a more specific rule
+          bypass: (req) => {
+             // If the request is for one of the specific proxies above, don't use this one
+             const specificProxies = ['/api/cdn-proxy', '/api/wger-media', '/api/wger', '/api/exercisedb', '/api/workoutdb', '/api/off-images', '/api/off-static', '/api/off'];
+             if (specificProxies.some(p => req.url?.startsWith(p))) {
+               return req.url;
+             }
+             return null;
+          }
+        }
       }
     },
     build: {

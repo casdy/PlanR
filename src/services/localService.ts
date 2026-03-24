@@ -23,11 +23,18 @@ import {
     pushLogToCloud,
     deleteLogFromCloud,
 } from './syncService';
+import { NotificationService } from './notificationService';
 
 const DB_PREFIX = 'juuk_fitness_v1_';
 const PROGRAMS_KEY = `${DB_PREFIX}workout_plans`;
 const PROGRESS_KEY = `${DB_PREFIX}workout_progress`;
 const LOGS_KEY = `${DB_PREFIX}workout_logs`;
+const ENGAGEMENT_KEY = `${DB_PREFIX}engagement_stats`;
+
+interface EngagementStats {
+    date: string; // YYYY-MM-DD
+    openCount: number;
+}
 
 /** Returns true if the user is a real authenticated account (not guest). */
 function isRealUser(userId?: string): userId is string {
@@ -207,6 +214,16 @@ export const LocalService = {
                 console.error('[LocalService] logWorkout cloud sync failed:', err)
             );
         }
+
+        // --- NEW: Praise Notification ---
+        const storedPlan = localStorage.getItem('planR_coaching_plan');
+        if (storedPlan) {
+            const plan = JSON.parse(storedPlan);
+            const todayPlan = plan[0]; // Day 0
+            if (todayPlan?.praise_message) {
+                NotificationService.showImmediatePraise(todayPlan.praise_message);
+            }
+        }
     },
 
     getLogs: (userId?: string): WorkoutLog[] => {
@@ -299,5 +316,47 @@ export const LocalService = {
             }
         }
         return streak;
+    },
+
+    // ─── Engagement ──────────────────────────────────────────────────────────
+
+    /** Tracks an app open event and returns the current day's stats. */
+    trackAppOpen: (): EngagementStats => {
+        const today = new Date().toISOString().split('T')[0];
+        const stored = localStorage.getItem(ENGAGEMENT_KEY);
+        let stats: EngagementStats = stored ? JSON.parse(stored) : { date: today, openCount: 0 };
+
+        if (stats.date !== today) {
+            stats = { date: today, openCount: 1 };
+        } else {
+            stats.openCount += 1;
+        }
+
+        localStorage.setItem(ENGAGEMENT_KEY, JSON.stringify(stats));
+        return stats;
+    },
+
+    /** Returns current day's engagement including workout status. */
+    getDailyEngagement: (userId?: string) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const stored = localStorage.getItem(ENGAGEMENT_KEY);
+        const stats: EngagementStats = stored ? JSON.parse(stored) : { date: todayStr, openCount: 0 };
+        
+        const logs = LocalService.getLogs(userId);
+        const workedOutToday = logs.some(l => l.completedAt && l.completedAt.startsWith(todayStr));
+
+        return {
+            ...stats,
+            workedOutToday
+        };
+    },
+
+    /** Saves the coach plan and schedules notifications. */
+    saveCoachingPlan: (plan: any[]) => {
+        localStorage.setItem('planR_coaching_plan', JSON.stringify(plan));
+        localStorage.setItem('planR_coaching_plan_ts', Date.now().toString());
+        
+        // Schedule notifications for the new plan
+        NotificationService.scheduleCoachingNotifications(plan);
     }
 };

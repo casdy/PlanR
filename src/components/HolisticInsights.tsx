@@ -267,13 +267,13 @@ export const HolisticInsights = () => {
             </div>
             {insights.length > 1 && (
                 <div className="flex items-center gap-1">
-                    <button onClick={handlePrev} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
                         <ChevronLeft className="w-4 h-4 text-muted-foreground" />
                     </button>
                     <span className="text-[10px] font-bold text-muted-foreground mx-1">
                         {currentIndex + 1} / {insights.length}
                     </span>
-                    <button onClick={handleNext} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="p-1 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
                         <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </button>
                 </div>

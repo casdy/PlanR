@@ -16,6 +16,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { sqliteAuthService, type User } from '../services/sqliteAuthService';
 import { pullFromCloud } from '../services/syncService';
 import { supabase } from '../lib/supabase';
+import { useUserStore } from '../store/userStore';
 
 /** Shape of the values exposed by the Auth context. */
 interface AuthContextType {
@@ -135,6 +136,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
         setUser(guestUser);
         localStorage.setItem('planr_user', JSON.stringify(guestUser));
+
+        // Always show the onboarding flow for guest log-ins to demonstrate UI changes
+        useUserStore.getState().setHasSeenOnboarding(false);
     };
 
     return (

@@ -54,6 +54,7 @@ export interface FoodProduct {
   ingredients_text?: string;
   allergens?: string;
   additives_tags?: string[];
+  isAiGenerated?: boolean;
 }
 
 export interface SearchResponse {
@@ -214,6 +215,44 @@ export const offService = {
     } catch (error) {
       console.error('Error fetching healthier alternatives:', error);
       return [];
+    }
+  },
+
+  /**
+   * Use Gemini 1.5 Flash Vision to analyze a base64 image of food/barcode.
+   */
+  async analyzeImage(base64Image: string): Promise<FoodProduct | null> {
+    if (!base64Image) return null;
+
+    try {
+      const response = await fetch('/api/vision', {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ image: base64Image }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Vision API failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Map Gemini Vision result to FoodProduct
+      return {
+        product_name: data.productName || 'AI Analyzed Food',
+        nutriments: {
+          energy_kcal: data.calories,
+          proteins: data.protein,
+          carbohydrates: data.carbs,
+          fat: data.fats
+        },
+        ingredients_text: data.ingredients?.join(', ') || '',
+        brands: 'AI Identification',
+        isAiGenerated: true,
+      };
+    } catch (error) {
+      console.error('Error in analyzeImage:', error);
+      throw error;
     }
   }
 };

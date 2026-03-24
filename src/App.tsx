@@ -34,6 +34,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { SplashScreen } from './components/SplashScreen'
 import { OnboardingFlow } from './components/OnboardingFlow'
 import { useUserStore } from './store/userStore'
+import { NotificationService } from './services/notificationService'
 
 // Inner app that can consume AuthContext
 const AppRoutes = () => {
@@ -72,6 +73,12 @@ const AppRoutes = () => {
     };
 
     setupDeepLink();
+  }, []);
+
+  useEffect(() => {
+    // Initialise Notifications
+    NotificationService.requestPermissions();
+    NotificationService.clearTodaysPrompts();
   }, []);
 
   useEffect(() => {
