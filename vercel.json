@@ -1,11 +1,6 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/**/*.py": {
-      "runtime": "@vercel/python@4.1.0"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
