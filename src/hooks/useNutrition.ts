@@ -13,6 +13,9 @@ export type NutritionResult = {
   timestamp?: number;
 };
 
+// OFF proxy path — routed by Vite dev proxy or Vercel rewrite
+const OFF_BASE = '/api/off';
+
 export function useNutrition() {
   const { getBarcode, saveBarcode } = useCache();
   const [loading, setLoading] = useState(false);
@@ -23,6 +26,7 @@ export function useNutrition() {
     setError(null);
 
     try {
+      // 1. Check local cache first
       const cached = await getBarcode(barcode);
       if (cached) {
         setLoading(false);
@@ -37,12 +41,12 @@ export function useNutrition() {
         };
       }
 
-      const res = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+      // 2. Lookup via OFF proxy (avoids CORS)
+      const res = await fetch(`${OFF_BASE}/api/v2/product/${barcode}?fields=product_name,nutriments`);
       if (!res.ok) return null;
       const data = await res.json();
 
-      if (data.status !== 1) {
-        // Product not found in OFF — return null so scanner can fall back to AI vision
+      if (data.status !== 1 || !data.product) {
         return null;
       }
 
@@ -50,10 +54,15 @@ export function useNutrition() {
       const result = {
         barcode,
         name: data.product.product_name || 'Unknown Product',
-        calories: Math.round(nutriments.energy_kcal ?? nutriments['energy-kcal_100g'] ?? 0),
-        protein: parseFloat((nutriments.proteins ?? 0).toFixed(1)),
-        carbs: parseFloat((nutriments.carbohydrates ?? 0).toFixed(1)),
-        fat: parseFloat((nutriments.fat ?? 0).toFixed(1)),
+        calories: Math.round(
+          nutriments.energy_kcal ??
+          nutriments['energy-kcal'] ??
+          nutriments['energy-kcal_100g'] ??
+          0
+        ),
+        protein: parseFloat((nutriments.proteins ?? nutriments.proteins_100g ?? 0).toFixed(1)),
+        carbs: parseFloat((nutriments.carbohydrates ?? nutriments.carbohydrates_100g ?? 0).toFixed(1)),
+        fat: parseFloat((nutriments.fat ?? nutriments.fat_100g ?? 0).toFixed(1)),
         timestamp: Date.now(),
       };
 
@@ -72,13 +81,13 @@ export function useNutrition() {
     setError(null);
 
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
+      // Convert blob to base64 data URL
+      const base64data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.onerror = reject;
+        reader.readAsDataURL(imageBlob);
       });
-      reader.readAsDataURL(imageBlob);
-      const base64data = await base64Promise;
 
       const res = await fetch('/api/vision', {
         method: 'POST',
@@ -88,17 +97,11 @@ export function useNutrition() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Vision API failed');
+        throw new Error(errData.details || errData.error || `Vision API failed (${res.status})`);
       }
 
-      const rawText = await res.text();
-      // the api may return markdown wrapped JSON
-      let jsonStr = rawText.trim();
-      if (jsonStr.startsWith('```json')) jsonStr = jsonStr.slice(7);
-      if (jsonStr.startsWith('```')) jsonStr = jsonStr.slice(3);
-      if (jsonStr.endsWith('```')) jsonStr = jsonStr.slice(0, -3);
-      
-      const data = JSON.parse(jsonStr.trim());
+      // Backend already returns parsed JSON — no need to strip markdown wrappers
+      const data = await res.json();
 
       return {
         name: data.productName || 'Recognized Food',
