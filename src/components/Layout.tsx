@@ -121,7 +121,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.3 }}
                     onClick={() => setShowScanner(true)}
-                    className="fixed bottom-[7.5rem] right-[calc(50%-215px+16px)] sm:right-[calc(50%-215px+16px)] z-50 w-14 h-14 rounded-full bg-teal-500 text-white shadow-xl shadow-teal-500/30 flex items-center justify-center hover:bg-teal-600 active:scale-90 transition-all border-2 border-white/20"
+                    className="fixed bottom-28 right-4 z-[60] w-14 h-14 rounded-full bg-teal-500 text-white shadow-xl shadow-teal-500/30 flex items-center justify-center hover:bg-teal-600 active:scale-90 transition-all border-2 border-white/20"
                     aria-label="Open Smart Scanner"
                 >
                     <Camera className="w-6 h-6" />

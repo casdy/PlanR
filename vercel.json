@@ -74,7 +74,7 @@
     },
     {
        "source": "/api/off/(.*)",
-       "destination": "/api/off?path=$1"
+       "destination": "https://world.openfoodfacts.org/$1"
     },
     {
       "source": "/((?!api/)(?!.*\\.[a-zA-Z0-9]{1,5}$).*)",

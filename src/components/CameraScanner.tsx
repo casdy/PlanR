@@ -1,11 +1,9 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNutrition, type NutritionResult } from '../hooks/useNutrition';
 import { useMeals } from '../hooks/useMeals';
-import { BrowserMultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
+import { useScanner } from '../hooks/useScanner';
 import { RefreshCw, Camera as CameraIcon, X, Check, Upload, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { compressImage } from '../utils/imageCompression';
-import Webcam from 'react-webcam';
 
 type CameraScannerProps = {
   onClose: () => void;
@@ -23,9 +21,8 @@ type CameraScannerProps = {
  * 3. User can also manually tap the shutter to send any frame to AI Vision.
  */
 export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess }) => {
-  const webcamRef = useRef<Webcam>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
   const [result, setResult] = useState<NutritionResult | null>(null);
   const [status, setStatus] = useState<'scanning' | 'analyzing' | 'result' | 'error'>('scanning');
@@ -35,31 +32,50 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
   const { lookupBarcode, recognizeFood } = useNutrition();
   const { addMeal, loading: mealLoading } = useMeals();
 
-  // Initialize ZXing barcode reader
-  useEffect(() => {
-    const hints = new Map();
-    hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.EAN_13, BarcodeFormat.EAN_8,
-      BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
-      BarcodeFormat.CODE_128, BarcodeFormat.CODE_39,
-    ]);
-    readerRef.current = new BrowserMultiFormatReader(hints);
-    return () => { readerRef.current?.reset(); };
-  }, []);
+  // Handle a detected barcode: OFF lookup → AI fallback
+  const handleBarcodeDetected = useCallback(async (code: string) => {
+    if (status !== 'scanning') return;
+    setStatus('analyzing');
 
-  // Capture current frame as a Blob for AI vision
-  const captureFrame = useCallback(async (): Promise<Blob | null> => {
-    const screenshot = webcamRef.current?.getScreenshot();
-    if (!screenshot) return null;
     try {
-      const compressed = await compressImage(screenshot, 800, 0.7);
-      const res = await fetch(compressed);
-      return await res.blob();
+      const data = await lookupBarcode(code);
+      if (data) {
+        setResult(data);
+        setStatus('result');
+        return;
+      }
     } catch {
-      const res = await fetch(screenshot);
-      return await res.blob();
+      // OFF failed — fall through to vision
     }
-  }, []);
+
+    // Fallback: capture current frame and send to AI
+    const blob = await captureFrameFromVideo();
+    if (blob) {
+      await analyzeWithVision(blob);
+    } else {
+      setErrorMsg('Could not capture frame for AI fallback.');
+      setStatus('error');
+    }
+  }, [status, lookupBarcode]);
+
+  const { start, stop, captureImage } = useScanner({
+    videoRef,
+    onBarcodeDetected: handleBarcodeDetected,
+    scanInterval: 1500,
+  });
+
+  // Start camera when component mounts
+  useEffect(() => {
+    start().catch(err => {
+      setCameraError(err.message || 'Camera access denied');
+    });
+    return () => stop();
+  }, [start, stop]);
+
+  // Capture current frame as a Blob
+  const captureFrameFromVideo = useCallback(async (): Promise<Blob | null> => {
+    return captureImage();
+  }, [captureImage]);
 
   // Send a blob to the AI vision endpoint
   const analyzeWithVision = useCallback(async (blob: Blob) => {
@@ -74,80 +90,19 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
     }
   }, [recognizeFood]);
 
-  // Handle a detected barcode: OFF lookup → AI fallback
-  const handleBarcodeDetected = useCallback(async (code: string) => {
-    if (status !== 'scanning') return;
-    setStatus('analyzing');
-    try {
-      const data = await lookupBarcode(code);
-      if (data) {
-        setResult(data);
-        setStatus('result');
-        readerRef.current?.reset();
-        return;
-      }
-    } catch {
-      // OFF failed — fall through to vision
-    }
-
-    // Fallback: capture current frame and send to AI
-    const blob = await captureFrame();
-    if (blob) {
-      await analyzeWithVision(blob);
-    } else {
-      setErrorMsg('Could not capture frame for AI fallback.');
-      setStatus('error');
-    }
-    readerRef.current?.reset();
-  }, [status, lookupBarcode, captureFrame, analyzeWithVision]);
-
-  // Start continuous barcode scanning once the webcam video is ready
-  useEffect(() => {
-    if (status !== 'scanning') return;
-    let active = true;
-
-    const interval = setInterval(() => {
-      if (webcamRef.current && readerRef.current) {
-        const video = webcamRef.current.video;
-        if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
-          clearInterval(interval);
-          if (active) {
-            readerRef.current.decodeFromVideoElementContinuously(
-              video,
-              (r) => {
-                if (r && active) {
-                  active = false;
-                  handleBarcodeDetected(r.getText());
-                }
-              }
-            ).catch(() => { /* scanning errors are expected */ });
-          }
-        }
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-      readerRef.current?.reset();
-    };
-  }, [status, handleBarcodeDetected]);
-
   // Manual shutter: always sends to AI vision
   const handleShutter = useCallback(async () => {
     if (status !== 'scanning') return;
-    readerRef.current?.reset();
-    const blob = await captureFrame();
+    const blob = await captureFrameFromVideo();
     if (blob) {
       await analyzeWithVision(blob);
     }
-  }, [status, captureFrame, analyzeWithVision]);
+  }, [status, captureFrameFromVideo, analyzeWithVision]);
 
   // File upload handler
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    readerRef.current?.reset();
     await analyzeWithVision(file);
   };
 
@@ -171,6 +126,12 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
     setResult(null);
     setErrorMsg('');
     setStatus('scanning');
+    start().catch(() => {});
+  };
+
+  const handleClose = () => {
+    stop();
+    onClose();
   };
 
   return (
@@ -178,7 +139,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 p-6 pt-10 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
         <button
-          onClick={() => { readerRef.current?.reset(); onClose(); }}
+          onClick={handleClose}
           className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors"
         >
           <X className="w-5 h-5" />
@@ -199,23 +160,13 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
             <p className="text-sm opacity-90 mt-1">{cameraError}</p>
           </div>
         ) : (
-          !result && (
-            <Webcam
-              audio={false}
-              ref={webcamRef}
-              className="absolute inset-0 w-full h-full object-cover"
-              videoConstraints={{
-                width: { ideal: 1920 },
-                height: { ideal: 1080 },
-                facingMode: 'environment',
-              }}
-              screenshotFormat="image/jpeg"
-              screenshotQuality={0.9}
-              onUserMediaError={(err) =>
-                setCameraError(typeof err === 'string' ? err : (err as any).message || 'Browser blocking camera.')
-              }
-            />
-          )
+          <video
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            playsInline
+            autoPlay
+            muted
+          />
         )}
 
         {/* Viewfinder Overlay */}

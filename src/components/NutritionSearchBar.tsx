@@ -23,6 +23,21 @@ export interface UnifiedFoodProduct extends FoodProduct {
   source?: 'database' | 'off';
 }
 
+/** Proxy OFF image URLs through /api/off-images to satisfy COEP headers */
+function proxyImage(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/api/')) return url;
+  return url.replace(/^https?:\/\/images\.openfoodfacts\.(org|net)/i, '/api/off-images');
+}
+
+/** Resolve kcal from OFF nutriments (they use many different field names) */
+function getKcal(n?: any): number {
+  if (!n) return 0;
+  return Math.round(
+    n.energy_kcal ?? n['energy-kcal'] ?? n['energy-kcal_100g'] ?? n['energy-kcal_serving'] ?? 0
+  );
+}
+
 interface NutritionSearchBarProps {
   onResult: (product: UnifiedFoodProduct) => void;
   onResults?: (products: UnifiedFoodProduct[]) => void;
@@ -105,7 +120,7 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
       } finally {
         setIsFetchingSuggestions(false);
       }
-    }, 200); // 200ms debounce for ultra-fast suggestions
+    }, 600); // 600ms debounce — OFF rate-limits search to 10 req/min
 
     return () => clearTimeout(timer);
   }, [query, user?.id]);
@@ -240,34 +255,53 @@ export const NutritionSearchBar: React.FC<NutritionSearchBarProps> = ({
               </div>
             ) : suggestions.length > 0 ? (
               <div className="max-h-64 overflow-y-auto no-scrollbar">
-                {suggestions.map((p, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                       setShowSuggestions(false);
-                       setQuery(p.product_name || '');
-                       onResult(p); // Select directly
-                    }}
-                    className="w-full text-left p-3 hover:bg-slate-800 transition-colors border-b border-slate-800 flex items-center gap-3 last:border-0"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-slate-950 overflow-hidden flex-shrink-0 flex items-center justify-center text-[8px] font-black text-slate-700 italic border border-white/5">
-                      {p.image_small_url ? (
-                        <img src={p.image_small_url} alt="" className="w-full h-full object-cover" />
-                      ) : 'NO IMG'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-white truncate group-hover:text-teal-400 flex items-center gap-2">
-                        {p.product_name}
-                        {p.isAiGenerated && (
-                          <Badge variant="ai" className="scale-[0.6] origin-left lowercase">
-                            AI Identified
-                          </Badge>
+                {suggestions.map((p, i) => {
+                  const imgSrc = proxyImage(p.image_small_url || p.image_url);
+                  const kcal = getKcal(p.nutriments);
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setShowSuggestions(false);
+                        setQuery(p.product_name || '');
+                        onResult(p);
+                      }}
+                      className="w-full text-left p-3 hover:bg-slate-800 transition-colors border-b border-slate-800 flex items-center gap-3 last:border-0"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-slate-950 overflow-hidden flex-shrink-0 flex items-center justify-center border border-white/5">
+                        {imgSrc ? (
+                          <img
+                            src={imgSrc}
+                            alt={p.product_name}
+                            className="w-full h-full object-cover"
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-lg">🍽️</span>';
+                            }}
+                          />
+                        ) : (
+                          <span className="text-lg">🍽️</span>
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-500 truncate">{p.brands || t('unknown')} · {p.nutriments?.energy_kcal ? `${Math.round(p.nutriments.energy_kcal)} kcal` : ''}</div>
-                    </div>
-                  </button>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-white truncate flex items-center gap-2">
+                          {p.product_name}
+                          {p.isAiGenerated && (
+                            <Badge variant="ai" className="scale-[0.6] origin-left lowercase">
+                              AI Identified
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {p.brands || t('unknown')}
+                          {kcal > 0 && <> · <span className="text-teal-400 font-bold">{kcal} kcal</span></>}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
                 
                 <button
                   onClick={handleSearch}
