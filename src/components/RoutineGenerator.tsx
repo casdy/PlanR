@@ -37,8 +37,16 @@ export const RoutineGenerator = ({ onRoutineGenerated }: { onRoutineGenerated: (
     const [streamedContent, setStreamedContent] = useState('');
     const [discoveredExercises, setDiscoveredExercises] = useState<string[]>([]);
     const [usedFallback, setUsedFallback] = useState(false);
-    const [remaining, setRemaining] = useState(quotaService.getRemainingGroq());
+    const [remaining, setRemaining] = useState<number>(0);
     const { checkDeloadStatus } = usePerformance();
+
+    useEffect(() => {
+        const fetchInitialQuota = async () => {
+            const rem = await quotaService.getRemainingGroq();
+            setRemaining(rem);
+        };
+        fetchInitialQuota();
+    }, []);
 
     useEffect(() => {
         const names = streamedContent.match(/"name":\s*"([^"]+)"/g);
@@ -93,7 +101,8 @@ export const RoutineGenerator = ({ onRoutineGenerated }: { onRoutineGenerated: (
         } catch (err) {
             console.error('Failed to generate routine:', err);
         } finally {
-            setRemaining(quotaService.getRemainingGroq());
+            const rem = await quotaService.getRemainingGroq();
+            setRemaining(rem);
             setIsGenerating(false);
         }
     };
