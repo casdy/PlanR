@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNutrition, type NutritionResult } from '../hooks/useNutrition';
 import { useMeals } from '../hooks/useMeals';
 import { useScanner } from '../hooks/useScanner';
-import { RefreshCw, Camera as CameraIcon, X, Check, Upload, Zap } from 'lucide-react';
+import { RefreshCw, Camera as CameraIcon, X, Check, Upload, Zap, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type CameraScannerProps = {
@@ -19,6 +19,7 @@ type CameraScannerProps = {
  *    - If OFF finds it → show result.
  *    - If OFF fails → automatically capture frame and send to AI Vision.
  * 3. User can also manually tap the shutter to send any frame to AI Vision.
+ * 4. If no camera is available → shows upload-first UI so the scanner is still usable.
  */
 export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,7 +28,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
   const [result, setResult] = useState<NutritionResult | null>(null);
   const [status, setStatus] = useState<'scanning' | 'analyzing' | 'result' | 'error'>('scanning');
   const [errorMsg, setErrorMsg] = useState('');
-  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [hasCamera, setHasCamera] = useState(true);
 
   const { lookupBarcode, recognizeFood } = useNutrition();
   const { addMeal, loading: mealLoading } = useMeals();
@@ -49,7 +50,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
     }
 
     // Fallback: capture current frame and send to AI
-    const blob = await captureFrameFromVideo();
+    const blob = await captureImage();
     if (blob) {
       await analyzeWithVision(blob);
     } else {
@@ -64,18 +65,13 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
     scanInterval: 1500,
   });
 
-  // Start camera when component mounts
+  // Start camera when component mounts — gracefully handle missing hardware
   useEffect(() => {
-    start().catch(err => {
-      setCameraError(err.message || 'Camera access denied');
+    start().catch(() => {
+      setHasCamera(false);
     });
     return () => stop();
   }, [start, stop]);
-
-  // Capture current frame as a Blob
-  const captureFrameFromVideo = useCallback(async (): Promise<Blob | null> => {
-    return captureImage();
-  }, [captureImage]);
 
   // Send a blob to the AI vision endpoint
   const analyzeWithVision = useCallback(async (blob: Blob) => {
@@ -93,13 +89,13 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
   // Manual shutter: always sends to AI vision
   const handleShutter = useCallback(async () => {
     if (status !== 'scanning') return;
-    const blob = await captureFrameFromVideo();
+    const blob = await captureImage();
     if (blob) {
       await analyzeWithVision(blob);
     }
-  }, [status, captureFrameFromVideo, analyzeWithVision]);
+  }, [status, captureImage, analyzeWithVision]);
 
-  // File upload handler
+  // File upload handler (works with AND without camera)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -126,7 +122,7 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
     setResult(null);
     setErrorMsg('');
     setStatus('scanning');
-    start().catch(() => {});
+    if (hasCamera) start().catch(() => {});
   };
 
   const handleClose = () => {
@@ -152,37 +148,65 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
         </div>
       </div>
 
-      {/* Camera View */}
-      <div className="flex-1 relative overflow-hidden bg-black flex items-center justify-center">
-        {cameraError ? (
-          <div className="bg-red-500/90 text-white p-4 rounded-xl backdrop-blur-md z-10 mx-6 text-center shadow-2xl border border-red-500/20">
-            <p className="font-bold">Camera Failed</p>
-            <p className="text-sm opacity-90 mt-1">{cameraError}</p>
-          </div>
-        ) : (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 w-full h-full object-cover"
-            playsInline
-            autoPlay
-            muted
-          />
-        )}
+      {/* Hidden file input — always available */}
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileUpload}
+      />
 
-        {/* Viewfinder Overlay */}
-        {status === 'scanning' && !cameraError && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
-            <div className="w-64 h-64 relative">
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-teal-500 rounded-tl-xl opacity-90" />
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-teal-500 rounded-tr-xl opacity-90" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-teal-500 rounded-bl-xl opacity-90" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-teal-500 rounded-br-xl opacity-90" />
-              {/* Barcode scan line */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-[80%] h-0.5 bg-teal-500/50 shadow-[0_0_10px_rgba(20,184,166,0.8)] animate-pulse" />
+      {/* Camera View OR Upload-First Fallback */}
+      <div className="flex-1 relative overflow-hidden bg-black flex items-center justify-center">
+        {hasCamera ? (
+          <>
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              playsInline
+              autoPlay
+              muted
+            />
+
+            {/* Viewfinder Overlay */}
+            {status === 'scanning' && (
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10">
+                <div className="w-64 h-64 relative">
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-teal-500 rounded-tl-xl opacity-90" />
+                  <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-teal-500 rounded-tr-xl opacity-90" />
+                  <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-teal-500 rounded-bl-xl opacity-90" />
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-teal-500 rounded-br-xl opacity-90" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-[80%] h-0.5 bg-teal-500/50 shadow-[0_0_10px_rgba(20,184,166,0.8)] animate-pulse" />
+                  </div>
+                </div>
               </div>
+            )}
+          </>
+        ) : (
+          /* ─── No Camera: Upload-First UI ─── */
+          status === 'scanning' && (
+            <div className="flex flex-col items-center justify-center text-center px-8 gap-6">
+              <div className="w-24 h-24 rounded-full bg-teal-500/10 border-2 border-teal-500/30 flex items-center justify-center">
+                <ImageIcon className="w-10 h-10 text-teal-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white mb-2">Upload a Photo</h3>
+                <p className="text-sm text-white/50 max-w-xs">
+                  Take a photo of your food or barcode and our AI will identify it for you
+                </p>
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-8 py-4 rounded-full bg-teal-500 text-white font-black uppercase text-sm tracking-widest shadow-xl shadow-teal-500/25 hover:bg-teal-600 active:scale-95 transition-all flex items-center gap-3"
+              >
+                <CameraIcon className="w-5 h-5" />
+                Take Photo or Choose File
+              </button>
             </div>
-          </div>
+          )
         )}
 
         {/* Analyzing Overlay */}
@@ -275,20 +299,12 @@ export const CameraScanner: React.FC<CameraScannerProps> = ({ onClose, onSuccess
         </AnimatePresence>
       </div>
 
-      {/* Footer Controls */}
-      {status === 'scanning' && !cameraError && (
+      {/* Footer Controls — shown when camera is active */}
+      {status === 'scanning' && hasCamera && (
         <div className="p-8 pb-12 z-20 bg-gradient-to-t from-black/80 to-transparent absolute bottom-0 w-full flex flex-col items-center">
           <p className="text-white/80 font-medium text-xs mb-6 text-center tracking-wide">
             Point at a barcode or tap to identify food with AI
           </p>
-
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-          />
 
           <div className="flex items-center justify-center w-full max-w-sm relative px-6">
             <div className="w-12 h-12 flex-shrink-0" />
