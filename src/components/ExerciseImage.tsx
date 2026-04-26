@@ -9,15 +9,16 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Dumbbell, Loader2 } from 'lucide-react';
-import { getExerciseByName, getExerciseImageUrl } from '../services/wgerService';
+import { getExerciseByName, getExerciseImageUrl } from '../services/exerciseService';
 import { cn } from '../lib/utils';
 
 interface ExerciseImageProps {
   exerciseName: string;
   className?: string;
+  iconClassName?: string;
 }
 
-export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
+export function ExerciseImage({ exerciseName, className, iconClassName }: ExerciseImageProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +53,7 @@ export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
   if (loading) {
     return (
       <div className={cn("relative overflow-hidden rounded-xl bg-zinc-800/50 flex items-center justify-center", className)}>
-         <Loader2 className="w-6 h-6 text-zinc-500 animate-spin" />
+         <Loader2 className={cn("w-6 h-6 text-zinc-500 animate-spin", iconClassName)} />
       </div>
     );
   }
@@ -60,7 +61,7 @@ export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
   if (!imageUrl) {
     return (
       <div className={cn("relative overflow-hidden rounded-xl bg-zinc-800 flex items-center justify-center", className)}>
-        <Dumbbell className="w-8 h-8 text-zinc-500" />
+        <Dumbbell className={cn("w-8 h-8 text-zinc-500", iconClassName)} />
       </div>
     );
   }

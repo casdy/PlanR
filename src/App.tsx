@@ -28,7 +28,7 @@ import { SettingsPage } from './pages/Settings'
 import { CalendarView } from './pages/CalendarView'
 import { RecoveryCheckIn } from './pages/RecoveryCheckIn'
 import { WebNutritionDashboard } from './pages/WebNutritionDashboard'
-import MobileScannerPreview from './pages/mobile/MobileScannerPreview'
+
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { SplashScreen } from './components/SplashScreen'
@@ -124,7 +124,7 @@ const AppRoutes = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/nutrition-preview" element={<WebNutritionDashboard />} />
-              <Route path="/mobile-scanner-preview" element={<MobileScannerPreview />} />
+
 
               {/* Redirects & Fallbacks */}
               <Route path="/dashboard" element={<Navigate to="/" replace />} />

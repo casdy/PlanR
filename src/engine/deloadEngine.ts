@@ -1,5 +1,5 @@
 import type { ExerciseLog, RecoveryLog, DeloadResult } from './types';
-import { getBodyweightExercises, type DbExercise } from '../services/wgerService';
+import { getBodyweightExercises, type DbExercise } from '../services/exerciseService';
 
 /**
  * Adaptive Performance Engine - Deload Engine (Phase 1.3)
@@ -65,7 +65,7 @@ export function applyDeloadAdjustment<T extends { title: string; slots: any[] }>
   // Applies ~10% intensity reduction and drops 1 set per exercise for active recovery.
   const adjustedSlots = template.slots.map(slot => ({
     ...slot,
-    entries: slot.entries.map((entry: any) => ({
+    entries: slot.entries.map((entry: { targetSets: number; targetWeight?: number }) => ({
       ...entry,
       targetSets: Math.max(1, entry.targetSets - 1),
       targetWeight: entry.targetWeight ? parseFloat((entry.targetWeight * 0.9).toFixed(2)) : undefined,

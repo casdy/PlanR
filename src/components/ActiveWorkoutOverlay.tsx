@@ -20,8 +20,8 @@ import { useAuth } from '../hooks/useAuth';
 import { ProgramService } from '../services/programService';
 import type { WorkoutProgram, WorkoutDay } from '../types';
 import { supabase } from '../lib/supabase';
-import type { DbExercise } from '../services/wgerService';
-import { getExerciseImageUrl } from '../services/wgerService';
+import type { DbExercise } from '../services/exerciseService';
+import { getExerciseImageUrl } from '../services/exerciseService';
 import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, X, Dumbbell } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -49,7 +49,7 @@ export const ActiveWorkoutOverlay = () => {
         status, activeProgramId, activeDayId, activeExerciseIndex, activeSessionId,
         elapsedSeconds, timerDuration, isMinimized, setIsMinimized,
         tick, nextExercise, pauseWorkout, resumeWorkout, cancelWorkout,
-        exerciseLogs, logExerciseSet, markExerciseCompleted, completePhysiqueCapture
+        logExerciseSet, markExerciseCompleted, completePhysiqueCapture
     } = useWorkoutStore();
     const { t } = useLanguage();
 
@@ -61,7 +61,7 @@ export const ActiveWorkoutOverlay = () => {
     const [program, setProgram] = React.useState<WorkoutProgram | null>(null);
     const [day, setDay] = React.useState<WorkoutDay | null>(null);
     const [exerciseDetails, setExerciseDetails] = React.useState<DbExercise | null>(null);
-    const [wgerMediaUrl, setWgerMediaUrl] = React.useState<string>('');
+    const [exerciseMediaUrl, setExerciseMediaUrl] = React.useState<string>('');
     const location = useLocation();
 
     // Keep track of the previous pathname to detect actual navigation events after starting
@@ -170,7 +170,7 @@ export const ActiveWorkoutOverlay = () => {
             const exName = firstEntry?.name;
             if (exName) {
                 setExerciseDetails(null);
-                setWgerMediaUrl('');
+                setExerciseMediaUrl('');
                 
                 // Fetch details from our Supabase table
                 const fetchExercise = async () => {
@@ -184,7 +184,7 @@ export const ActiveWorkoutOverlay = () => {
                         if (!error && data) {
                             setExerciseDetails(data as DbExercise);
                             const url = getExerciseImageUrl(data as DbExercise);
-                            if (url) setWgerMediaUrl(url);
+                            if (url) setExerciseMediaUrl(url);
                         }
                     } catch (e: any) {
                         console.error("Failed to load exercise info by name", e);
@@ -301,8 +301,8 @@ export const ActiveWorkoutOverlay = () => {
 
     // Never return null if a workout is active—show a skeleton instead.
     // This allows the "Open Workout" button to expand even if data is still loading.
-    const isActive = status === 'running' || status === 'paused';
-    if (!isActive || status === 'finished') return null;
+    const isActuallyActive = status === 'running' || status === 'paused';
+    if (!isActuallyActive) return null;
 
     if (!day || !program) {
         return (
@@ -436,9 +436,9 @@ export const ActiveWorkoutOverlay = () => {
                                 {/* MEDIA SIDE */}
                                 <div className="space-y-4">
                                     <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-3xl shadow-xl border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
-                                        {wgerMediaUrl ? (
+                                        {exerciseMediaUrl ? (
                                             <img 
-                                                src={wgerMediaUrl} 
+                                                src={exerciseMediaUrl} 
                                                 alt={currentEntry.name} 
                                                 className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal p-4" 
                                                 loading="lazy" 

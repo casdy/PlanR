@@ -73,7 +73,6 @@ interface WorkoutState {
     badgePrompt: string | null;
     achievementTitle: string | null;
     achievementSubtitle: string | null;
-    lastBadgeUrl: string | null;
     lastPhysiquePhotoUrl: string | null;
     setBadgeUrl: (url: string | null) => void;
     

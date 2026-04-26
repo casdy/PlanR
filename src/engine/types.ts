@@ -29,7 +29,7 @@ export interface WorkoutTemplate {
   title: string;
   slots: {
     id: string;
-    type: 'normal' | 'superset' | 'dropset';
+    type: 'normal' | 'superset' | 'dropset' | 'circleset';
     entries: {
       id: string;
       name: string;

@@ -11,7 +11,7 @@
  */
 import { groqService } from './groqService';
 import { quotaService } from './quotaService';
-import { getExercisesByBodyPart } from './wgerService';
+import { getExercisesByBodyPart, type DbExercise } from './exerciseService';
 import type { WorkoutProgram } from '../types';
 
 // Body-part keyword detection for ExerciseDB fallback
@@ -60,7 +60,7 @@ async function buildProgramFromExerciseDB(goal: string): Promise<WorkoutProgram>
             dayOfWeek,
             type: 'strength',
             durationMin: 45,
-            slots: selected.map(ex => ({
+            slots: selected.map((ex: DbExercise) => ({
                 id: crypto.randomUUID(),
                 type: 'normal',
                 entries: [{

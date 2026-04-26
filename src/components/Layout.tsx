@@ -6,10 +6,8 @@
  * The bottom nav provides tab-bar navigation between Dashboard, Programs, Calendar,
  * History, and Settings. The active tab is highlighted with a pill indicator.
  */
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
-import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost, Leaf, Camera } from 'lucide-react';
+import { Dumbbell, Settings as SettingsIcon, Home, Activity, Moon, Sun, Calendar, User, Ghost, Leaf } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Button } from './ui/Button';
@@ -19,6 +17,7 @@ import { useTheme } from '../hooks/useTheme';
 import { Toast } from './ui/Toast';
 import { useLanguage } from '../hooks/useLanguage';
 import { LanguagePicker } from './ui/LanguagePicker';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
@@ -34,7 +33,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         { label: t('nav_profile'), icon: SettingsIcon, path: '/settings' },
     ];
 
-    const isNutritionPage = location.pathname === '/nutrition';
+
 
     return (
         <div className={cn(

@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, X, Check, RefreshCw, Zap, Timer, ChevronLeft, Upload, ImageIcon } from 'lucide-react';
+import { Camera, X, Check, RefreshCw, Zap, ChevronLeft, ImageIcon } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StorageService } from '../services/storageService';
 import { ProgressService } from '../services/progressService';

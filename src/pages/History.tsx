@@ -17,8 +17,8 @@ import { Card } from '../components/ui/Card';
 import { LocalService } from '../services/localService';
 import { ProgressService, type ProgressPhoto } from '../services/progressService';
 import { useAuth } from '../hooks/useAuth';
-import type { WorkoutLog, WorkoutProgram, WorkoutDay, Exercise } from '../types';
-import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell, Camera, Calendar, ChevronRight, Search } from 'lucide-react';
+import type { WorkoutLog, WorkoutProgram, WorkoutDay } from '../types';
+import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell, Camera } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/ui/Button';
@@ -216,11 +216,9 @@ export const History = () => {
     const [progressPhotos, setProgressPhotos] = React.useState<ProgressPhoto[]>([]);
     const [programs, setPrograms] = React.useState<WorkoutProgram[]>([]);
     const [isCameraOpen, setIsCameraOpen] = React.useState(false);
-    const [isLoading, setIsLoading] = React.useState(true);
     const isActive = status === 'running' || status === 'paused';
 
     const loadData = React.useCallback(async () => {
-        setIsLoading(true);
         const userId = user?.id || 'guest';
         const fetchedLogs = LocalService.getLogs(userId);
         const fetchedPrograms = LocalService.getUserPrograms();
@@ -237,7 +235,6 @@ export const History = () => {
         setLogs(fetchedLogs);
         setProgressPhotos(fetchedPhotos);
         setPrograms(fetchedPrograms);
-        setIsLoading(false);
     }, [user]);
 
     // Reload logs when the active session changes (e.g., a new session starts)

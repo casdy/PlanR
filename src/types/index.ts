@@ -8,7 +8,7 @@
  */
 
 // Re-export the exercise-library type so consumers can import from one place.
-export type { DbExercise } from '../services/wgerService';
+export type { DbExercise } from '../services/exerciseService';
 export type { DeloadResult } from '../engine/types';
 
 export type FitnessGoal = 'fat_loss' | 'muscle_gain' | 'strength' | 'maintenance';
@@ -44,7 +44,7 @@ export interface UserProfile {
   createdAt: Date;
 }
 
-/** A single exercise entry within a workout slot. Matches Wger's set-based model. */
+/** A single exercise entry within a workout slot. */
 export interface WorkoutEntry {
   id: string;
   exerciseId: string;
@@ -59,6 +59,8 @@ export interface WorkoutEntry {
   notes?: string;
   /** REQUIRED: UI instructional image or GIF. */
   imageUrl: string;
+  /** Primary muscle group targeted by this exercise. */
+  primaryMuscle?: string;
   /** Whether the entry has been marked complete in the active session. */
   isCompleted?: boolean;
 }

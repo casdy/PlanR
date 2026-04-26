@@ -9,15 +9,16 @@
  */
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getExercisesByMuscle } from '../services/wgerService';
-import type { DbExercise } from '../services/wgerService';
-import type { WorkoutProgram, WorkoutEntry, WorkoutSlot } from '../types';
+import { getExercisesByMuscle } from '../services/exerciseService';
+import type { DbExercise } from '../services/exerciseService';
+import type { WorkoutProgram, WorkoutEntry } from '../types';
 import { ProgramService } from '../services/programService';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { RefreshCw, ShieldAlert, X, Loader2 } from 'lucide-react';
-import { WgerImage } from './ui/WgerImage';
+import { ExerciseImage } from './ExerciseImage';
 import { useLanguage } from '../hooks/useLanguage';
+import { cn } from '../lib/utils';
 
 interface ProgramEditorProps {
     program: WorkoutProgram;
@@ -55,7 +56,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
         try {
             const results = await getExercisesByMuscle(target);
             // Filter out the exact same exercise, grab 3
-            const filtered = results.filter(e => e.name.toLowerCase() !== currentExercise.name.toLowerCase()).slice(0, 3);
+            const filtered = results.filter(e => e.name.toLowerCase() !== entry.name.toLowerCase()).slice(0, 3);
             setAlternatives(filtered);
         } catch (error) {
             console.error("Failed to fetch alternatives", error);
@@ -189,7 +190,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                                                 <Card key={i} className="rounded-2xl border-white/10 dark:border-white/5 bg-secondary/20 hover:bg-secondary/40 transition-colors cursor-pointer overflow-hidden p-0" onClick={() => handleConfirmSwap(alt)}>
                                                     <div className="flex gap-4 items-center">
                                                         <div className="w-24 h-24 bg-white dark:bg-zinc-200 flex items-center justify-center shrink-0 p-2 border border-border/50 shadow-inner overflow-hidden">
-                                                            <WgerImage exerciseName={alt.name} />
+                                                            <ExerciseImage exerciseName={alt.name} />
                                                         </div>
                                                         <div className="flex-1 min-w-0 py-3 pr-4">
                                                             <p className="font-bold text-sm truncate">{alt.name}</p>

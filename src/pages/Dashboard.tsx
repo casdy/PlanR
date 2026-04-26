@@ -16,7 +16,7 @@ import { useRecovery } from '../hooks/useRecovery';
 import { usePerformance } from '../hooks/usePerformance';
 import { ProgramService } from '../services/programService';
 import { LocalService } from '../services/localService';
-import { getExercisesByBodyPart, type DbExercise } from '../services/wgerService';
+import { getExercisesByBodyPart, type DbExercise } from '../services/exerciseService';
 import type { WorkoutProgram, DeloadResult } from '../types';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';

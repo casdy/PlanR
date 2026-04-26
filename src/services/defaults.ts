@@ -1,3 +1,5 @@
+import type { WorkoutProgram } from '../types';
+
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800";
 
 export const DEFAULT_PROGRAMS: Record<string, Omit<WorkoutProgram, 'id' | 'userId' | 'version' | 'isPublic'>> = {

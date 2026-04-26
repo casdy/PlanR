@@ -11,8 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Dumbbell } from 'lucide-react';
 import { Button } from './ui/Button';
 import { createPortal } from 'react-dom';
-import type { DbExercise } from '../services/wgerService';
-import { getExerciseImageUrl } from '../services/wgerService';
+import type { DbExercise } from '../services/exerciseService';
+import { getExerciseImageUrl } from '../services/exerciseService';
 import { useLanguage } from '../hooks/useLanguage';
 
 interface ExerciseCardProps {
