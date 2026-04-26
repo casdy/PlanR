@@ -126,3 +126,13 @@ __pycache__/
 .venv/
 venv/
 .python-version
+
+# ─── Scripts & Utility ───────────────────────────────────────────────────────
+scripts/
+
+# ─── Legacy Migrations ───────────────────────────────────────────────────────
+supabase/migrations/
+
+# ─── Temporary Scratch ───────────────────────────────────────────────────────
+scratch/
+check_db.js

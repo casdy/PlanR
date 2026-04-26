@@ -61,19 +61,20 @@ export function detectDeloadTrigger(
   };
 }
 
-export function applyDeloadAdjustment<T extends { title: string; exercises: any[] }>(template: T): T {
+export function applyDeloadAdjustment<T extends { title: string; slots: any[] }>(template: T): T {
   // Applies ~10% intensity reduction and drops 1 set per exercise for active recovery.
-  const adjustedExercises = template.exercises.map(ex => {
-    return {
-      ...ex,
-      targetSets: Math.max(1, ex.targetSets - 1), // Drop a set, minimum 1
-      targetWeight: ex.targetWeight ? parseFloat((ex.targetWeight * 0.9).toFixed(2)) : undefined, // 10% weight drop
-    };
-  });
+  const adjustedSlots = template.slots.map(slot => ({
+    ...slot,
+    entries: slot.entries.map((entry: any) => ({
+      ...entry,
+      targetSets: Math.max(1, entry.targetSets - 1),
+      targetWeight: entry.targetWeight ? parseFloat((entry.targetWeight * 0.9).toFixed(2)) : undefined,
+    }))
+  }));
 
   return {
     ...template,
-    exercises: adjustedExercises
+    slots: adjustedSlots
   };
 }
 

@@ -44,18 +44,33 @@ export interface UserProfile {
   createdAt: Date;
 }
 
-/** A single exercise within a workout day. */
-export interface Exercise {
+/** A single exercise entry within a workout slot. Matches Wger's set-based model. */
+export interface WorkoutEntry {
   id: string;
+  exerciseId: string;
   name: string;
   targetSets: number;
   targetReps: string;
+  /** Optional starting weight in kg/lbs. */
+  weight?: number;
   /** Optional rest time in seconds between sets. */
   restTimeSec?: number;
-  /** Coach notes visible to the user during the exercise. */
+  /** Coach notes visible to the user. */
   notes?: string;
-  /** Whether the exercise has been marked complete in the active session. */
+  /** REQUIRED: UI instructional image or GIF. */
+  imageUrl: string;
+  /** Whether the entry has been marked complete in the active session. */
   isCompleted?: boolean;
+}
+
+/** 
+ * A collection of exercises performed together. 
+ * If entries.length > 1, it functions as a superset.
+ */
+export interface WorkoutSlot {
+  id: string;
+  type: 'normal' | 'superset' | 'circleset' | 'dropset';
+  entries: WorkoutEntry[];
 }
 
 /** A single day's workout block inside a workout program schedule. */
@@ -65,7 +80,8 @@ export interface WorkoutDay {
   dayOfWeek: string;
   type: 'strength' | 'cardio' | 'rest' | 'active_recovery';
   durationMin: number;
-  exercises: Exercise[];
+  /** REFACTORED: Now uses Slots instead of a flat Exercise list. */
+  slots: WorkoutSlot[];
 }
 
 /** A full user-defined workout program with a weekly schedule. */
@@ -103,6 +119,8 @@ export interface WorkoutLog {
   totalTimeSpentSec: number;
   /** Null if the session was not finished, ISO string if completed successfully. */
   completedAt: any;
+  /** Optional URL to a physique progress photo taken after this session. */
+  physiquePhotoUrl?: string;
   /** Exercise index the user was on when the session was last paused/canceled. */
   lastExerciseIndex?: number;
   /**

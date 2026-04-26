@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getExercisesByMuscle } from '../services/wgerService';
 import type { DbExercise } from '../services/wgerService';
-import type { WorkoutProgram, Exercise } from '../types';
+import type { WorkoutProgram, WorkoutEntry, WorkoutSlot } from '../types';
 import { ProgramService } from '../services/programService';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
@@ -28,7 +28,7 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
     const [swapModalOpen, setSwapModalOpen] = useState(false);
     const [loadingAlternatives, setLoadingAlternatives] = useState(false);
     const [alternatives, setAlternatives] = useState<DbExercise[]>([]);
-    const [targetExercise, setTargetExercise] = useState<{ dayId: string; exIndex: number; exId: string; muscle: string } | null>(null);
+    const [targetExercise, setTargetExercise] = useState<{ dayId: string; slotId: string; entryId: string; muscle: string } | null>(null);
     const { t } = useLanguage();
 
     // Hardcode a default muscle map for our default exercises if we can't infer it.
@@ -46,9 +46,9 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
         return 'pectorals'; // Fallback so the API still works
     };
 
-    const handleOpenSwap = async (dayId: string, exIndex: number, currentExercise: Exercise) => {
-        const target = guessTarget(currentExercise.name);
-        setTargetExercise({ dayId, exIndex, exId: currentExercise.id, muscle: target });
+    const handleOpenSwap = async (dayId: string, slotId: string, entry: WorkoutEntry) => {
+        const target = guessTarget(entry.name);
+        setTargetExercise({ dayId, slotId, entryId: entry.id, muscle: target });
         setSwapModalOpen(true);
         setLoadingAlternatives(true);
 
@@ -70,15 +70,23 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
         // Clone deeply
         const updatedProgram = JSON.parse(JSON.stringify(program)) as WorkoutProgram;
         
-        const dayIndex = updatedProgram.schedule.findIndex(d => d.id === targetExercise.dayId);
-        if (dayIndex > -1) {
-            updatedProgram.schedule[dayIndex].exercises[targetExercise.exIndex] = {
-                id: crypto.randomUUID(),
-                name: newApiEx.name,
-                targetSets: 3, // Keep defaults or try to inherit from previous
-                targetReps: '10-12',
-                notes: newApiEx.instructions ? newApiEx.instructions.join(' ').substring(0, 100) + '...' : '' // Sneak in some help
-            };
+        const dayIdx = updatedProgram.schedule.findIndex(d => d.id === targetExercise.dayId);
+        if (dayIdx > -1) {
+            const slotIdx = updatedProgram.schedule[dayIdx].slots.findIndex(s => s.id === targetExercise.slotId);
+            if (slotIdx > -1) {
+                const entryIdx = updatedProgram.schedule[dayIdx].slots[slotIdx].entries.findIndex(e => e.id === targetExercise.entryId);
+                if (entryIdx > -1) {
+                    updatedProgram.schedule[dayIdx].slots[slotIdx].entries[entryIdx] = {
+                        id: crypto.randomUUID(),
+                        exerciseId: crypto.randomUUID(),
+                        name: newApiEx.name,
+                        targetSets: 3,
+                        targetReps: '10-12',
+                        imageUrl: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800",
+                        notes: newApiEx.instructions ? newApiEx.instructions.join(' ').substring(0, 100) + '...' : ''
+                    };
+                }
+            }
         }
 
         updatedProgram.version += 1;
@@ -102,27 +110,37 @@ export const ProgramEditor = ({ program, onUpdate }: ProgramEditorProps) => {
                             <span className="font-bold text-sm">{t('rest_day_no_exercises')}</span>
                         </div>
                     ) : (
-                        <div className="space-y-2">
-                            {day.exercises.map((ex, idx) => (
-                                <Card key={ex.id} className="glass rounded-2xl flex items-center justify-between p-3 border-white/5">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
-                                            {idx + 1}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm">{ex.name}</p>
-                                            <p className="text-[10px] text-muted-foreground uppercase">{ex.targetSets} Sets • {ex.targetReps}</p>
-                                        </div>
-                                    </div>
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-8 text-xs gap-1 rounded-xl"
-                                        onClick={() => handleOpenSwap(day.id, idx, ex)}
-                                    >
-                                        <RefreshCw className="w-3 h-3" /> {t('swap_exercise')}
-                                    </Button>
-                                </Card>
+                        <div className="space-y-4">
+                            {day.slots.map((slot, sIdx) => (
+                                <div key={slot.id} className={cn(
+                                    "space-y-2 rounded-2xl",
+                                    slot.type !== 'normal' && "p-3 bg-amber-500/5 border border-amber-500/10"
+                                )}>
+                                    {slot.type !== 'normal' && (
+                                        <p className="text-[10px] font-black uppercase text-amber-500 px-1 mb-2">{slot.type}</p>
+                                    )}
+                                    {slot.entries.map((ex, eIdx) => (
+                                        <Card key={ex.id} className="glass rounded-2xl flex items-center justify-between p-3 border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+                                                    {sIdx + 1}{slot.entries.length > 1 ? String.fromCharCode(97 + eIdx) : ''}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm">{ex.name}</p>
+                                                    <p className="text-[10px] text-muted-foreground uppercase">{ex.targetSets} Sets • {ex.targetReps}</p>
+                                                </div>
+                                            </div>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="h-8 text-xs gap-1 rounded-xl"
+                                                onClick={() => handleOpenSwap(day.id, slot.id, ex)}
+                                            >
+                                                <RefreshCw className="w-3 h-3" /> {t('swap_exercise')}
+                                            </Button>
+                                        </Card>
+                                    ))}
+                                </div>
                             ))}
                         </div>
                     )}

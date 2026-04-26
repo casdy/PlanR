@@ -1,17 +1,15 @@
 /**
  * @file src/components/ExerciseImage.tsx
- * @description Smart image loader for exercise GIFs fetched from ExerciseDB.
+ * @description Smart image loader for exercise GIFs from Supabase Storage.
  *
- * Given an exercise name, it fetches the matching GIF URL from ExerciseDB and
- * renders it with a fade-in animation. Shows a spinner while loading and a
- * dumbbell icon fallback if the fetch fails or returns no image.
- *
- * Uses an `isMounted` flag to avoid state updates on unmounted components.
+ * Given an exercise name, looks up the matching record in the Supabase
+ * `exercises` table and renders the self-hosted GIF with a fade-in animation.
+ * Shows a spinner while loading and a dumbbell icon fallback if not found.
  */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Dumbbell, Loader2 } from 'lucide-react';
-import { fetchWgerMedia } from '../services/wgerService';
+import { getExerciseByName, getExerciseImageUrl } from '../services/wgerService';
 import { cn } from '../lib/utils';
 
 interface ExerciseImageProps {
@@ -31,15 +29,15 @@ export function ExerciseImage({ exerciseName, className }: ExerciseImageProps) {
     }
 
     setLoading(true);
-    fetchWgerMedia(exerciseName)
-      .then((url) => {
+    getExerciseByName(exerciseName)
+      .then((exercise) => {
         if (isMounted) {
-          setImageUrl(url || null);
+          setImageUrl(exercise ? getExerciseImageUrl(exercise) || null : null);
           setLoading(false);
         }
       })
       .catch((err) => {
-        console.error("Failed to load Wger exercise image", err);
+        console.error("Failed to load exercise image", err);
         if (isMounted) {
           setImageUrl(null);
           setLoading(false);

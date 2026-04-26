@@ -23,7 +23,7 @@ import { LocalService } from '../services/localService';
 import { supabase } from '../lib/supabase';
 import type { WorkoutLog } from '../types';
 
-type WorkoutStatus = 'idle' | 'running' | 'paused' | 'finished';
+type WorkoutStatus = 'idle' | 'running' | 'paused' | 'finished' | 'physique_capture';
 
 interface WorkoutState {
     status: WorkoutStatus;
@@ -73,7 +73,12 @@ interface WorkoutState {
     badgePrompt: string | null;
     achievementTitle: string | null;
     achievementSubtitle: string | null;
+    lastBadgeUrl: string | null;
+    lastPhysiquePhotoUrl: string | null;
     setBadgeUrl: (url: string | null) => void;
+    
+    // Physique capture flow
+    completePhysiqueCapture: (photoUrl?: string) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -127,6 +132,12 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             resumeOldWorkout: (log) => {
                 LocalService.logWorkoutEvent(log.sessionId, 'resume');
+                // Update the session date to now so the activity feed reflects when it was resumed
+                const resumedDate = new Date().toISOString();
+                LocalService.updateWorkoutSession(log.sessionId, {
+                    isPaused: false,
+                    date: resumedDate,
+                });
                 set({
                     status: 'running',
                     activeProgramId: log.programId,
@@ -141,7 +152,6 @@ export const useWorkoutStore = create<WorkoutState>()(
                     completedExerciseIds: log.completedExerciseIds || [],
                     completedExerciseNames: log.completedExerciseNames || []
                 });
-                LocalService.updateWorkoutSession(log.sessionId, { isPaused: false });
             },
 
             pauseWorkout: () => {
@@ -174,7 +184,14 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             resumeWorkout: () => {
                 const { activeSessionId } = get();
-                if (activeSessionId) LocalService.logWorkoutEvent(activeSessionId, 'resume');
+                if (activeSessionId) {
+                    LocalService.logWorkoutEvent(activeSessionId, 'resume');
+                    // Sync the unpaused state and update date to move to top of history
+                    LocalService.updateWorkoutSession(activeSessionId, { 
+                        isPaused: false,
+                        date: new Date().toISOString() 
+                    });
+                }
                 set({ status: 'running' });
             },
 
@@ -233,7 +250,7 @@ export const useWorkoutStore = create<WorkoutState>()(
                 const prompt = `A hyper-realistic 3D digital gold badge, futuristic gym trophy aesthetic, centered, dark glowing background, representing a completed workout with ${exerciseCount} exercises and ${totalVolume.toLocaleString()} lbs total volume lifted. Highly detailed 8k render, Unreal Engine 5 style. Text saying "${title}".`;
                 
                 set({ 
-                    status: 'finished', 
+                    status: 'physique_capture', 
                     badgePrompt: prompt,
                     achievementTitle: title,
                     achievementSubtitle: subtitle,
@@ -287,7 +304,7 @@ export const useWorkoutStore = create<WorkoutState>()(
                         elapsedSeconds: 0
                     });
                 } else {
-                    set({ status: 'finished' });
+                    get().finishWorkout();
                 }
             },
 
@@ -352,10 +369,19 @@ export const useWorkoutStore = create<WorkoutState>()(
             },
 
             lastBadgeUrl: null,
+            lastPhysiquePhotoUrl: null,
             badgePrompt: null,
             achievementTitle: null,
             achievementSubtitle: null,
-            setBadgeUrl: (url) => set({ lastBadgeUrl: url })
+            setBadgeUrl: (url) => set({ lastBadgeUrl: url }),
+
+            completePhysiqueCapture: (photoUrl) => {
+                const { activeSessionId } = get();
+                if (activeSessionId && photoUrl) {
+                    LocalService.updateWorkoutSession(activeSessionId, { physiquePhotoUrl: photoUrl });
+                }
+                set({ status: 'finished', lastPhysiquePhotoUrl: photoUrl || null });
+            }
         }),
         {
             name: 'juuk-workout-storage', // key in local storage
@@ -369,7 +395,8 @@ export const useWorkoutStore = create<WorkoutState>()(
                 elapsedSeconds: state.elapsedSeconds,
                 totalSessionSeconds: state.totalSessionSeconds,
                 completedExerciseIds: state.completedExerciseIds,
-                completedExerciseNames: state.completedExerciseNames
+                completedExerciseNames: state.completedExerciseNames,
+                lastPhysiquePhotoUrl: state.lastPhysiquePhotoUrl
             }),
         }
     )

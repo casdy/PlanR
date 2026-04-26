@@ -388,11 +388,17 @@ export const Dashboard = () => {
                 dayOfWeek: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date()),
                 type: 'strength',
                 durationMin: 45,
-                exercises: dailySuggestion.map((ex) => ({
+                slots: dailySuggestion.map((ex) => ({
                     id: crypto.randomUUID(),
-                    name: ex.name,
-                    targetSets: 3,
-                    targetReps: '10-12'
+                    type: 'normal',
+                    entries: [{
+                        id: crypto.randomUUID(),
+                        exerciseId: crypto.randomUUID(),
+                        name: ex.name,
+                        targetSets: 3,
+                        targetReps: '10-12',
+                        imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400"
+                    }]
                 }))
             }]
         };
@@ -424,11 +430,17 @@ export const Dashboard = () => {
                 dayOfWeek: new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date()),
                 type: 'strength',
                 durationMin: 45,
-                exercises: dailySuggestion.map((ex) => ({
+                slots: dailySuggestion.map((ex) => ({
                     id: crypto.randomUUID(),
-                    name: ex.name,
-                    targetSets: 3,
-                    targetReps: '10-12'
+                    type: 'normal',
+                    entries: [{
+                        id: crypto.randomUUID(),
+                        exerciseId: crypto.randomUUID(),
+                        name: ex.name,
+                        targetSets: 3,
+                        targetReps: '10-12',
+                        imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400"
+                    }]
                 }))
             }]
         };

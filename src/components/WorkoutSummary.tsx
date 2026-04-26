@@ -19,7 +19,7 @@ import { LocalService } from '../services/localService';
 import { useLanguage } from '../hooks/useLanguage';
 
 export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
-    const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
+    const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, lastPhysiquePhotoUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
     const [isGenerating, setIsGenerating] = useState(false);
 
     const [isLogging, setIsLogging] = useState(false);
@@ -104,15 +104,31 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                         <div className="relative w-full aspect-square mb-6 bg-[#05060a] rounded-2xl overflow-hidden flex items-center justify-center shadow-inner">
                             {lastBadgeUrl ? (
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="w-full h-full"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="w-full h-full relative"
                                 >
+                                    {/* Carousel-like logic: if photo exists, show it secondary?
+                                        Actually, let's show the physique photo as a "before/after" style or a floating circle.
+                                    */}
                                     <img 
                                         src={lastBadgeUrl} 
                                         alt="Achievement Badge" 
                                         className="w-full h-full object-cover"
                                     />
+                                    
+                                    {lastPhysiquePhotoUrl && (
+                                        <motion.div 
+                                            initial={{ scale: 0, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            transition={{ delay: 0.5, type: 'spring' }}
+                                            className="absolute bottom-4 left-4 w-24 h-24 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden rotate-[-6deg]"
+                                        >
+                                            <img src={lastPhysiquePhotoUrl} alt="Physique Update" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20" />
+                                        </motion.div>
+                                    )}
+
                                     <div className="absolute bottom-3 right-3 animate-bounce">
                                         <div className="bg-[#0f121b]/80 p-1.5 rounded-full shadow-lg backdrop-blur-sm">
                                             <Sparkles className="w-3.5 h-3.5 text-yellow-500" />

@@ -101,6 +101,7 @@ async function pullLogsFromCloud(userId: string): Promise<void> {
             lastExerciseIndex: row.last_exercise_index ?? 0,
             isPaused: row.is_paused ?? false,
             events: row.events ?? [],
+            physiquePhotoUrl: row.physique_photo_url ?? null,
         };
         localMap.set(log.sessionId, log);
     }
@@ -170,6 +171,7 @@ export async function pushLogToCloud(userId: string, log: WorkoutLog): Promise<v
             last_exercise_index: log.lastExerciseIndex ?? 0,
             is_paused: log.isPaused ?? false,
             events: log.events ?? [],
+            physique_photo_url: log.physiquePhotoUrl ?? null,
             updated_at: new Date().toISOString(),
         }, { onConflict: 'id' });
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Dumbbell } from 'lucide-react';
-import { fetchWgerMedia } from '../../services/wgerService';
+import { getExerciseByName, getExerciseImageUrl } from '../../services/wgerService';
 import { cn } from '../../lib/utils';
 
 interface WgerImageProps {
@@ -19,9 +19,9 @@ export const WgerImage = ({ exerciseName, className, iconClassName }: WgerImageP
         setIsMediaLoading(true);
         setImageError(false);
 
-        fetchWgerMedia(exerciseName).then((url: string) => {
+        getExerciseByName(exerciseName).then((exercise) => {
             if (isMounted) {
-                setMediaUrl(url);
+                setMediaUrl(exercise ? getExerciseImageUrl(exercise) : '');
                 setIsMediaLoading(false);
             }
         }).catch(() => {

@@ -27,13 +27,17 @@ export interface WorkoutTemplate {
   // Representation of a day's workout from AI
   id: string;
   title: string;
-  exercises: {
+  slots: {
     id: string;
-    name: string;
-    targetSets: number;
-    targetReps: string; // e.g., "8-10"
-    targetWeight?: number; // optional starting weight based on history
-    rpeTarget?: number;    // optional RPE target (serious mode)
+    type: 'normal' | 'superset' | 'dropset';
+    entries: {
+      id: string;
+      name: string;
+      targetSets: number;
+      targetReps: string;
+      targetWeight?: number;
+      rpeTarget?: number;
+    }[];
   }[];
 }
 

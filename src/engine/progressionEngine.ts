@@ -56,80 +56,83 @@ export function adjustProgram(
 ): EngineAdjustmentResult {
   const adjustmentsMade: string[] = [];
   
-  const adjustedExercises = template.exercises.map(exercise => {
-    // Find the most recent log for this specific exercise
-    const recentLogs = performanceHistory
-      .filter(log => log.exercise_id === exercise.id)
-      .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime());
+  const adjustedSlots = template.slots.map(slot => {
+    const adjustedEntries = slot.entries.map(entry => {
+      // Find the most recent log for this specific exercise
+      const recentLogs = performanceHistory
+        .filter(log => log.exercise_id === entry.name) // Engine usually matches by name for template flexibility
+        .sort((a, b) => new Date(b.performed_at).getTime() - new Date(a.performed_at).getTime());
 
-    const lastLog = recentLogs[0];
-    
-    // Goal-Adaptive Adjustments (PRD Phase 2.1)
-    let targetWeight = exercise.targetWeight;
-    let targetSets = exercise.targetSets;
-    let targetReps = exercise.targetReps;
-    let restTimeSec = 90; // default
+      const lastLog = recentLogs[0];
+      
+      let targetWeight = entry.targetWeight;
+      let targetSets = entry.targetSets;
+      let targetReps = entry.targetReps;
+      let restTimeSec = 90;
 
-    if (goal === 'fat_loss') {
-      targetSets = 3;
-      targetReps = "10-15";
-      restTimeSec = 60;
-    } else if (goal === 'muscle_gain') {
-      targetSets = 4;
-      targetReps = "8-12";
-      restTimeSec = 90;
-    } else if (goal === 'strength') {
-      targetSets = 5;
-      targetReps = "3-5";
-      restTimeSec = 180;
-    }
-
-    if (lastLog) {
-      if (trainingMode === 'casual') {
-        // Simple +2.5% progression
-        const newWeight = parseFloat((lastLog.weight * (1 + PROGRESSION_CASUAL_INCREASE_PERCENT)).toFixed(2));
-        targetWeight = newWeight;
-        adjustmentsMade.push(`Increased weight for ${exercise.name} by 2.5% based on previous completion.`);
-      } else if (trainingMode === 'serious') {
-        // v1.2 RPE based adjustments
-        const loggedRpe = lastLog.rpe || 8; // Default to 8 if no RPE was logged
-        let increasePercent = 0;
-        let rpeTarget = 8;
-
-        if (loggedRpe < 7) {
-          increasePercent = 0.05; // 5% increase for low exertion
-          rpeTarget = Math.min(10, loggedRpe + 2); // Push them harder
-          adjustmentsMade.push(`Increased weight for ${exercise.name} by 5% due to low RPE (${loggedRpe}). Target RPE ${rpeTarget}.`);
-        } else if (loggedRpe >= 7 && loggedRpe < 9) {
-          increasePercent = 0.025; // 2.5% increase for optimal RPE
-          rpeTarget = loggedRpe; // Aim to maintain same feeling
-          adjustmentsMade.push(`Increased weight for ${exercise.name} by 2.5% based on RPE ${loggedRpe}. Target RPE ${rpeTarget}.`);
-        } else {
-          // RPE 9-10 (High Exertion)
-          increasePercent = 0; // Maintain weight to allow recovery / adaptation
-          rpeTarget = 8; // Goal is to hit 8 next time with the same weight
-          adjustmentsMade.push(`Maintained weight for ${exercise.name} due to high RPE (${loggedRpe}). Target RPE ${rpeTarget}.`);
-        }
-
-        const newWeight = parseFloat((lastLog.weight * (1 + increasePercent)).toFixed(2));
-        targetWeight = newWeight;
-        exercise.rpeTarget = rpeTarget;
+      if (goal === 'fat_loss') {
+        targetSets = 3;
+        targetReps = "10-15";
+        restTimeSec = 60;
+      } else if (goal === 'muscle_gain') {
+        targetSets = 4;
+        targetReps = "8-12";
+        restTimeSec = 90;
+      } else if (goal === 'strength') {
+        targetSets = 5;
+        targetReps = "3-5";
+        restTimeSec = 180;
       }
-    }
+
+      if (lastLog) {
+        if (trainingMode === 'casual') {
+          const newWeight = parseFloat((lastLog.weight * (1 + PROGRESSION_CASUAL_INCREASE_PERCENT)).toFixed(2));
+          targetWeight = newWeight;
+          adjustmentsMade.push(`Increased weight for ${entry.name} by 2.5% based on previous completion.`);
+        } else if (trainingMode === 'serious') {
+          const loggedRpe = lastLog.rpe || 8;
+          let increasePercent = 0;
+          let rpeTarget = 8;
+
+          if (loggedRpe < 7) {
+            increasePercent = 0.05;
+            rpeTarget = Math.min(10, loggedRpe + 2);
+            adjustmentsMade.push(`Increased weight for ${entry.name} by 5% due to low RPE (${loggedRpe}). Target RPE ${rpeTarget}.`);
+          } else if (loggedRpe >= 7 && loggedRpe < 9) {
+            increasePercent = 0.025;
+            rpeTarget = loggedRpe;
+            adjustmentsMade.push(`Increased weight for ${entry.name} by 2.5% based on RPE ${loggedRpe}. Target RPE ${rpeTarget}.`);
+          } else {
+            increasePercent = 0;
+            rpeTarget = 8;
+            adjustmentsMade.push(`Maintained weight for ${entry.name} due to high RPE (${loggedRpe}). Target RPE ${rpeTarget}.`);
+          }
+
+          const newWeight = parseFloat((lastLog.weight * (1 + increasePercent)).toFixed(2));
+          targetWeight = newWeight;
+          entry.rpeTarget = rpeTarget;
+        }
+      }
+
+      return {
+        ...entry,
+        targetWeight,
+        targetSets,
+        targetReps,
+        restTimeSec,
+      };
+    });
 
     return {
-      ...exercise,
-      targetWeight,
-      targetSets,
-      targetReps,
-      restTimeSec,
+      ...slot,
+      entries: adjustedEntries
     };
   });
 
   return {
     adjustedTemplate: {
       ...template,
-      exercises: adjustedExercises
+      slots: adjustedSlots
     },
     adjustmentsMade
   };

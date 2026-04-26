@@ -1,8 +1,10 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  
   return {
     plugins: [react()],
     optimizeDeps: {
@@ -14,91 +16,18 @@ export default defineConfig(() => {
         'Cross-Origin-Embedder-Policy': 'require-corp',
       },
       proxy: {
-  
-        // /api/cdn-proxy?url=<encoded CDN URL>
-        '/api/cdn-proxy': {
-          target: 'https://v2.exercisedb.io', // placeholder
+        '/api/exercise-gifs': {
+          target: 'https://yykfqceawzvxzqmogxvv.supabase.co/storage/v1/object/public/exercise-gifs',
           changeOrigin: true,
           secure: false,
-          router: (req: any) => {
-            try {
-              const urlMatch = req.url?.match(/[?&]url=([^&]+)/);
-              if (urlMatch) {
-                const cdnUrl = decodeURIComponent(urlMatch[1]);
-                const parsed = new URL(cdnUrl);
-                return `${parsed.protocol}//${parsed.host}`;
-              }
-            } catch (e) {}
-            return 'https://v2.exercisedb.io';
-          },
-          rewrite: (path) => {
-            try {
-              const match = path.match(/[?&]url=([^&]+)/);
-              if (match) {
-                const cdnUrl = decodeURIComponent(match[1]);
-                const url = new URL(cdnUrl);
-                return url.pathname + url.search;
-              }
-            } catch (e) {}
-            return path.replace(/^\/api\/cdn-proxy/, '');
-          },
-          configure: (proxy, _options) => {
-            proxy.on('proxyReq', (proxyReq, req) => {
-              try {
-                const urlMatch = req.url?.match(/[?&]url=([^&]+)/);
-                if (urlMatch) {
-                  const cdnUrl = decodeURIComponent(urlMatch[1]);
-                  const parsed = new URL(cdnUrl);
-                  proxyReq.setHeader('Host', parsed.host);
-                  proxyReq.setHeader('Referer', `${parsed.protocol}//${parsed.host}/`);
-                }
-              } catch (e) {}
-            });
+          rewrite: (path) => path.replace(/^\/api\/exercise-gifs/, ''),
+          configure: (proxy) => {
             proxy.on('proxyRes', (_proxyRes, _req, res) => {
               res.setHeader('Access-Control-Allow-Origin', '*');
               res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
             });
           }
         },
-        '/api/wger-media': {
-          target: 'https://wger.de',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api\/wger-media/, ''),
-          configure: (proxy, _options) => {
-            proxy.on('proxyRes', (_proxyRes, _req, res) => {
-              res.setHeader('Access-Control-Allow-Origin', '*');
-              res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-            });
-          }
-        },
-        '/api/wger': {
-          target: 'https://wger.de',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => path.replace(/^\/api\/wger/, '/api'),
-        },
-        '/api/exercisedb': {
-          target: 'https://exercisedb.p.rapidapi.com',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => {
-            const url = new URL(path, 'http://localhost');
-            const endpoint = url.searchParams.get('endpoint');
-            return endpoint ? `/${endpoint}` : '/exercises';
-          },
-        },
-        '/api/workoutdb': {
-          target: 'https://workoutdb.is-app.in',
-          changeOrigin: true,
-          secure: false,
-          rewrite: (path) => {
-            const url = new URL(path, 'http://localhost');
-            const endpoint = url.searchParams.get('endpoint'); 
-            return endpoint ? `/api/${endpoint}` : '/api/workouts';
-          },
-        },
-        // Dedicated proxy for Open Food Facts images
         '/api/off-images': {
           target: 'https://images.openfoodfacts.org',
           changeOrigin: true,
@@ -135,28 +64,14 @@ export default defineConfig(() => {
             });
           }
         },
-        // All other /api/* calls go to Vercel serverless functions via vercel dev
         '/api': {
           target: 'http://localhost:3000',
           changeOrigin: true,
-          secure: false,
-          // Only proxy if not already handled by a more specific rule
-          bypass: (req) => {
-             // If the request is for one of the specific proxies above, don't use this one
-             const specificProxies = ['/api/cdn-proxy', '/api/wger-media', '/api/wger', '/api/exercisedb', '/api/workoutdb', '/api/off-images', '/api/off-static', '/api/off'];
-             if (specificProxies.some(p => req.url?.startsWith(p))) {
-               return req.url;
-             }
-             return null;
-          }
+          secure: false
         }
       }
     },
     build: {
-      rollupOptions: {
-        output: {
-        }
-      },
       chunkSizeWarningLimit: 1000
     }
   }

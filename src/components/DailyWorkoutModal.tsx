@@ -4,6 +4,7 @@
  *
  * Lets the user pick a specific program day to schedule on a calendar date, or
  * start it immediately. Renders as a portal to avoid layout clipping issues.
+ * Exercise GIFs are loaded from Supabase Storage via getExerciseByName.
  */
 import { createPortal } from 'react-dom';
 import { useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { X, Calendar, Play, Loader2, Dumbbell } from 'lucide-react';
 import type { DbExercise } from '../services/wgerService';
-import { fetchWgerMedia } from '../services/wgerService';
+import { getExerciseByName, getExerciseImageUrl } from '../services/wgerService';
 import { useLanguage } from '../hooks/useLanguage';
 
 const ModalExerciseImage = ({ exerciseName }: { exerciseName: string }) => {
@@ -25,9 +26,9 @@ const ModalExerciseImage = ({ exerciseName }: { exerciseName: string }) => {
         setIsMediaLoading(true);
         setImageError(false);
 
-        fetchWgerMedia(exerciseName).then(url => {
+        getExerciseByName(exerciseName).then(exercise => {
             if (isMounted) {
-                setMediaUrl(url);
+                setMediaUrl(exercise ? getExerciseImageUrl(exercise) : '');
                 setIsMediaLoading(false);
             }
         }).catch(() => {
@@ -141,7 +142,7 @@ export const DailyWorkoutModal = ({
                                 <div className="flex gap-4 w-max h-full min-h-[280px]">
                                     {exercises.map((item, idx) => (
                                         <Card key={idx} className="p-5 bg-secondary/20 border-white/5 rounded-[2rem] flex flex-col items-center text-center gap-4 w-[240px] shrink-0 h-full">
-                                            {/* Icon/Visual - Fixed for Light/Dark Mode */}
+                                            {/* Icon/Visual */}
                                             <div className="w-24 h-24 rounded-3xl bg-white dark:bg-zinc-200 flex items-center justify-center shrink-0 p-3 border border-border/50 shadow-inner overflow-hidden">
                                                 <ModalExerciseImage exerciseName={item.name} />
                                             </div>

@@ -15,12 +15,14 @@
 import * as React from 'react';
 import { Card } from '../components/ui/Card';
 import { LocalService } from '../services/localService';
+import { ProgressService, type ProgressPhoto } from '../services/progressService';
 import { useAuth } from '../hooks/useAuth';
 import type { WorkoutLog, WorkoutProgram, WorkoutDay, Exercise } from '../types';
-import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell } from 'lucide-react';
+import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell, Camera, Calendar, ChevronRight, Search } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/ui/Button';
+import { ProgressCamera } from '../components/ProgressCamera';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -57,8 +59,10 @@ const LiveWorkoutCard = () => {
                 const day = prog.schedule?.find(d => d.id === activeDayId);
                 if (day) {
                     setDayTitle(day.title || '');
-                    const ex = day.exercises?.[activeExerciseIndex];
-                    if (ex) setCurrentExerciseName(ex.name);
+                    const slot = day.slots?.[activeExerciseIndex];
+                    if (slot && slot.entries.length > 0) {
+                        setCurrentExerciseName(slot.entries[0].name);
+                    }
                 }
             }
         };
@@ -70,7 +74,7 @@ const LiveWorkoutCard = () => {
         const progs = LocalService.getUserPrograms();
         const prog = progs.find(p => p.id === activeProgramId);
         const day = prog?.schedule?.find(d => d.id === activeDayId);
-        return day?.exercises?.length || 0;
+        return day?.slots?.length || 0;
     }, [activeProgramId, activeDayId]);
 
     const progressPct = totalExercises > 0
@@ -209,21 +213,37 @@ export const History = () => {
     const { t } = useLanguage();
     const { resumeOldWorkout, startWorkout, status, activeSessionId } = useWorkoutStore();
     const [logs, setLogs] = React.useState<WorkoutLog[]>([]);
+    const [progressPhotos, setProgressPhotos] = React.useState<ProgressPhoto[]>([]);
     const [programs, setPrograms] = React.useState<WorkoutProgram[]>([]);
+    const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+    const [isLoading, setIsLoading] = React.useState(true);
     const isActive = status === 'running' || status === 'paused';
 
-    // Reload logs when the active session changes (e.g., a new session starts)
-    React.useEffect(() => {
+    const loadData = React.useCallback(async () => {
+        setIsLoading(true);
         const userId = user?.id || 'guest';
         const fetchedLogs = LocalService.getLogs(userId);
         const fetchedPrograms = LocalService.getUserPrograms();
         
-        const sortedLogs = [...fetchedLogs].sort((a, b) =>
-            new Date(b.completedAt || b.date).getTime() - new Date(a.completedAt || a.date).getTime()
-        );
-        setLogs(sortedLogs);
+        let fetchedPhotos: ProgressPhoto[] = [];
+        if (user && user.id !== 'guest') {
+            try {
+                fetchedPhotos = await ProgressService.getProgressPhotos(user.id);
+            } catch (err) {
+                console.error("Failed to fetch progress photos:", err);
+            }
+        }
+
+        setLogs(fetchedLogs);
+        setProgressPhotos(fetchedPhotos);
         setPrograms(fetchedPrograms);
-    }, [user, activeSessionId]);
+        setIsLoading(false);
+    }, [user]);
+
+    // Reload logs when the active session changes (e.g., a new session starts)
+    React.useEffect(() => {
+        loadData();
+    }, [loadData, activeSessionId]);
 
     const handleDelete = (logId: string) => {
         LocalService.deleteLog(logId);
@@ -236,15 +256,45 @@ export const History = () => {
     return (
         <div className="space-y-8 pb-36">
             <header>
-                <h1 className="text-4xl font-black tracking-tighter flex items-center gap-3">
-                    <Activity className="w-8 h-8 text-primary" />
-                    {t('activity_feed')}
-                    <PopoverTooltip title={t('activity_feed')}>
-                        Your Activity Feed is a chronological record of your training journey. It tracks every session, completed rep, and personal best. The AI uses this data to map your volume trends and fatigue levels.
-                    </PopoverTooltip>
-                </h1>
-                <p className="text-muted-foreground font-medium">{t('activity_subtitle')}</p>
+                <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl sm:text-4xl font-black tracking-tighter flex items-center gap-3">
+                        <Activity className="w-8 h-8 text-primary" />
+                        {t('activity_feed')}
+                        <PopoverTooltip title={t('activity_feed')}>
+                            Your Activity Feed is a chronological record of your training journey. It tracks every session, completed rep, and personal best. The AI uses this data to map your volume trends and fatigue levels.
+                        </PopoverTooltip>
+                    </h1>
+                    <p className="text-muted-foreground font-medium">{t('activity_subtitle')}</p>
+                </div>
             </header>
+
+            <AnimatePresence>
+                {isCameraOpen && (
+                    <ProgressCamera 
+                        onClose={() => setIsCameraOpen(false)}
+                        onComplete={() => {
+                            setIsCameraOpen(false);
+                            loadData();
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Floating Action Button (FAB) for Camera */}
+            <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="fixed bottom-[110px] right-6 z-40"
+            >
+                <Button 
+                    className="w-16 h-16 rounded-full shadow-2xl shadow-primary/40 p-0 flex items-center justify-center bg-primary"
+                    onClick={() => setIsCameraOpen(true)}
+                >
+                    <Camera className="w-7 h-7" />
+                </Button>
+            </motion.div>
 
             <div className="space-y-4">
                 {/* Live workout block — always re-renders from store */}
@@ -252,11 +302,64 @@ export const History = () => {
                     {isActive && <LiveWorkoutCard />}
                 </AnimatePresence>
 
-                {/* Past logs */}
+                {/* Past activities */}
                 <AnimatePresence mode="wait">
-                    {pastLogs.length > 0 ? (
+                    {(pastLogs.length > 0 || progressPhotos.length > 0) ? (
                         <div className="space-y-3">
-                            {pastLogs.map((log, idx) => {
+                            {[
+                                ...pastLogs.map(l => ({ type: 'workout' as const, date: l.completedAt || l.date, data: l })),
+                                ...progressPhotos.map(p => ({ type: 'photo' as const, date: p.created_at, data: p }))
+                            ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                             .map((item, idx) => {
+                                if (item.type === 'photo') {
+                                    const photo = item.data;
+                                    return (
+                                        <motion.div
+                                            key={photo.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                        >
+                                            <Card className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all p-4 bg-gradient-to-br from-zinc-900/50 to-black/50">
+                                                <div className="flex gap-4">
+                                                    <div className="w-16 h-20 sm:w-24 sm:h-32 rounded-2xl border-4 border-white/10 shadow-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-transform cursor-pointer">
+                                                        <img src={photo.photo_url} alt="Progress" className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Progress Update</span>
+                                                        </div>
+                                                        <h4 className="font-bold text-lg text-white">
+                                                            {photo.body_part || 'Overall Progress'}
+                                                        </h4>
+                                                        <p className="text-xs text-muted-foreground font-medium mb-3">
+                                                            {format(new Date(photo.created_at), 'EEEE, MMM do • h:mm a')}
+                                                        </p>
+                                                        {photo.notes && (
+                                                            <p className="text-xs text-white/50 italic line-clamp-2">
+                                                                "{photo.notes}"
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            if (confirm('Delete this photo?')) {
+                                                                await ProgressService.deleteProgressPhoto(photo.id);
+                                                                loadData();
+                                                            }
+                                                        }}
+                                                        className="self-start p-2 text-white/20 hover:text-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </Card>
+                                        </motion.div>
+                                    );
+                                }
+
+                                const log = item.data;
                                 const isComplete = !!log.completedAt;
                                 const displayDate = log.completedAt || log.date;
                                 
@@ -268,7 +371,7 @@ export const History = () => {
                                 const hasCompleted = log.completedExerciseNames && log.completedExerciseNames.length > 0;
                                 const displayExerciseNames = hasCompleted 
                                     ? log.completedExerciseNames 
-                                    : (day?.exercises.map((e: Exercise) => e.name) || []);
+                                    : (day?.slots?.flatMap(s => s.entries).map(e => e.name) || []);
 
                                 return (
                                     <motion.div
@@ -284,6 +387,13 @@ export const History = () => {
                                                     <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${isComplete ? 'bg-primary/10 text-primary' : (log.isPaused ? 'bg-yellow-500/10 text-yellow-500' : 'bg-red-500/10 text-red-500')}`}>
                                                         {isComplete ? <Activity className="w-5 h-5" /> : (log.isPaused ? <Play className="w-5 h-5" /> : <XCircle className="w-5 h-5" />)}
                                                     </div>
+                                                    
+                                                    {log.physiquePhotoUrl && (
+                                                        <div className="absolute right-6 top-6 w-16 h-20 rounded-2xl border-4 border-white/10 shadow-2xl overflow-hidden rotate-[3deg] scale-100 group-hover:scale-110 group-hover:rotate-[6deg] transition-all hidden sm:block">
+                                                            <img src={log.physiquePhotoUrl} alt="Physique" className="w-full h-full object-cover" />
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                                                        </div>
+                                                    )}
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="font-bold text-base truncate flex items-center gap-2 flex-wrap">
                                                             <span className="truncate">{programTitle}</span>
@@ -300,6 +410,13 @@ export const History = () => {
                                                         <span className="text-xs text-muted-foreground font-bold uppercase tracking-wider block mt-0.5">
                                                             {format(new Date(displayDate), 'MMM do, yyyy • h:mm a')}
                                                         </span>
+                                                        
+                                                        {log.physiquePhotoUrl && (
+                                                            <div className="mt-2 sm:hidden rounded-xl overflow-hidden border border-white/10 aspect-video w-full max-w-[200px]">
+                                                                <img src={log.physiquePhotoUrl} alt="Physique Update" className="w-full h-full object-cover" />
+                                                            </div>
+                                                        )}
+
                                                         {displayExerciseNames && displayExerciseNames.length > 0 && (
                                                             <div className="flex flex-wrap gap-1.5 mt-2 opacity-80">
                                                                 {displayExerciseNames.slice(0, 3).map((name: string, i: number) => (

@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import { ExerciseImage } from './ExerciseImage';
 import { useLanguage } from '../hooks/useLanguage';
 import { supabase } from '../lib/supabase';
+import type { WorkoutSlot, WorkoutEntry } from '../types';
 
 const RECOVERY_EXERCISES = [
     { id: 'rec-1', name: 'Cat-Cow Mobility', targetSets: 2, targetReps: '10' },
@@ -29,10 +30,14 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
 
     // Fetch metadata for exercises in this day
     useEffect(() => {
-        if (!day?.exercises) return;
-
         const fetchMeta = async () => {
-            const names = day.exercises.map((ex: any) => ex.name);
+            const names: string[] = [];
+            day.slots?.forEach((slot: WorkoutSlot) => {
+                slot.entries.forEach((entry: WorkoutEntry) => {
+                    names.push(entry.name);
+                });
+            });
+            
             const { data, error } = await supabase
                 .from('exercises')
                 .select('name, body_part')
@@ -48,56 +53,66 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
         };
 
         fetchMeta();
-    }, [day.exercises]);
+    }, [day]);
 
     const displayedDay = useMemo(() => {
         if (isRecoveryMode) {
+            // Simplified return for recovery mode using the new structure
             return {
                 ...day,
                 title: 'Active Recovery & Mobility',
-                exercises: RECOVERY_EXERCISES
+                slots: RECOVERY_EXERCISES.map(ex => ({
+                    id: ex.id,
+                    type: 'normal',
+                    entries: [{
+                        ...ex,
+                        exerciseId: ex.id,
+                        imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400",
+                        primaryMuscle: 'Mobility'
+                    }]
+                }))
             };
         }
 
-        let exercises = [...day.exercises];
         const intensity = activeIntensity;
+        let daySlots = JSON.parse(JSON.stringify(day.slots || [])) as WorkoutSlot[];
 
         if (intensity === 'light') {
-            // Drop the last exercise if there's more than 3 (skip accessory)
-            if (exercises.length > 3) {
-                exercises.pop();
+            if (daySlots.length > 3) {
+                daySlots.pop();
             }
         }
 
         return {
             ...day,
-            exercises: exercises.map((ex: any) => {
-                let baseSets = parseInt(String(ex.targetSets)) || 3;
-                let baseReps = String(ex.targetReps);
-                
-                // Parse out the primary rep number if it's a range (e.g. "10-12" -> 10)
-                let numReps = 10;
-                const match = baseReps.match(/\d+/);
-                if (match) {
-                    numReps = parseInt(match[0]);
-                }
+            slots: daySlots.map((slot: WorkoutSlot) => ({
+                ...slot,
+                entries: slot.entries.map((entry: WorkoutEntry) => {
+                    let baseSets = parseInt(String(entry.targetSets)) || 3;
+                    let baseReps = String(entry.targetReps);
+                    
+                    let numReps = 10;
+                    const match = baseReps.match(/\d+/);
+                    if (match) {
+                        numReps = parseInt(match[0]);
+                    }
 
-                if (intensity === 'light') {
-                    baseSets = Math.max(1, baseSets - 1);
-                    numReps = Math.max(1, Math.round(numReps * 0.8));
-                } else if (intensity === 'intense') {
-                    baseSets += 1;
-                    numReps = Math.round(numReps * 1.2);
-                }
+                    if (intensity === 'light') {
+                        baseSets = Math.max(1, baseSets - 1);
+                        numReps = Math.max(1, Math.round(numReps * 0.8));
+                    } else if (intensity === 'intense') {
+                        baseSets += 1;
+                        numReps = Math.round(numReps * 1.2);
+                    }
 
-                return {
-                    ...ex,
-                    targetSets: baseSets,
-                    primaryMuscle: exerciseMetadata[ex.name.toLowerCase()] || 'Target Group',
-                    // If the original was a string format we couldn't parse cleanly, fall back to showing the math 
-                    targetReps: intensity === 'standard' ? baseReps : `${numReps} (Scaled)`
-                };
-            })
+                    return {
+                        ...entry,
+                        targetSets: baseSets,
+                        primaryMuscle: exerciseMetadata[entry.name.toLowerCase()] || 'Target Group',
+                        targetReps: intensity === 'standard' ? baseReps : `${numReps} (Scaled)`
+                    };
+                })
+            }))
         };
     }, [day, activeIntensity, isRecoveryMode, exerciseMetadata]);
 
@@ -174,59 +189,70 @@ export const WorkoutDayView = ({ day, programTitle }: { day: any; programTitle?:
             )}
 
             <div className="space-y-4">
-                {displayedDay.exercises.map((exercise: any, i: number) => (
+                {displayedDay.slots.map((slot: WorkoutSlot, i: number) => (
                     <motion.div
-                        key={exercise.id}
+                        key={slot.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                        className={cn("space-y-2", slot.type !== 'normal' && "p-4 rounded-[2.5rem] bg-amber-500/5 border border-amber-500/10")}
                     >
-                        <Card className="border-zinc-200 dark:border-white/5 hover:border-primary/50 transition-all rounded-[2rem] overflow-hidden group bg-white dark:bg-zinc-900/50 shadow-sm hover:shadow-xl dark:shadow-none">
-                            <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-5">
-                                    <div className="relative shrink-0">
-                                        <div className="absolute -top-1 -left-1 z-10 w-5 h-5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[9px] font-black shadow-xl">
-                                            {i + 1}
-                                        </div>
-                                        <div className="w-20 h-20 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 p-2 overflow-hidden shadow-inner flex items-center justify-center">
-                                            <ExerciseImage exerciseName={exercise.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal opacity-80 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                    </div>
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-black text-lg sm:text-xl tracking-tight leading-none group-hover:text-primary transition-colors truncate">{exercise.name}</h4>
-                                        </div>
-                                        
-                                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-                                            <div className="flex items-center gap-1.5">
-                                                <Zap className="w-3 h-3 text-zinc-400" />
-                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{exercise.targetSets} Sets</span>
-                                            </div>
-                                            <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                                            <div className="flex items-center gap-1.5">
-                                                <ChevronRight className="w-3 h-3 text-zinc-400" />
-                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{exercise.targetReps} Reps</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex flex-wrap gap-1.5">
-                                            <span className="px-2 py-0.5 rounded-[6px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[9px] font-black uppercase tracking-tighter border border-zinc-200 dark:border-white/5">
-                                                Primary: {exercise.primaryMuscle || 'Target Group'}
-                                            </span>
-                                            {activeIntensity !== 'standard' && (
-                                                <span className="px-2 py-0.5 rounded-[6px] bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[9px] font-black uppercase tracking-tighter border border-teal-500/20">
-                                                    Smart Adjustment
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 hidden sm:block">
-                                    <Sparkles className="w-5 h-5 text-primary/40" />
-                                </div>
+                        {slot.type !== 'normal' && (
+                            <div className="flex items-center gap-2 mb-2 px-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full">
+                                    {slot.type}
+                                </span>
                             </div>
-                        </Card>
+                        )}
+                        
+                        {slot.entries.map((entry, entryIdx) => (
+                            <Card key={entry.id} className={cn(
+                                "border-zinc-200 dark:border-white/5 hover:border-primary/50 transition-all rounded-[2rem] overflow-hidden group bg-white dark:bg-zinc-900/50 shadow-sm hover:shadow-xl dark:shadow-none",
+                                entryIdx > 0 && "mt-2"
+                            )}>
+                                <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-5">
+                                        <div className="relative shrink-0">
+                                            <div className="absolute -top-1 -left-1 z-10 w-5 h-5 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center text-[9px] font-black shadow-xl">
+                                                {i + 1}{slot.entries.length > 1 ? String.fromCharCode(97 + entryIdx) : ''}
+                                            </div>
+                                            <div className="w-20 h-20 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 p-2 overflow-hidden shadow-inner flex items-center justify-center">
+                                                {entry.imageUrl ? (
+                                                    <img src={entry.imageUrl} alt={entry.name} className="w-full h-full object-cover rounded-xl" />
+                                                ) : (
+                                                    <ExerciseImage exerciseName={entry.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="font-black text-lg sm:text-xl tracking-tight leading-none group-hover:text-primary transition-colors truncate">{entry.name}</h4>
+                                            
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 mt-1">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Zap className="w-3 h-3 text-zinc-400" />
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{entry.targetSets} Sets</span>
+                                                </div>
+                                                <div className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <ChevronRight className="w-3 h-3 text-zinc-400" />
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{entry.targetReps} Reps</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-wrap gap-1.5">
+                                                <span className="px-2 py-0.5 rounded-[6px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 text-[9px] font-black uppercase tracking-tighter border border-zinc-200 dark:border-white/5">
+                                                    Primary: {entry.primaryMuscle || 'Target Group'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0 hidden sm:block">
+                                        <Sparkles className="w-5 h-5 text-primary/40" />
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
                     </motion.div>
                 ))}
             </div>

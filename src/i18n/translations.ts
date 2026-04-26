@@ -183,6 +183,10 @@ export const translations = {
     transcribing: 'Transcribing...',
     voice_processing_error: 'Voice processing error.',
     couldnt_understand: "Couldn't understand reps/weight.",
+    physique_update: 'Physique Update',
+    save_progress: 'Save Progress',
+    retake: 'Retake',
+    align_silhouette_flex: 'Align with silhouette & Flex',
 
 
     // --- WorkoutSummary / DailyModal ---
@@ -673,6 +677,10 @@ export const translations = {
     processing_scan: 'Procesando Escaneo...',
     error: 'Error',
     point_camera_barcode: 'Apunta la cámara al código de barras',
+    physique_update: 'Actualización Física',
+    save_progress: 'Guardar Progreso',
+    retake: 'Reintentar',
+    align_silhouette_flex: 'Alinéate con la silueta y flexiona',
   },
 
   fr: {

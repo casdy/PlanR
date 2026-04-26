@@ -2,7 +2,7 @@
  * @file src/services/sqliteAuthService.ts
  * @description Authentication service backed by Supabase.
  *
- * Handles user registration, email/password login, and Google OAuth.
+ * Handles user registration and email/password login.
  * The `User` type here mirrors the one in `types/index.ts` but is kept
  * local to avoid circular dependencies with the auth context.
  */
@@ -82,24 +82,6 @@ export const sqliteAuthService = {
         } catch (error: any) {
              console.error('[SupabaseAuth] Login error:', error);
              throw new Error(error.message || 'Unknown login error');
-        }
-    },
-    
-    async loginWithGoogle(): Promise<void> {
-        try {
-            const isNative = window.hasOwnProperty('Capacitor');
-            const redirectTo = isNative ? 'com.planr.app://login' : undefined;
-            
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo
-                }
-            });
-            if (error) throw error;
-        } catch (error: any) {
-            console.error('[SupabaseAuth] Google login error:', error);
-            throw new Error(error.message || 'Failed to sign in with Google');
         }
     },
     

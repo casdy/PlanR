@@ -19,14 +19,12 @@ import { useTheme } from '../hooks/useTheme';
 import { Toast } from './ui/Toast';
 import { useLanguage } from '../hooks/useLanguage';
 import { LanguagePicker } from './ui/LanguagePicker';
-import { CameraScanner } from './CameraScanner';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
     const { user, loading: authLoading } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const { t } = useLanguage();
     const location = useLocation();
-    const [showScanner, setShowScanner] = useState(false);
 
     const navItems = [
         { label: t('nav_home'), icon: Home, path: '/' },
@@ -114,19 +112,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 </AnimatePresence>
             </main>
 
-            {/* Floating Camera FAB — above navbar, only on nutrition page */}
-            {user && isNutritionPage && (
-                <motion.button
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.3 }}
-                    onClick={() => setShowScanner(true)}
-                    className="fixed bottom-28 right-4 z-[60] w-14 h-14 rounded-full bg-teal-500 text-white shadow-xl shadow-teal-500/30 flex items-center justify-center hover:bg-teal-600 active:scale-90 transition-all border-2 border-white/20"
-                    aria-label="Open Smart Scanner"
-                >
-                    <Camera className="w-6 h-6" />
-                </motion.button>
-            )}
 
             {/* Floating Bottom Nav - Optimized for one-hand mobile use */}
             {user && (
@@ -179,14 +164,6 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             <ActiveWorkoutOverlay />
             <WorkoutSummary onRestart={() => window.location.href = '/'} />
             <Toast />
-
-            {/* Scanner Modal */}
-            {showScanner && (
-              <CameraScanner
-                onClose={() => setShowScanner(false)}
-                onSuccess={() => setShowScanner(false)}
-              />
-            )}
             </div>
         </div>
     );

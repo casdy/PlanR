@@ -21,7 +21,7 @@ import { ProgramService } from '../services/programService';
 import type { WorkoutProgram, WorkoutDay } from '../types';
 import { supabase } from '../lib/supabase';
 import type { DbExercise } from '../services/wgerService';
-import { fetchWgerMedia } from '../services/wgerService';
+import { getExerciseImageUrl } from '../services/wgerService';
 import { Play, Pause, Square, SkipForward, Maximize2, Mic, Check, Loader2, X, Dumbbell } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -34,6 +34,7 @@ import { useTrainingMode } from '../hooks/useTrainingMode';
 import { usePerformance } from '../hooks/usePerformance';
 import { adjustProgram } from '../engine/progressionEngine';
 import type { WorkoutTemplate } from '../engine/types';
+import { ProgressCamera } from './ProgressCamera';
 
 
 // Helper to format time properties
@@ -45,10 +46,10 @@ const formatTime = (seconds: number) => {
 
 export const ActiveWorkoutOverlay = () => {
     const {
-        status, activeProgramId, activeDayId, activeExerciseIndex,
+        status, activeProgramId, activeDayId, activeExerciseIndex, activeSessionId,
         elapsedSeconds, timerDuration, isMinimized, setIsMinimized,
         tick, nextExercise, pauseWorkout, resumeWorkout, cancelWorkout,
-        exerciseLogs, logExerciseSet, markExerciseCompleted
+        exerciseLogs, logExerciseSet, markExerciseCompleted, completePhysiqueCapture
     } = useWorkoutStore();
     const { t } = useLanguage();
 
@@ -74,15 +75,17 @@ export const ActiveWorkoutOverlay = () => {
     // Handle Route Changes & Maximization Rules
     useEffect(() => {
         if (status === 'running' || status === 'paused') {
-            // Automatically maximize if navigating to the dedicated history tab (e.g. reviewing past workouts)
-            // or if the workout just started and we haven't actually navigated away yet
+            // Automatically maximize if navigating to the history tab for the FIRST time in this session
+            // across renders, or if the user explicitly opens it.
             if (location.pathname === '/history') {
+                // If we're on history, we usually want to see the active details, 
+                // but let's allow it to stay minimized if the user explicitly dragged it down.
+                // For now, auto-maximize is fine for "opening" the view.
                 setIsMinimized(false);
             } else if (location.pathname !== lastPath) {
                 // User navigated somewhere else while a workout is active -> Minimize it
                 setIsMinimized(true);
             }
-            // else: Do nothing. (This allows startWorkout() which sets isMinimized=false to keep it maximized)
         }
         setLastPath(location.pathname);
     }, [location.pathname, status, setIsMinimized, lastPath]);
@@ -108,16 +111,22 @@ export const ActiveWorkoutOverlay = () => {
                         if (user && user.id !== 'guest') {
                             const history = await fetchPerformanceHistory();
                             
+                            const daySlots = d.slots ?? [];
+
                             // Transform for engine representation
                             const template: WorkoutTemplate = {
                                 id: d.id,
                                 title: d.title,
-                                exercises: d.exercises.map(ex => ({
-                                    id: ex.name, // Engine keys off of exercise_id (using name for V1)
-                                    name: ex.name,
-                                    targetSets: ex.targetSets,
-                                    targetReps: ex.targetReps,
-                                    rpeTarget: undefined
+                                slots: daySlots.map(slot => ({
+                                    id: slot.id,
+                                    type: slot.type,
+                                    entries: (slot.entries ?? []).map(ex => ({
+                                        id: ex.name,
+                                        name: ex.name,
+                                        targetSets: ex.targetSets,
+                                        targetReps: ex.targetReps,
+                                        targetWeight: ex.weight
+                                    }))
                                 }))
                             };
 
@@ -126,12 +135,18 @@ export const ActiveWorkoutOverlay = () => {
                             // Map adjustments back to the WorkoutDay format
                             const adjustedDay: WorkoutDay = {
                                 ...d,
-                                exercises: d.exercises.map((ex, i) => {
-                                    const adj = adjustedTemplate.exercises[i];
+                                slots: daySlots.map((slot, i) => {
+                                    const adjSlot = adjustedTemplate.slots[i];
                                     return {
-                                        ...ex,
-                                        targetSets: adj.targetSets,
-                                        notes: adj.targetWeight ? `Target Weight: ${adj.targetWeight}lbs. ${ex.notes || ''}` : ex.notes
+                                        ...slot,
+                                        entries: (slot.entries ?? []).map((entry, j) => {
+                                            const adjEntry = adjSlot?.entries[j];
+                                            return {
+                                                ...entry,
+                                                targetSets: adjEntry?.targetSets ?? entry.targetSets,
+                                                notes: adjEntry?.targetWeight ? `Target Weight: ${adjEntry.targetWeight}lbs. ${entry.notes || ''}` : entry.notes
+                                            };
+                                        })
                                     };
                                 })
                             };
@@ -150,7 +165,9 @@ export const ActiveWorkoutOverlay = () => {
     // Fetch rich exercise details for the active screen
     useEffect(() => {
         if (day && activeExerciseIndex !== undefined) {
-            const exName = day.exercises[activeExerciseIndex]?.name;
+            const currentSlot = day.slots[activeExerciseIndex];
+            const firstEntry = currentSlot?.entries[0];
+            const exName = firstEntry?.name;
             if (exName) {
                 setExerciseDetails(null);
                 setWgerMediaUrl('');
@@ -161,22 +178,19 @@ export const ActiveWorkoutOverlay = () => {
                         const { data, error } = await supabase
                             .from('exercises')
                             .select('*')
-                            .eq('name', exName)
-                            .single();
+                            .ilike('name', exName)
+                            .maybeSingle();
                         
                         if (!error && data) {
                             setExerciseDetails(data as DbExercise);
+                            const url = getExerciseImageUrl(data as DbExercise);
+                            if (url) setWgerMediaUrl(url);
                         }
                     } catch (e: any) {
                         console.error("Failed to load exercise info by name", e);
                     }
                 };
                 fetchExercise();
-
-                // Eagerly fetch authoritative media from Live API
-                fetchWgerMedia(exName).then(url => {
-                    if (url) setWgerMediaUrl(url);
-                });
             }
         }
     }, [day, activeExerciseIndex]);
@@ -222,14 +236,16 @@ export const ActiveWorkoutOverlay = () => {
         if (elapsedSeconds >= timerDuration && status === 'running') {
             playBeep();
             if (day && activeProgramId && activeDayId) {
-                // Mark current exercise as complete before moving on
-                if (day.exercises[activeExerciseIndex]) {
-                    const ex = day.exercises[activeExerciseIndex];
-                    markExerciseCompleted(ex.id, ex.name);
+                // Mark all entries in current slot as complete before moving on
+                const currentSlot = day.slots[activeExerciseIndex];
+                if (currentSlot) {
+                    currentSlot.entries.forEach(entry => {
+                        markExerciseCompleted(entry.id, entry.name);
+                    });
                 }
                 LocalService.toggleExerciseCompliance(activeProgramId, activeDayId, activeExerciseIndex);
                 
-                nextExercise(day.exercises.length - 1);
+                nextExercise(day.slots.length - 1);
             }
         }
     }, [elapsedSeconds, timerDuration, status, day, nextExercise, activeProgramId, activeDayId, activeExerciseIndex, user]);
@@ -246,11 +262,13 @@ export const ActiveWorkoutOverlay = () => {
                     
                     const result = await aiService.parseWorkoutTranscript(transcription.text);
                     if (result && (result.reps > 0 || result.weight > 0)) {
-                        const exName = day?.exercises[activeExerciseIndex]?.name;
+                        const currentSlot = day?.slots[activeExerciseIndex];
+                        const primaryEntry = currentSlot?.entries[0];
+                        const exName = primaryEntry?.name;
+                        
                         logExerciseSet(activeProgramId, activeDayId, activeExerciseIndex, result.reps, result.weight, currentRpe, exName);
-                        if (day?.exercises[activeExerciseIndex]) {
-                            const ex = day.exercises[activeExerciseIndex];
-                            markExerciseCompleted(ex.id, ex.name);
+                        if (primaryEntry) {
+                            markExerciseCompleted(primaryEntry.id, primaryEntry.name);
                         }
                         setVoiceFeedback(`Logged: ${result.reps} reps @ ${result.weight}lbs`);
                         setTimeout(() => setVoiceFeedback(null), 3000);
@@ -271,10 +289,44 @@ export const ActiveWorkoutOverlay = () => {
     }, [audioBlob, activeProgramId, activeDayId, activeExerciseIndex, logExerciseSet, currentRpe]);
 
 
-    if (status === 'idle' || status === 'finished' || !day || !program) return null;
+    if (status === 'physique_capture') {
+        return (
+            <ProgressCamera 
+                sessionId={activeSessionId!} 
+                onComplete={(url) => completePhysiqueCapture(url)}
+                onClose={() => completePhysiqueCapture()}
+            />
+        );
+    }
 
-    const currentExercise = day.exercises[activeExerciseIndex];
-    const nextEx = day.exercises[activeExerciseIndex + 1];
+    // Never return null if a workout is active—show a skeleton instead.
+    // This allows the "Open Workout" button to expand even if data is still loading.
+    const isActive = status === 'running' || status === 'paused';
+    if (!isActive || status === 'finished') return null;
+
+    if (!day || !program) {
+        return (
+            <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                className="fixed inset-x-2 bottom-[100px] z-[60] h-32 bg-zinc-900/90 rounded-[2.5rem] border border-white/10 flex items-center justify-center gap-3 backdrop-blur-xl"
+            >
+                <div className="w-12 h-12 rounded-2xl bg-white/5 animate-pulse flex items-center justify-center">
+                    <Dumbbell className="w-6 h-6 text-primary/40" />
+                </div>
+                <div className="space-y-2">
+                    <div className="h-4 w-32 bg-white/5 rounded animate-pulse" />
+                    <div className="h-3 w-20 bg-white/5 rounded animate-pulse opacity-50" />
+                </div>
+            </motion.div>
+        );
+    }
+
+    const currentSlot = day.slots[activeExerciseIndex];
+    if (!currentSlot) return null;
+
+    const currentEntry = currentSlot.entries[0]; // Primary exercise in focus
+    const nextSlot = day.slots[activeExerciseIndex + 1];
 
     // Variants for animations
     const overlayVariants = {
@@ -316,7 +368,7 @@ export const ActiveWorkoutOverlay = () => {
                 {isMinimized ? (
                     <div className="px-6 pb-2 shrink-0 flex justify-between items-center min-h-[4rem]">
                         <div onClick={(e) => { e.stopPropagation(); setIsMinimized(false); }} className="flex-1 cursor-pointer">
-                            <h3 className="font-bold text-lg truncate pr-2">{currentExercise.name}</h3>
+                            <h3 className="font-bold text-lg truncate pr-2">{currentEntry.name}</h3>
                             <p className="text-sm text-zinc-500">{formatTime(elapsedSeconds)} / {formatTime(timerDuration)}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -339,23 +391,30 @@ export const ActiveWorkoutOverlay = () => {
                         {/* Expanded Modal-style Header */}
                         <div className="px-6 py-4 border-b border-white/5 flex items-start justify-between z-10 shrink-0">
                             <div className="pr-4">
-                                <h3 className="text-3xl font-black capitalize leading-tight">{currentExercise.name}</h3>
+                                <div className="flex items-center gap-2 mb-1">
+                                    {currentSlot.type !== 'normal' && (
+                                        <span className="text-[10px] bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">
+                                            {currentSlot.type}
+                                        </span>
+                                    )}
+                                </div>
+                                <h3 className="text-3xl font-black capitalize leading-tight">{currentEntry.name}</h3>
                                 {exerciseDetails ? (
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
                                             {exerciseDetails.target}
                                         </span>
                                         <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                                            {exerciseDetails.equipment.replace('_', ' ')}
+                                            {exerciseDetails.equipment?.replace('_', ' ')}
                                         </span>
                                     </div>
                                 ) : (
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <span className="text-[10px] uppercase font-black tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
-                                            {currentExercise.targetSets} {t('sets')}
+                                            {currentEntry.targetSets} {t('sets')}
                                         </span>
                                         <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground bg-secondary/50 px-3 py-1 rounded-full">
-                                            {currentExercise.targetReps} {t('reps')}
+                                            {currentEntry.targetReps} {t('reps')}
                                         </span>
                                     </div>
                                 )}
@@ -372,37 +431,106 @@ export const ActiveWorkoutOverlay = () => {
 
                         {/* Expanded View Content */}
                         <div className="p-6 pb-8 overflow-y-auto space-y-8 scroll-smooth no-scrollbar w-full flex-1 overscroll-none">
-                            {/* Media Container */}
-                            <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-2xl shadow-md border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
-                                {wgerMediaUrl ? (
-                                    <img 
-                                        src={wgerMediaUrl} 
-                                        alt={currentExercise.name} 
-                                        className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" 
-                                        loading="lazy" 
-                                    />
-                                ) : exerciseDetails?.gif_url ? (
-                                    <img 
-                                        src={exerciseDetails.gif_url.startsWith('http') ? `/api/cdn-proxy?url=${encodeURIComponent(exerciseDetails.gif_url)}` : exerciseDetails.gif_url} 
-                                        alt={currentExercise.name} 
-                                        className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" 
-                                        loading="lazy" 
-                                    />
-                                ) : (
-                                    <div className="w-full aspect-square sm:aspect-video bg-white/5 rounded-2xl flex flex-col items-center justify-center text-muted-foreground/40 border border-white/5">
-                                        <Dumbbell className="w-16 h-16 mb-2" />
-                                        <span className="text-sm font-bold uppercase tracking-widest">{t('no_media')}</span>
+                            {/* Side-by-Side Grid Layout (PRD Phase 2) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                                {/* MEDIA SIDE */}
+                                <div className="space-y-4">
+                                    <div className="w-full aspect-square bg-zinc-100 dark:bg-zinc-800 rounded-3xl shadow-xl border border-black/5 dark:border-white/5 overflow-hidden flex items-center justify-center relative">
+                                        {wgerMediaUrl ? (
+                                            <img 
+                                                src={wgerMediaUrl} 
+                                                alt={currentEntry.name} 
+                                                className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal p-4" 
+                                                loading="lazy" 
+                                            />
+                                        ) : currentEntry.imageUrl ? (
+                                            <img 
+                                                src={currentEntry.imageUrl} 
+                                                alt={currentEntry.name} 
+                                                className="w-full h-full object-cover" 
+                                                loading="lazy" 
+                                            />
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-zinc-400 gap-2">
+                                                <Dumbbell className="w-12 h-12 opacity-20" />
+                                                <span className="text-xs uppercase tracking-widest font-medium opacity-50">{t('no_media')}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Timer Display */}
-                            <div className="flex flex-col items-center justify-center py-2">
-                                <div className="text-7xl font-black tracking-tightest tabular-nums animate-float">
-                                    {formatTime(elapsedSeconds)}
+                                    {/* Timer Display anchored to Media Side on Desktop */}
+                                    <div className="hidden md:flex flex-col items-center justify-center p-6 bg-secondary/20 rounded-3xl border border-white/5">
+                                        <div className="text-6xl font-black tracking-tightest tabular-nums font-mono">
+                                            {formatTime(elapsedSeconds)}
+                                        </div>
+                                        <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
+                                            {t('target')}: {formatTime(timerDuration)}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
-                                    {t('target')}: {formatTime(timerDuration)}
+
+                                {/* INSTRUCIONS & LOGGING SIDE */}
+                                <div className="space-y-8">
+                                    {/* Mobile Timer (hidden on MD) */}
+                                    <div className="md:hidden flex flex-col items-center justify-center py-2">
+                                        <div className="text-7xl font-black tracking-tightest tabular-nums">
+                                            {formatTime(elapsedSeconds)}
+                                        </div>
+                                        <div className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
+                                            {t('target')}: {formatTime(timerDuration)}
+                                        </div>
+                                    </div>
+
+                                    {/* Instructions Section */}
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-8 bg-primary rounded-full" />
+                                            <h4 className="text-2xl font-black tracking-tight">{t('instructions')}</h4>
+                                        </div>
+                                        
+                                        {currentEntry.notes && (
+                                            <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 italic text-sm text-primary font-medium">
+                                                {currentEntry.notes}
+                                            </div>
+                                        )}
+
+                                        {exerciseDetails?.instructions ? (
+                                            <ol className="space-y-4">
+                                                {exerciseDetails.instructions.map((step: string, index: number) => (
+                                                    <li key={index} className="flex gap-4">
+                                                        <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-foreground text-[10px] font-black mt-0.5">
+                                                            {index + 1}
+                                                        </span>
+                                                        <p className="text-sm text-foreground/80 leading-relaxed font-semibold">
+                                                            {step}
+                                                        </p>
+                                                    </li>
+                                                ))}
+                                            </ol>
+                                        ) : (
+                                            <p className="text-muted-foreground text-sm font-medium">
+                                                {exerciseDetails?.description?.replace(/<[^>]+>/g, '') || t('no_instructions_available')}
+                                            </p>
+                                        )}
+                                    </div>
+                                
+                                    {/* Superset Indicator for Slot */}
+                                    {currentSlot.entries.length > 1 && (
+                                        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                                            <h5 className="text-xs font-black uppercase tracking-widest text-amber-500 mb-2">Superset Part of:</h5>
+                                            <div className="space-y-2">
+                                                {currentSlot.entries.map((entry, idx) => (
+                                                    <div key={entry.id} className={cn(
+                                                        "text-sm font-bold flex items-center gap-2",
+                                                        idx === 0 ? "text-foreground" : "opacity-40"
+                                                    )}>
+                                                        <Dumbbell className="w-3 h-3" />
+                                                        {entry.name}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -480,7 +608,7 @@ export const ActiveWorkoutOverlay = () => {
                                     )}
                                 </div>
 
-                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); nextExercise(day.exercises.length - 1); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
+                                <Button size="lg" variant="secondary" onClick={(e) => { e.stopPropagation(); nextExercise(day.slots.length - 1); }} className="flex-col h-20 gap-2 border-none bg-zinc-50 dark:bg-zinc-800">
                                     <SkipForward className="w-5 h-5 opacity-60" />
                                     <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{t('skip')}</span>
                                 </Button>
@@ -503,61 +631,18 @@ export const ActiveWorkoutOverlay = () => {
                                 </AnimatePresence>
                             </div>
 
-                            {/* Set History */}
-                            {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`]?.length > 0 && (
-                                <div className="flex flex-wrap gap-2">
-                                    {exerciseLogs[`${activeProgramId}-${activeDayId}-${activeExerciseIndex}`].map((set, i) => (
-                                        <div key={i} className="bg-white/5 dark:bg-zinc-800 px-3 py-1.5 rounded-lg text-xs font-bold border border-white/5">
-                                            Set {i + 1}: {set.reps} × {set.weight}lbs
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Instructions */}
-                            {exerciseDetails && exerciseDetails.instructions && exerciseDetails.instructions.length > 0 && (
-                                <div className="space-y-4">
-                                    <h4 className="text-xl font-black tracking-tight">{t('instructions')}</h4>
-                                    <ol className="space-y-4">
-                                        {exerciseDetails.instructions.map((step: string, index: number) => (
-                                            <li key={index} className="flex gap-4">
-                                                <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-black shrink-0 mt-0.5">
-                                                    {index + 1}
-                                                </span>
-                                                <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-                                                    {step}
-                                                </p>
-                                            </li>
-                                        ))}
-                                    </ol>
-                                </div>
-                            )}
-
-                            {/* Description Fallback (if instructions array is missing but we have a text description) */}
-                            {exerciseDetails && !exerciseDetails.instructions && exerciseDetails.description && (
-                                <div className="space-y-4">
-                                    <h4 className="text-xl font-black tracking-tight">{t('instructions')}</h4>
-                                    <div className="prose prose-sm dark:prose-invert">
-                                        <p className="text-sm text-foreground/80 leading-relaxed font-medium">
-                                            {exerciseDetails.description.replace(/<[^>]+>/g, '')}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Up Next */}
-                            {nextEx && (
+                            {nextSlot && (
                                 <div className="pt-6 border-t border-white/5 opacity-80">
                                     <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">{t('up_next')}</p>
                                     <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
                                         <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-sm font-black text-muted-foreground">
                                             {activeExerciseIndex + 2}
                                         </div>
-                                        <div>
-                                            <p className="font-bold text-lg leading-tight">{nextEx.name}</p>
-                                            <p className="text-xs font-black uppercase tracking-widest text-primary mt-1">
-                                                {nextEx.targetSets} Sets × {nextEx.targetReps} Reps
-                                            </p>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-black uppercase tracking-widest text-primary mb-0.5">{nextSlot.entries[0].name}</p>
+                                            <p className="text-[10px] font-bold text-muted-foreground/60">{nextSlot.type}</p>
                                         </div>
                                     </div>
                                 </div>

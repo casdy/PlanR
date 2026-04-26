@@ -3,7 +3,7 @@
  * @description Authentication context, provider, and hook.
  *
  * Manages the logged-in user's session lifecycle including sign-up, login,
- * Google OAuth, logout, guest access, and password-less app resets.
+ * logout, guest access, and password-less app resets.
  *
  * User state is persisted to `localStorage` under `planr_user` so sessions
  * survive page refreshes. Auth events from Supabase (e.g. OAuth redirects)
@@ -23,7 +23,6 @@ interface AuthContextType {
     user: User | null;
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
-    loginWithGoogle: () => Promise<void>;
     signUp: (email: string, password: string, name: string) => Promise<void>;
     logout: () => Promise<void>;
     /** Wipes all local user data and Supabase session — use with caution. */
@@ -50,21 +49,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         }
         
-        // Listen for OAuth redirects and other auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session?.user) {
-                const authUser: User = {
-                    id: session.user.id,
-                    email: session.user.email!,
-                    name: session.user.user_metadata?.name || 'Athlete'
-                };
-                setUser(authUser);
-                localStorage.setItem('planr_user', JSON.stringify(authUser));
-                // Pull cloud data (programs + logs) into localStorage after OAuth sign-in
-                pullFromCloud(authUser.id).catch(err =>
-                    console.error('[Auth] Cloud pull after OAuth failed:', err)
-                );
-            } else if (event === 'SIGNED_OUT') {
+        // Listen for signed out events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+            if (event === 'SIGNED_OUT') {
                 setUser(null);
                 localStorage.removeItem('planr_user');
             }
@@ -103,15 +90,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
     
-    /** Initiates the Google OAuth flow — the page will redirect to Google's consent screen. */
-    const loginWithGoogle = async () => {
-         try {
-             await sqliteAuthService.loginWithGoogle();
-         } catch (error: any) {
-             throw error;
-         }
-    };
-
     /** Signs out locally and redirects to /login. */
     const logout = async () => {
         setUser(null);
@@ -142,7 +120,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, signUp, logout, resetApp, continueAsGuest }}>
+        <AuthContext.Provider value={{ user, loading, login, signUp, logout, resetApp, continueAsGuest }}>
             {children}
         </AuthContext.Provider>
     );

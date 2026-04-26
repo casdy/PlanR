@@ -28,7 +28,7 @@
       ]
     },
     {
-      "source": "/api/wger-media/(.*)",
+      "source": "/api/exercise-gifs/(.*)",
       "headers": [
         {
           "key": "Cross-Origin-Resource-Policy",
@@ -57,12 +57,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/wger-media/(.*)",
-      "destination": "https://wger.de/$1"
-    },
-    {
-      "source": "/api/wger/(.*)",
-      "destination": "/api/wger?path=$1"
+      "source": "/api/exercise-gifs/(.*)",
+      "destination": "https://yykfqceawzvxzqmogxvv.supabase.co/storage/v1/object/public/exercise-gifs/$1"
     },
     {
        "source": "/api/off-images/(.*)",

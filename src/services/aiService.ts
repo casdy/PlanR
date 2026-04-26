@@ -35,6 +35,8 @@ function detectBodyPart(goal: string): string {
     return 'chest'; // sensible default
 }
 
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800";
+
 /** Build a WorkoutProgram from ExerciseDB results — used as quota fallback */
 async function buildProgramFromExerciseDB(goal: string): Promise<WorkoutProgram> {
     const bodyPart = detectBodyPart(goal);
@@ -58,11 +60,17 @@ async function buildProgramFromExerciseDB(goal: string): Promise<WorkoutProgram>
             dayOfWeek,
             type: 'strength',
             durationMin: 45,
-            exercises: selected.map(ex => ({
+            slots: selected.map(ex => ({
                 id: crypto.randomUUID(),
-                name: ex.name,
-                targetSets: 3,
-                targetReps: '10-12',
+                type: 'normal',
+                entries: [{
+                    id: crypto.randomUUID(),
+                    exerciseId: crypto.randomUUID(),
+                    name: ex.name,
+                    targetSets: 3,
+                    targetReps: '10-12',
+                    imageUrl: PLACEHOLDER_IMAGE
+                }]
             }))
         }]
     };
@@ -88,8 +96,11 @@ export const aiService = {
 
         const prompt = `Create a 3-day workout routine for someone with this goal: "${goal}".
 Return ONLY a valid JSON object with "title", "description", "icon", "colorTheme", and "schedule" (array of WorkoutDay objects).
-WorkoutDay object: { id, dayOfWeek, title, durationMin, type, exercises: [{ id, name, targetSets, targetReps }] }.
-Include 3-4 exercises per day. Use "blue", "emerald", or "orange" for colorTheme. Use "dumbbell", "home", or "flame" for icon.`;
+WorkoutDay object: { id, dayOfWeek, title, durationMin, type, slots: [] }.
+WorkoutSlot object: { id, type: "normal" | "superset", entries: [] }.
+WorkoutEntry object: { id, name, targetSets, targetReps, imageUrl }.
+Include 3-4 slots per day. For imageUrl, use a realistic Unsplash link for that specific exercise category.
+Use "blue", "emerald", or "orange" for colorTheme. Use "dumbbell", "home", or "flame" for icon.`;
 
         try {
             console.log('[AI Service] Using Groq (primary).');
