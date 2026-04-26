@@ -8,19 +8,21 @@
  * save, share, or return to the Dashboard.
  */
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkoutStore } from '../store/workoutStore';
 import { thumbnailService } from '../services/thumbnailService';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { Trophy, Share2, RotateCcw, Download, Sparkles } from 'lucide-react';
+import { Trophy, Share2, RotateCcw, Download, Sparkles, Eye } from 'lucide-react';
+import { PhotoViewerModal } from './PhotoViewerModal';
 import { useAuth } from '../hooks/useAuth';
 import { LocalService } from '../services/localService';
 import { useLanguage } from '../hooks/useLanguage';
 
 export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
-    const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, lastPhysiquePhotoUrl, setBadgeUrl, cancelWorkout } = useWorkoutStore();
+    const { status, badgePrompt, achievementTitle, achievementSubtitle, lastBadgeUrl, lastPhysiquePhotoUrl, lastProgressPhoto, setBadgeUrl, cancelWorkout } = useWorkoutStore();
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
 
     const [isLogging, setIsLogging] = useState(false);
     const { user } = useAuth();
@@ -122,10 +124,14 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                                             initial={{ scale: 0, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             transition={{ delay: 0.5, type: 'spring' }}
-                                            className="absolute bottom-4 left-4 w-24 h-24 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden rotate-[-6deg]"
+                                            className="absolute bottom-4 left-4 w-24 h-24 rounded-2xl border-2 border-white/20 shadow-2xl overflow-hidden rotate-[-6deg] cursor-pointer group/photo"
+                                            onClick={() => setIsViewerOpen(true)}
                                         >
                                             <img src={lastPhysiquePhotoUrl} alt="Physique Update" className="w-full h-full object-cover" />
-                                            <div className="absolute inset-0 bg-black/20" />
+                                            <div className="absolute inset-0 bg-black/20 group-hover/photo:bg-black/0 transition-colors" />
+                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/photo:opacity-100 transition-opacity">
+                                                 <Eye className="w-6 h-6 text-white drop-shadow-lg" />
+                                            </div>
                                         </motion.div>
                                     )}
 
@@ -175,6 +181,18 @@ export const WorkoutSummary = ({ onRestart }: { onRestart: () => void }) => {
                     </div>
                 </Card>
             </motion.div>
+
+            <AnimatePresence>
+                {isViewerOpen && lastProgressPhoto && (
+                    <PhotoViewerModal
+                        photo={lastProgressPhoto}
+                        onClose={() => setIsViewerOpen(false)}
+                        onUpdate={() => {
+                            // Optionally refresh if needed, but the store handles current
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

@@ -119,6 +119,12 @@ export const translations = {
     no_activity: 'No Activity Yet',
     no_activity_desc: 'Complete a workout to see your history appear here.',
     moves: 'Moves',
+    delete: 'Delete',
+    cancel: 'Cancel',
+    edit: 'Edit',
+    link_copied: 'Link copied to clipboard!',
+    confirm_delete: 'Are you sure you want to delete this photo?',
+    save_details: 'Save Details',
 
     // --- Calendar ---
     planning_hub: 'Planning Hub',

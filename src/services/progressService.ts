@@ -39,5 +39,17 @@ export const ProgressService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  async updateProgressPhoto(id: string, updates: Partial<Pick<ProgressPhoto, 'notes' | 'body_part'>>) {
+    const { data, error } = await supabase
+      .from('progress_photos')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as ProgressPhoto;
   }
 };

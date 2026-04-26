@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, Check, RefreshCw, Zap, ChevronLeft, ImageIcon } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StorageService } from '../services/storageService';
-import { ProgressService } from '../services/progressService';
+import { ProgressService, type ProgressPhoto } from '../services/progressService';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProgressCameraProps {
     sessionId?: string; // Optional: if provided, links to a workout session
-    onComplete: (photoUrl: string) => void;
+    onComplete: (photoUrl: string, photoRecord?: ProgressPhoto) => void;
     onClose: () => void;
 }
 
@@ -64,14 +64,14 @@ export const ProgressCamera: React.FC<ProgressCameraProps> = ({ sessionId, onCom
             const url = await StorageService.uploadPhysiquePhoto(blob, fileName);
             
             // Save to standalone progress table
-            await ProgressService.saveProgressPhoto({
+            const savedPhoto = await ProgressService.saveProgressPhoto({
               user_id: user.id,
               photo_url: url,
               body_part: 'Overall', // Default
               notes: sessionId ? `Linked to workout session ${sessionId}` : 'Standalone progress update'
             });
 
-            onComplete(url);
+            onComplete(url, savedPhoto);
         } catch (err) {
             console.error("Upload failed:", err);
             // Fallback: inform user or use local

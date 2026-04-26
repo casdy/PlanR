@@ -293,7 +293,7 @@ export const ActiveWorkoutOverlay = () => {
         return (
             <ProgressCamera 
                 sessionId={activeSessionId!} 
-                onComplete={(url) => completePhysiqueCapture(url)}
+                onComplete={(url, record) => completePhysiqueCapture(url, record)}
                 onClose={() => completePhysiqueCapture()}
             />
         );

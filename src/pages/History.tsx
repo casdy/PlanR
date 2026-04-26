@@ -18,15 +18,17 @@ import { LocalService } from '../services/localService';
 import { ProgressService, type ProgressPhoto } from '../services/progressService';
 import { useAuth } from '../hooks/useAuth';
 import type { WorkoutLog, WorkoutProgram, WorkoutDay } from '../types';
-import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell, Camera } from 'lucide-react';
+import { Activity, Trash2, XCircle, Play, RotateCcw, Zap, Timer, Dumbbell, Camera, ImageIcon } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useLanguage } from '../hooks/useLanguage';
 import { Button } from '../components/ui/Button';
 import { ProgressCamera } from '../components/ProgressCamera';
+import { ProgressGalleryModal } from '../components/ProgressGalleryModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { PopoverTooltip } from '../components/ui/Tooltip';
+import { PhotoViewerModal } from '../components/PhotoViewerModal';
 
 // ─── Live Workout Card ──────────────────────────────────────────────────────
 // Renders entirely from store state so it re-renders every time the timer ticks.
@@ -216,6 +218,8 @@ export const History = () => {
     const [progressPhotos, setProgressPhotos] = React.useState<ProgressPhoto[]>([]);
     const [programs, setPrograms] = React.useState<WorkoutProgram[]>([]);
     const [isCameraOpen, setIsCameraOpen] = React.useState(false);
+    const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
+    const [selectedPhoto, setSelectedPhoto] = React.useState<ProgressPhoto | null>(null);
     const isActive = status === 'running' || status === 'paused';
 
     const loadData = React.useCallback(async () => {
@@ -275,23 +279,48 @@ export const History = () => {
                         }}
                     />
                 )}
+                {isGalleryOpen && (
+                    <ProgressGalleryModal 
+                        onClose={() => {
+                            setIsGalleryOpen(false);
+                            loadData();
+                        }}
+                    />
+                )}
             </AnimatePresence>
 
-            {/* Floating Action Button (FAB) for Camera */}
-            <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="fixed bottom-[110px] right-6 z-40"
-            >
-                <Button 
-                    className="w-16 h-16 rounded-full shadow-2xl shadow-primary/40 p-0 flex items-center justify-center bg-primary"
-                    onClick={() => setIsCameraOpen(true)}
+            {/* Floating Action Buttons (FAB) */}
+            <div className="fixed bottom-[110px] right-6 z-40 flex flex-col gap-3">
+                <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                 >
-                    <Camera className="w-7 h-7" />
-                </Button>
-            </motion.div>
+                    <Button 
+                        variant="secondary"
+                        className="w-14 h-14 rounded-full shadow-xl bg-zinc-900/80 backdrop-blur-md border border-white/10 p-0 flex items-center justify-center text-white/60 hover:text-white"
+                        onClick={() => setIsGalleryOpen(true)}
+                    >
+                        <ImageIcon className="w-6 h-6" />
+                    </Button>
+                </motion.div>
+
+                <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <Button 
+                        className="w-16 h-16 rounded-full shadow-2xl shadow-primary/40 p-0 flex items-center justify-center bg-primary"
+                        onClick={() => setIsCameraOpen(true)}
+                    >
+                        <Camera className="w-7 h-7" />
+                    </Button>
+                </motion.div>
+            </div>
 
             <div className="space-y-4">
                 {/* Live workout block — always re-renders from store */}
@@ -317,7 +346,10 @@ export const History = () => {
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: idx * 0.05 }}
                                         >
-                                            <Card className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all p-4 bg-gradient-to-br from-zinc-900/50 to-black/50">
+                                            <Card 
+                                                className="glass border-white/5 rounded-[2rem] overflow-hidden group hover:border-primary/20 transition-all p-4 bg-gradient-to-br from-zinc-900/50 to-black/50 cursor-pointer"
+                                                onClick={() => setSelectedPhoto(photo)}
+                                            >
                                                 <div className="flex gap-4">
                                                     <div className="w-16 h-20 sm:w-24 sm:h-32 rounded-2xl border-4 border-white/10 shadow-2xl overflow-hidden shrink-0 group-hover:scale-105 transition-transform cursor-pointer">
                                                         <img src={photo.photo_url} alt="Progress" className="w-full h-full object-cover" />
@@ -496,6 +528,21 @@ export const History = () => {
                     ) : null}
                 </AnimatePresence>
             </div>
+
+            <AnimatePresence>
+                {selectedPhoto && (
+                    <PhotoViewerModal
+                        photo={selectedPhoto}
+                        onClose={() => setSelectedPhoto(null)}
+                        onUpdate={loadData}
+                        onDelete={async () => {
+                            await ProgressService.deleteProgressPhoto(selectedPhoto.id);
+                            setSelectedPhoto(null);
+                            loadData();
+                        }}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };

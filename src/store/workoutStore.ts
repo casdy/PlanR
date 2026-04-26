@@ -22,6 +22,7 @@ import { persist } from 'zustand/middleware';
 import { LocalService } from '../services/localService';
 import { supabase } from '../lib/supabase';
 import type { WorkoutLog } from '../types';
+import type { ProgressPhoto } from '../services/progressService';
 
 type WorkoutStatus = 'idle' | 'running' | 'paused' | 'finished' | 'physique_capture';
 
@@ -74,10 +75,11 @@ interface WorkoutState {
     achievementTitle: string | null;
     achievementSubtitle: string | null;
     lastPhysiquePhotoUrl: string | null;
+    lastProgressPhoto: ProgressPhoto | null;
     setBadgeUrl: (url: string | null) => void;
     
     // Physique capture flow
-    completePhysiqueCapture: (photoUrl?: string) => void;
+    completePhysiqueCapture: (photoUrl?: string, photoRecord?: ProgressPhoto) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>()(
@@ -369,17 +371,22 @@ export const useWorkoutStore = create<WorkoutState>()(
 
             lastBadgeUrl: null,
             lastPhysiquePhotoUrl: null,
+            lastProgressPhoto: null,
             badgePrompt: null,
             achievementTitle: null,
             achievementSubtitle: null,
             setBadgeUrl: (url) => set({ lastBadgeUrl: url }),
 
-            completePhysiqueCapture: (photoUrl) => {
+            completePhysiqueCapture: (photoUrl, photoRecord) => {
                 const { activeSessionId } = get();
                 if (activeSessionId && photoUrl) {
                     LocalService.updateWorkoutSession(activeSessionId, { physiquePhotoUrl: photoUrl });
                 }
-                set({ status: 'finished', lastPhysiquePhotoUrl: photoUrl || null });
+                set({ 
+                    status: 'finished', 
+                    lastPhysiquePhotoUrl: photoUrl || null,
+                    lastProgressPhoto: photoRecord || null
+                });
             }
         }),
         {
