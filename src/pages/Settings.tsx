@@ -12,7 +12,7 @@
  * Settings are persisted to localStorage via `planr-settings` key.
  */
 import * as React from 'react';
-import { User, Bell, Shield, Moon, LogOut, ChevronRight, Download, RefreshCcw, Activity, Play, Sun, Vibrate, Sparkles, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { User, Bell, Shield, Moon, LogOut, ChevronRight, RefreshCcw, Activity, Play, Sun, Vibrate, Sparkles, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useLanguage } from '../hooks/useLanguage';
@@ -121,6 +121,7 @@ export const SettingsPage = () => {
         setRestTimer(nextValue);
     };
 
+    /*
     const handleExport = () => {
         try {
             const data: Record<string, any> = {};
@@ -150,6 +151,7 @@ export const SettingsPage = () => {
             alert("Export failed: " + (err as Error).message);
         }
     };
+    */
 
     const sections: SettingsSection[] = [
         {
@@ -329,11 +331,13 @@ export const SettingsPage = () => {
         {
             title: t('data_management'),
             items: [
+                /*
                 { 
                     icon: Download, 
                     label: t('export_data'),
                     action: handleExport
                 },
+                */
                 {
                     icon: RefreshCcw,
                     label: "Check for Updates",
